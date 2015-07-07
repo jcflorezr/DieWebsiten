@@ -1,0 +1,26 @@
+Validación,V_ALFANUMERICO_SIN_ESPACIOS,Alfanumérico y sin espacios
+Validación,V_ALFANUMERICO_CON_ESPACIOS,Alfanumérico que puede tener espacios en blanco
+Validación,V_CARACTER_SIN_ESPACIOS,Caracter sin espacios
+Validación,V_CARACTER_CON_ESPACIOS,Caracter que puede tener espacios en blanco
+Transformación,T_CIFRADO,Cifrado Base 64 para campos tipo password
+Validación,V_EMAIL,Correo electrónico
+Transformación,T_EMAIL,Dividir el correo electronico entre usuario y dominio
+Validación,V_FECHAHORA,Fecha y hora en el formato yyyy-MM-dd HH:mm:ss
+Transformación,T_FECHAHORA,Convertir a fecha y hora en el formato yyyy-MM-dd HH:mm:ss
+Validación,Obligatorio,Obligatorio
+Validación,Opcional,No obligatorio
+Validación,V_NUMERICO_SIN_ESPACIOS,Numérico y sin espacios
+Validación,V_NUMERICO_CON_ESPACIOS,Numérico que puede tener espacios en blanco
+Validación,V_PUNTO,Solo puede tener el caracter punto (.)
+Transformación,T_MINUSCULAS,Solo caracteres en minúsculas
+Transformación,T_MAYUSCULAS,Solo caracteres en mayúsculas
+Transformación,T_CAMELCASE_CLASE,Formato de nombre que se da a las clases en la programación orientada a objetos (nueva clase --> NuevaClase)
+Transformación,T_CAMELCASE_METODO,Formato de nombre que se da a los métodos o atributos en la programación orientada a objetos (nuevo metodo --> nuevoMetodo)
+Transformación,T_GUIONBAJO,reemplazar los espacios en blanco con guiones bajos (nueva cadena con guinoes bajos --> nueva_cadena_con_guiones_bajos)
+Validación,DominioSitioWeb,"Debe terminar en alguno de estos dominios genéricos: .com, .net, .org, .int, .edu, .gov, .mil"
+Transformación,T_IDIOMA,"Las iniciales de un idioma (solo puede tener dos caracteres, 'Español' --> 'ES')"
+Validación,Json,String formato Json
+Validación,JsonSet,"String formato Json sin claves, sólo valores únicos"
+Validación,V_URL,Dirección URL
+Validación,V_DOMINIO,Nombre de un dominio de un sitio web 
+Validación,NoValidar,No se hace ninguna validación a este campo

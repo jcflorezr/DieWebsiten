@@ -1,0 +1,20 @@
+localhost,index,ES,1,html,1,null,null
+localhost,index,ES,2,body,1.2,null,null
+localhost,index,ES,2,head,1.1,null,null
+localhost,index,ES,3,div,1.2.1,"{'id': 'container'}",null
+localhost,index,ES,3,meta,1.1.2,"{'content': 'text/html;charset=utf-8', 'http-equiv': 'Content-Type'}",null
+localhost,index,ES,3,script,1.1.3,"{'charset': 'utf-8', 'src': 'https://code.jquery.com/jquery-1.11.1.min.js', 'type': 'text/javascript'}",null
+localhost,index,ES,3,title,1.1.1,null,Página de Inicio
+localhost,index,ES,4,a,1.2.1.1,"{'href': 'sitiosWeb'}",Sitios web
+localhost,index,ES,4,a,1.2.1.3,"{'href': 'elementos'}",Elementos
+localhost,index,ES,4,br,1.2.1.2,null,null
+miradorhumadea.com,index,ES,1,html,1,null,null
+miradorhumadea.com,index,ES,2,body,1.2,null,null
+miradorhumadea.com,index,ES,2,head,1.1,null,null
+miradorhumadea.com,index,ES,3,div,1.2.1,"{'id': 'container'}",null
+miradorhumadea.com,index,ES,3,meta,1.1.2,"{'content': 'text/html;charset=utf-8', 'http-equiv': 'Content-Type'}",null
+miradorhumadea.com,index,ES,3,script,1.1.3,"{'charset': 'utf-8', 'src': 'https://code.jquery.com/jquery-1.11.1.min.js', 'type': 'text/javascript'}",null
+miradorhumadea.com,index,ES,3,title,1.1.1,null,Página de Inicio
+miradorhumadea.com,index,ES,4,a,1.2.1.1,"{'href': 'sitiosWeb'}",Sitios web
+miradorhumadea.com,index,ES,4,a,1.2.1.3,"{'href': 'elementos'}",Elementos
+miradorhumadea.com,index,ES,4,br,1.2.1.2,null,null

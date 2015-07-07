@@ -1,0 +1,75 @@
+
+
+
+
+
+AHORA VERIFICAR LA FORMA DE IMPRIMIR UN FORMULARIO DESDE ESTAS ESTRUCTURAS
+
+
+
+
+
+
+{
+	"_!sitiosweb@!sitioweb": {
+		"descripcion": "",      
+		"keyspaces": ["system.keyspaces.keyspace_name"],
+		"_!paginas@!pagina": {
+			"descripcion": "",          
+			"_!eventos@!evento": {				
+				"@!transaccion": {
+					"descripcion": "",
+					"tipo": "",
+					"keyspace": "",
+					"column_family": "",
+					"orden": 1,
+					"sentencia_cql" : "",
+					"campos_formulario": []  
+                },
+				"_formularios@!keyspace_name": {
+					"@!column_family_name": {
+						"@!column_name": {
+							"grupovalidacion": "diewebsiten.grupos_validaciones.grupovalidacion",
+							"formaingreso": "",
+							"valorpordefecto" : ""							
+						}							
+					}					
+				}					               
+            }          
+        },
+		"_!usuarios@!dominio" : {
+			"@!usuario" : {
+				"email" : "",
+				"contrasena" : "",
+				"_!sesiones@!sessionid" : {
+					"fechaultimoacceso" : ""
+				}
+			}
+		}
+    }
+}
+
+{
+	"_!grupos_validaciones@!grupovalidacion" : {
+		"_!grupos_validaciones_!validaciones@!tipo" : {
+			"_!grupos_validaciones_!validaciones@!validacion" : {
+				"descripcion" : ""
+			}
+		}	
+	}
+}
+
+{
+	"_!keyspaces@!keyspace_name" : {
+		"_!column_families@!column_family_name" : {
+			"column_aliases" : "",
+			"key_aliases" : "",
+			"_!columns@!column_name" : {
+				"component_index" : "",							
+			},
+			"_!columnas@!column_name" : {
+				"grupovalidacion" : "_!grupos_validaciones@!grupovalidacion"
+			}
+		}			
+	}
+}

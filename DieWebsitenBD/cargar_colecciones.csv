@@ -1,0 +1,1 @@
+SET,tiposTransacciones,,"{'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE TABLE'}",
