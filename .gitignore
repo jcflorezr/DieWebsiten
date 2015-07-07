@@ -1,5 +1,5 @@
 $  cat .gitignore
-*/build
-*/classes
-*/*.DS_Store
+build/
+classes/
+*.DS_Store
 Thumbs.db
