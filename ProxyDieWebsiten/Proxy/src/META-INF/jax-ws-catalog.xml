@@ -1,4 +1,0 @@
-<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
-  <system systemId="http://localhost:8084/DieWebsiten_02/WSPrincipal?wsdl#%7Bhttp%3A%2F%2FWebServices.modelo.diewebsiten.com%2F%7DWSPrincipal"
-          uri="http://localhost:8084/DieWebsiten_02/WSPrincipal?wsdl"/>
-</catalog>

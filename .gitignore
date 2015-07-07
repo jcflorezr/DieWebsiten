@@ -1,5 +1,0 @@
-$  cat .gitignore
-build/
-classes/
-*.DS_Store
-Thumbs.db
