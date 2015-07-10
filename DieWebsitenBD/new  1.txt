@@ -60,15 +60,15 @@ AHORA VERIFICAR LA FORMA DE IMPRIMIR UN FORMULARIO DESDE ESTAS ESTRUCTURAS
 }
 
 {
-	"_!keyspaces@!keyspace_name" : {
-		"_!column_families@!column_family_name" : {
+	"#!keyspaces@!keyspace_name" : {
+		"#!column_families@!column_family_name" : {
 			"column_aliases" : "",
 			"key_aliases" : "",
-			"_!columns@!column_name" : {
+			"#!columns@!column_name" : {
 				"component_index" : "",							
 			},
 			"_!columnas@!column_name" : {
-				"grupovalidacion" : "_!grupos_validaciones@!grupovalidacion"
+				"grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
 			}
 		}			
 	}
