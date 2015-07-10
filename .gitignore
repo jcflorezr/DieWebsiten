@@ -9,6 +9,7 @@ classes/
 ###############################
 *.project
 .settings/
+*.classpath
 
 # NetBeans IDE generated files #
 ################################
