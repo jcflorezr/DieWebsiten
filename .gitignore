@@ -5,11 +5,16 @@ $ cat .gitignore
 build/
 classes/
 
-# eclipse IDE generated files #
+# Maven compiled source #
+#########################
+target/
+
+# Eclipse IDE generated files #
 ###############################
 *.project
 .settings/
 *.classpath
+.metadata/
 
 # NetBeans IDE generated files #
 ################################
