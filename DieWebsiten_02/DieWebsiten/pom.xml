@@ -140,8 +140,8 @@
 				<version>2.2</version>
 				<configuration>
 					<url>http://localhost:8084/manager/text</url>
-					<user>admin</user>
-					<password>s3cret</password>
+					<user>admindw</user>
+					<password>Jcfr0623*</password>
 					<!--path>/DieWebsiten</path -->
 					<path>/Promociones</path>
 				</configuration>
