@@ -47,12 +47,17 @@ public class G extends HttpServlet {
 			Log.getInstance().info("Remote Locale: " + request.getLocale());
 			Log.getInstance().info("Remote User: " + request.getRemoteUser());
 			Log.getInstance().info("Remote User Principal: " + request.getUserPrincipal());
-			Log.getInstance().info("Remote Host Info: " + request.getHeader("User-Agent"));
+			String userAgent = request.getHeader("User-Agent");
+			Log.getInstance().info("Remote Host Info: " + userAgent);
 			Log.getInstance().info("====================================================================");
 			Log.getInstance().info("========================= POR GEOLOCATION ==========================");
 			Log.getInstance().info("====================================================================");
-			Log.getInstance().info("Latitud: " + request.getParameter("latitud"));
-			Log.getInstance().info("Longitud: " + request.getParameter("longitud"));
+			if (null == request.getParameter("error")) {
+				Log.getInstance().info("Latitud: " + request.getParameter("latitud"));
+				Log.getInstance().info("Longitud: " + request.getParameter("longitud"));
+			} else {
+				Log.getInstance().info("No se pudo obtener la ubicación: " + request.getParameter("error"));
+			}
 			Log.getInstance().info("");			
 			Log.getInstance().info("====================================================================");
 			Log.getInstance().info("========================= POR DIRECCIÓN IP =========================");
@@ -62,6 +67,12 @@ public class G extends HttpServlet {
 			Log.getInstance().info("========================== X-FORWARDED-FOR =========================");
 			Log.getInstance().info(getIpLocationData(request.getHeader("X-FORWARDED-FOR")));
 			Log.getInstance().info("");
+			if (userAgent.toLowerCase().indexOf("mobile") > -1 || userAgent.toLowerCase().indexOf("android")  > -1
+					|| userAgent.toLowerCase().indexOf("iphone") > -1) {
+				response.getWriter().append("Por favor intenta ver nuestras promociones desde tu computador.");
+			} else {
+				response.getWriter().append("Por favor intenta más tarde.");
+			}
 			
 		} catch (Exception e) {
 			Log.getInstance().imprimirErrorEnLog(e);
