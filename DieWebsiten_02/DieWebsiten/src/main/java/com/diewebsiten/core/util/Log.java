@@ -44,12 +44,12 @@ public class Log {
      */
     private Log() {
         try {
-            File carpetaLog = new File("\\Log");
+            File carpetaLog = new File("/logsdw");
             //File carpetaLog = new File(Constantes.RUTA_LOG);
             if (!carpetaLog.exists())
                 carpetaLog.mkdirs();
             
-            String rutaYNombreLog = "\\Log" + "\\LogDieWebsiten";
+            String rutaYNombreLog = "/logsdw" + "/promociones";
             //String rutaYNombreLog = Constantes.RUTA_LOG + Constantes.NOMBRE_LOG;
             logger = Logger.getLogger(rutaYNombreLog);        
                 
@@ -58,19 +58,19 @@ public class Log {
             
             rutaYNombreLog += "_" + new SimpleDateFormat("yyyyMMdd").format(new Date()) + ".log";     
             
-            //DailyRollingFileAppender rollingAppender = new DailyRollingFileAppender();
-            //rollingAppender.setFile(rutaYNombreLog);
-            //rollingAppender.setLayout(layout);
-            //rollingAppender.activateOptions();
+            DailyRollingFileAppender rollingAppender = new DailyRollingFileAppender();
+            rollingAppender.setFile(rutaYNombreLog);
+            rollingAppender.setLayout(layout);
+            rollingAppender.activateOptions();
             
-            ConsoleAppender consoleAppender = new ConsoleAppender();
-            consoleAppender.setLayout(layout);
-            consoleAppender.activateOptions();
+            //ConsoleAppender consoleAppender = new ConsoleAppender();
+            //consoleAppender.setLayout(layout);
+            //consoleAppender.activateOptions();
      
             Logger rootLogger = Logger.getRootLogger();
             rootLogger.setLevel(Level.DEBUG);
-            //rootLogger.addAppender(rollingAppender);
-            rootLogger.addAppender(consoleAppender);
+            rootLogger.addAppender(rollingAppender);
+            //rootLogger.addAppender(consoleAppender);
             
         } catch (Exception e) {
             e.printStackTrace();
