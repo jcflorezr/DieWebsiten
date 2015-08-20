@@ -112,12 +112,12 @@ public class G extends HttpServlet {
 			//System.out.println(subdivision.getConfidence()); // 90
 	
 			City city = response.getCity();
-			data.add("City name", new JsonPrimitive(city.getName()));       // 'Minneapolis'
+			//data.add("City name", new JsonPrimitive(city.getName()));       // 'Minneapolis'
 			//System.out.println(city.getConfidence()); // 50
 	
 			Postal postal = response.getPostal();
-			data.add("Postal Code", new JsonPrimitive(postal.getCode()));       // '55455'
-			data.add("Postal confidence", new JsonPrimitive(postal.getConfidence())); // 40
+			//data.add("Postal Code", new JsonPrimitive(postal.getCode()));       // '55455'
+			//data.add("Postal confidence", new JsonPrimitive(postal.getConfidence())); // 40
 	
 			Location location = response.getLocation();
 			data.add("Latitude", new JsonPrimitive(location.getLatitude()));        // 44.9733
