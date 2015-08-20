@@ -128,6 +128,7 @@ public class G extends HttpServlet {
 			data.add("User type", new JsonPrimitive(response.getTraits().getUserType())); // 'college'
 			
 		} catch (Exception e) {
+			Log.getInstance().imprimirErrorEnLog(e);
 			data.add("ERROR", new JsonPrimitive(e.toString()));
 		}
 		
