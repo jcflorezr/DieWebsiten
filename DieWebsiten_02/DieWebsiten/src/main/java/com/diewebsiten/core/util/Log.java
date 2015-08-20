@@ -44,12 +44,12 @@ public class Log {
      */
     private Log() {
         try {
-            File carpetaLog = new File("/logsdw");
+            File carpetaLog = new File("/opt/apache-tomcat-8.0.23/logs/logsdw");
             //File carpetaLog = new File(Constantes.RUTA_LOG);
             if (!carpetaLog.exists())
                 carpetaLog.mkdirs();
             
-            String rutaYNombreLog = "/logsdw" + "/promociones";
+            String rutaYNombreLog = "/opt/apache-tomcat-8.0.23/logs/logsdw" + "/promociones";
             //String rutaYNombreLog = Constantes.RUTA_LOG + Constantes.NOMBRE_LOG;
             logger = Logger.getLogger(rutaYNombreLog);        
                 
