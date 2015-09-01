@@ -1,4 +1,4 @@
-/* Los campos de las sentencias CQL que se guardan en el campo 'diewebsiten.eventos.sentenciacql' deben ir en orden alfabético */
+/* Los campos de las sentencias CQL que se guardan en el campo 'diewebsiten.eventos.sentenciacql' deben ir en orden alfabetico */
 /* Se debe ejecutar script que modifica los comentarios de las tablas de las bases de datos del sistema (system, system_traces)*/
 
 DROP KEYSPACE IF EXISTS DIEWEBSITEN;
@@ -155,17 +155,17 @@ COPY diewebsiten.usuarios (sitioweb, usuario, dominio, contrasena) FROM 'C:\User
 COPY diewebsiten.sesiones (sitioweb, usuario, dominio, sessionid, fechaultimoacceso) FROM 'C:\Users\jflorezr\Documents\DW\DieWebsitenBD\cargar_sesiones.csv';
 COPY diewebsiten.colecciones (tipo, coleccion, tipolist, tiposet, tipomap) FROM 'C:\Users\jflorezr\Documents\DW\DieWebsitenBD\cargar_colecciones.csv';*/
 
-COPY diewebsiten.transacciones_por_tabla (tipotransaccion, basededatos, tabla) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_transacciones_por_tabla.csv';
-COPY diewebsiten.diccionario_columnas (basededatos, tabla, columna, grupovalidacion) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_diccionario_columnas.csv';
-COPY diewebsiten.sitiosweb_paginas_elementos (sitioweb, pagina, tipo, nombre, descripcion, basesdedatos) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_sitiosweb_paginas_elementos.csv';
-COPY diewebsiten.despliegues (sitioweb, pagina, ruta) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_despliegues.csv';
-COPY diewebsiten.codigos_por_pagina (sitioweb, idioma, pagina, nombre, codigo) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_codigos_por_pagina.csv';
-COPY diewebsiten.enunciados (sitioweb, pagina, idioma, nivel, etiqueta, ruta, atributos, texto) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_enunciados.csv';
-COPY diewebsiten.eventos (sitioweb, pagina, evento, transaccion, tipotransaccion, basededatos, tabla, orden, descripcion, sentenciacql, necesitaformulario, tipolista) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_eventos.csv';
-COPY diewebsiten.grupos_validaciones (grupo, validaciones, transformaciones) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_grupos_validaciones.csv';
---COPY diewebsiten.sentencias_cql (sitioweb, pagina, tipotransaccion, transaccion, clausula, campo, alias, valorpordefecto) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_sentencias_cql.csv';
-COPY diewebsiten.formularios (sitioweb, pagina, evento, basededatos, tabla, columna, grupovalidacion, formaingreso) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_formularios.csv';
-COPY diewebsiten.validaciones (tipo, nombre, descripcion) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_validaciones.csv';
-COPY diewebsiten.usuarios (sitioweb, usuario, dominio, contrasena) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_usuarios.csv';
-COPY diewebsiten.sesiones (sitioweb, usuario, dominio, sessionid, fechaultimoacceso) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_sesiones.csv';
-COPY diewebsiten.colecciones (tipo, coleccion, tipolist, tiposet, tipomap) FROM '/users/juancamiloroman/Dropbox/Base de datos/DieWebsitenBD/cargar_colecciones.csv';
+COPY diewebsiten.transacciones_por_tabla (tipotransaccion, basededatos, tabla) FROM '~/DieWebsiten/DieWebsitenBD/cargar_transacciones_por_tabla.csv';
+COPY diewebsiten.diccionario_columnas (basededatos, tabla, columna, grupovalidacion) FROM '~/DieWebsiten/DieWebsitenBD/cargar_diccionario_columnas.csv';
+COPY diewebsiten.sitiosweb_paginas_elementos (sitioweb, pagina, tipo, nombre, descripcion, basesdedatos) FROM '~/DieWebsiten/DieWebsitenBD/cargar_sitiosweb_paginas_elementos.csv';
+COPY diewebsiten.despliegues (sitioweb, pagina, ruta) FROM '~/DieWebsiten/DieWebsitenBD/cargar_despliegues.csv';
+COPY diewebsiten.codigos_por_pagina (sitioweb, idioma, pagina, nombre, codigo) FROM '~/DieWebsiten/DieWebsitenBD/cargar_codigos_por_pagina.csv';
+COPY diewebsiten.enunciados (sitioweb, pagina, idioma, nivel, etiqueta, ruta, atributos, texto) FROM '~/DieWebsiten/DieWebsitenBD/cargar_enunciados.csv';
+COPY diewebsiten.eventos (sitioweb, pagina, evento, transaccion, tipotransaccion, basededatos, tabla, orden, descripcion, sentenciacql, necesitaformulario, tipolista) FROM '~/DieWebsiten/DieWebsitenBD/cargar_eventos.csv';
+COPY diewebsiten.grupos_validaciones (grupo, validaciones, transformaciones) FROM '~/DieWebsiten/DieWebsitenBD/cargar_grupos_validaciones.csv';
+--COPY diewebsiten.sentencias_cql (sitioweb, pagina, tipotransaccion, transaccion, clausula, campo, alias, valorpordefecto) FROM '~/DieWebsiten/DieWebsitenBD/cargar_sentencias_cql.csv';
+COPY diewebsiten.formularios (sitioweb, pagina, evento, basededatos, tabla, columna, grupovalidacion, formaingreso) FROM '~/DieWebsiten/DieWebsitenBD/cargar_formularios.csv';
+COPY diewebsiten.validaciones (tipo, nombre, descripcion) FROM '~/DieWebsiten/DieWebsitenBD/cargar_validaciones.csv';
+COPY diewebsiten.usuarios (sitioweb, usuario, dominio, contrasena) FROM '~/DieWebsiten/DieWebsitenBD/cargar_usuarios.csv';
+COPY diewebsiten.sesiones (sitioweb, usuario, dominio, sessionid, fechaultimoacceso) FROM '~/DieWebsiten/DieWebsitenBD/cargar_sesiones.csv';
+COPY diewebsiten.colecciones (tipo, coleccion, tipolist, tiposet, tipomap) FROM '~/DieWebsiten/DieWebsitenBD/cargar_colecciones.csv';
