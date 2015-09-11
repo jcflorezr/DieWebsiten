@@ -10,10 +10,11 @@ public enum Constantes {
     EXCEPCION_GENERICA("com.diewebsiten.modelo.Excepciones.ExcepcionGenerica"),
     NOMBRE_EVENTO_VACIO("No se ha especificado un evento."),
     
-    SENTENCIA_TRANSACCIONES("SELECT tipotransaccion, transaccion, tabla, sentenciacql, necesitaformulario, tipolista FROM diewebsiten.eventos WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
+    SENTENCIA_TRANSACCIONES("SELECT evento, tipotransaccion, transaccion, tabla, sentenciacql, camposformulario FROM diewebsiten.eventos WHERE sitioweb = ? AND pagina = ?"),
+    //SENTENCIA_TRANSACCIONES("SELECT tipotransaccion, transaccion, tabla, sentenciacql, camposformulario FROM diewebsiten.eventos WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
     //SENTENCIA_FORMULARIOS("SELECT campo, alias FROM diewebsiten.formularios WHERE sitioweb = ? AND pagina = ? AND tipotransaccion = ? AND transaccion = ?"),
-    SENTENCIA_VALIDACIONES_EVENTO("SELECT campo, grupovalidacion, formaingreso FROM diewebsiten.validaciones_evento WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
-    SENTENCIA_SENTENCIAS_CQL("SELECT clausula, campo, valorpordefecto FROM diewebsiten.sentencias_cql WHERE sitioweb = ? AND pagina = ? AND tipotransaccion = ? AND transaccion = ?"),
+    SENTENCIA_VALIDACIONES_EVENTO("SELECT columna, grupovalidacion, formaingreso FROM diewebsiten.formularios WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
+    //SENTENCIA_SENTENCIAS_CQL("SELECT clausula, campo, valorpordefecto FROM diewebsiten.sentencias_cql WHERE sitioweb = ? AND pagina = ? AND tipotransaccion = ? AND transaccion = ?"),
     
     COLLECTIONS_CASSANDRA("SetType,ListType,MapType"),
     TIPOS_LISTAS_SENTENCIAS_SELECT("simple,compuesta,parValoresSimple,parValoresCompuesta,parAgrupadaSimple,parAgrupadaCompuesta"),

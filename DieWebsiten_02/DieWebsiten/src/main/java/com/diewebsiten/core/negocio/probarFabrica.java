@@ -126,11 +126,11 @@ public class probarFabrica {
             
             
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
+            /*grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", parametros1)));
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));*/
             
             
             for (Future<String> evento : grupoEventos) {

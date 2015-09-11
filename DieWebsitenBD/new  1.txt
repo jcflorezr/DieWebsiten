@@ -1,3 +1,6 @@
+_! --> tabla
+#! --> tabla del sistema
+@! --> primary key
 
 
 
@@ -26,7 +29,7 @@ AHORA VERIFICAR LA FORMA DE IMPRIMIR UN FORMULARIO DESDE ESTAS ESTRUCTURAS
 					"sentencia_cql" : "",
 					"campos_formulario": []  
                 },
-				"_formularios@!keyspace_name": {
+				"_!formularios@!keyspace_name": {
 					"@!column_family_name": {
 						"@!column_name": {
 							"grupovalidacion": "diewebsiten.grupos_validaciones.grupovalidacion",

@@ -15,7 +15,7 @@ system,compactions_in_progress,inputs,CampoObligatorioSinValidacion
 system,compactions_in_progress,keyspace_name,CampoObligatorioSinValidacion
 system,hints,hint_id,CampoObligatorioSinValidacion
 system,hints,message_version,CampoObligatorioSinValidacion
-system,hints,compact_value,mutation,CampoObligatorioSinValidacion
+system,hints,compact_value,CampoObligatorioSinValidacion
 system,hints,target_id,CampoObligatorioSinValidacion
 system,local,key,CampoObligatorioSinValidacion
 system,local,bootstrapped,CampoObligatorioSinValidacion
@@ -115,8 +115,6 @@ system_traces,sessions,duration,CampoObligatorioSinValidacion
 system_traces,sessions,parameters,CampoObligatorioSinValidacion
 system_traces,sessions,request,CampoObligatorioSinValidacion
 system_traces,sessions,started_at,CampoObligatorioSinValidacion
-
-
 diewebsiten,codigos_por_pagina,idioma,CampoTipoIdioma
 diewebsiten,codigos_por_pagina,nombre,CampoTipoURL
 diewebsiten,codigos_por_pagina,pagina,CampoTipoURL

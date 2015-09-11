@@ -134,7 +134,7 @@ public class Eventos implements Callable<String> {
                 sentenciasPreparadas = new HashMap<String, PreparedStatement>();
                 sentenciasPreparadas.put("SentenciaTransacciones", getSesionBD().prepare(Constantes.SENTENCIA_TRANSACCIONES.getString()));
                 //sentenciasPreparadas.put("SentenciaFormularios", getSesionBD().prepare(Constantes.SENTENCIA_FORMULARIOS.getString()));
-                sentenciasPreparadas.put("SentenciaSentenciasCql", getSesionBD().prepare(Constantes.SENTENCIA_SENTENCIAS_CQL.getString()));
+                //sentenciasPreparadas.put("SentenciaSentenciasCql", getSesionBD().prepare(Constantes.SENTENCIA_SENTENCIAS_CQL.getString()));
                 sentenciasPreparadas.put("SentenciaValidacionesEvento", getSesionBD().prepare(Constantes.SENTENCIA_VALIDACIONES_EVENTO.getString()));
             }
         }
@@ -246,8 +246,8 @@ public class Eventos implements Callable<String> {
         try {
 
             // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-            transacciones = getSesionBD().execute(getSentenciasPreparadas().get("SentenciaTransacciones").bind(getSitioWeb(), getPagina(), getNombreEvento())).all();
-              
+            transacciones = getSesionBD().execute(getSentenciasPreparadas().get("SentenciaTransacciones").bind(getSitioWeb(), getPagina()/*, getNombreEvento()*/)).all();
+//System.out.println(getSesionBD().execute(getSentenciasPreparadas().get("SentenciaTransacciones").bind(getSitioWeb(), getPagina()/*, getNombreEvento()*/)).getExecutionInfo().getQueryTrace());
             // Validar que el evento existe.
             if (transacciones.isEmpty()) 
                 throw new ExcepcionGenerica (Constantes.Mensajes.EVENTO_NO_EXISTE.getMensaje(getSitioWeb(), getPagina(), getNombreEvento()));
