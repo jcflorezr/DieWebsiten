@@ -1,3 +1,10 @@
+mvn clean package compile
+mvn exec:java -Dexec.mainClass="com.diewebsiten.core.negocio.probarFabrica"
+
+
+
+
+
 _! --> tabla
 #! --> tabla del sistema
 @! --> primary key

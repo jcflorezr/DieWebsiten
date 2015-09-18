@@ -51,13 +51,14 @@ public class Eventos implements Callable<String> {
     private String idioma;
     private String nombreEvento;
     private Map<String, Object> parametros;
-    private static Map<String, PreparedStatement> sentenciasPreparadas;
+    private List<Row> camposFormularioEvento;
+	private static Map<String, PreparedStatement> sentenciasPreparadas;
     private static Session sesionBD;
     private boolean validacionExitosa;
     private final Utilidades util;
     
     /**
-     * Este constructor se encarga de recibir un evento, éste evento contiene transacciones de consulta,
+     * Este constructor se encarga de recibir un evento, este evento contiene transacciones de consulta,
      * inserción, actualización, eliminación, entre otras; relacionadas con las tablas
      * de la base de datos, Posteriormente ejecuta cada una de estas transacciones y retorna
      * los resultados de cada transacción en un string formato JSON.
@@ -78,7 +79,7 @@ public class Eventos implements Callable<String> {
             throw new ExcepcionGenerica(Constantes.NOMBRE_EVENTO_VACIO.getString());
         
         // Obtener el nombre del evento que se ejecutará.
-        this.nombreEvento = nombreEvento + " ";
+        this.nombreEvento = nombreEvento;
         
         // Obtener la dirección URL del sitio web que está realizando la petición.
         this.sitioWeb = StringUtils.substringBefore(url, ":@:")/*.equals("localhost") ? "127.0.0.1" : sitioWeb*/;
@@ -164,6 +165,14 @@ public class Eventos implements Callable<String> {
         return validacionExitosa;
     }
     
+    public List<Row> getCamposFormularioEvento() {
+		return camposFormularioEvento;
+	}
+
+	public void setCamposFormularioEvento(List<Row> camposFormularioEvento) {
+		this.camposFormularioEvento = camposFormularioEvento;
+	}
+    
     @Override
     public String call() {
         try {
@@ -204,7 +213,7 @@ public class Eventos implements Callable<String> {
             List<Future<Boolean>> grupoEjecucionValidaciones = new ArrayList<Future<Boolean>>();
 
             for (Row campoFormularioEvento : camposFormularioEvento) {
-                grupoEjecucionValidaciones.add(ejecucionParalelaValidaciones.submit(new Validaciones(campoFormularioEvento, true)));
+                grupoEjecucionValidaciones.add(ejecucionParalelaValidaciones.submit(new Validaciones(campoFormularioEvento)));
             }
 
             for (Future<Boolean> ejecucionValidacionActual : grupoEjecucionValidaciones) {
@@ -215,15 +224,18 @@ public class Eventos implements Callable<String> {
             if (!isValidacionExitosa())
                 return isValidacionExitosa();
 
-            grupoEjecucionValidaciones = new ArrayList<Future<Boolean>>();
+            /*grupoEjecucionValidaciones = new ArrayList<Future<Boolean>>();
 
             for (Row campoFormularioEvento : camposFormularioEvento) {
-                grupoEjecucionValidaciones.add(ejecucionParalelaValidaciones.submit(new Validaciones(campoFormularioEvento, false)));
+                grupoEjecucionValidaciones.add(ejecucionParalelaValidaciones.submit(new Validaciones(campoFormularioEvento)));
             }
 
             for (Future<Boolean> ejecucionValidacionActual : grupoEjecucionValidaciones) {
                 ejecucionValidacionActual.get();
-            }
+            }*/
+            
+            // Guardar los campos del formulario del evento en una variable global
+            setCamposFormularioEvento(camposFormularioEvento);
 
             return isValidacionExitosa();
 
@@ -246,8 +258,8 @@ public class Eventos implements Callable<String> {
         try {
 
             // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-            transacciones = getSesionBD().execute(getSentenciasPreparadas().get("SentenciaTransacciones").bind(getSitioWeb(), getPagina()/*, getNombreEvento()*/)).all();
-//System.out.println(getSesionBD().execute(getSentenciasPreparadas().get("SentenciaTransacciones").bind(getSitioWeb(), getPagina()/*, getNombreEvento()*/)).getExecutionInfo().getQueryTrace());
+            transacciones = getSesionBD().execute(getSentenciasPreparadas().get("SentenciaTransacciones").bind(getSitioWeb(), getPagina(), getNombreEvento())).all();
+
             // Validar que el evento existe.
             if (transacciones.isEmpty()) 
                 throw new ExcepcionGenerica (Constantes.Mensajes.EVENTO_NO_EXISTE.getMensaje(getSitioWeb(), getPagina(), getNombreEvento()));
@@ -278,11 +290,9 @@ public class Eventos implements Callable<String> {
     private class Validaciones implements Callable<Boolean> {
         
         private final Row campo;
-        private final boolean validar;
         
-        public Validaciones(Row campo, boolean validar) {            
+        public Validaciones(Row campo) {            
             this.campo = campo;
-            this.validar = validar;
         }
         
         /**
@@ -297,40 +307,38 @@ public class Eventos implements Callable<String> {
          * @throws com.diewebsiten.core.excepciones.ExcepcionGenerica
          */
         @Override
-        public Boolean call() throws Exception {                        
-            StringBuilder sentencia = new StringBuilder("SELECT grupo, ");
-            String nombreCampoActual = campo.getString("campo");
+        public Boolean call() throws Exception {  
+        	
+            String nombreCampoActual = campo.getString("columna");
             String grupoValidacionesCampoActual = campo.getString("grupovalidacion");
-
-            if (validar)
-                sentencia.append("validaciones FROM diewebsiten.grupos_validaciones WHERE grupo = '").append(grupoValidacionesCampoActual).append("'");
-            else
-                sentencia.append("transformaciones FROM diewebsiten.grupos_validaciones WHERE grupo = '").append(grupoValidacionesCampoActual).append("'");
-
+            StringBuilder sentencia = new StringBuilder("SELECT grupo, tipo, validacion FROM diewebsiten.grupos_validaciones WHERE grupo = '").append(grupoValidacionesCampoActual).append("'");
+            
             List<Row> grupoValidacion = getSesionBD().execute(sentencia.toString()).all();
 
             // Validar que existen las validaciones del grupo.
             if (grupoValidacion.isEmpty())
                 throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.VALIDACIONES_NO_EXISTEN.getMensaje(getSitioWeb(), getPagina(), getNombreEvento()));            
-
-            Object valorParametroActual = getParametros().get(nombreCampoActual);
-            if (validar) {                
-                for (String validacion : grupoValidacion.get(0).getSet("validaciones", String.class)) {
-                    List<String> resVal = getUtil().validarParametro(validacion, valorParametroActual);
-                    if (!resVal.isEmpty()) {
-                        setParametros(nombreCampoActual, resVal);
-                        return false;
-                    }
-                }
-            } else {                
-                if (!grupoValidacion.get(0).isNull("transformaciones")) {
-                    for (String transformacion : grupoValidacion.get(0).getSet("transformaciones", String.class)) {
-                        Object resTrans = getUtil().transformarParametro(transformacion, valorParametroActual);
-                        if (null == resTrans)
-                            throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.TRANSFORMACION_FALLIDA.getMensaje(nombreCampoActual, getNombreEvento(), (String)valorParametroActual, transformacion));
-                        setParametros(nombreCampoActual, resTrans);
-                    }
-                }
+            
+            for (Row grupo : grupoValidacion) {
+	            Object valorParametroActual = getParametros().get(nombreCampoActual);
+	            if (grupo.getString("tipo").equals(Constantes.VALIDACION.getString())) {                
+	                //for (String validacion : grupoValidacion.get(0).getSet("validaciones", String.class)) {
+	                    List<String> resVal = getUtil().validarParametro(grupo.getString("validacion"), valorParametroActual);
+	                    if (!resVal.isEmpty()) {
+	                        setParametros(nombreCampoActual, resVal);
+	                        return false;
+	                    }
+	                //}
+	            } else {                
+	                //if (!grupoValidacion.get(0).isNull("transformaciones")) {
+	                    //for (String transformacion : grupoValidacion.get(0).getSet("transformaciones", String.class)) {
+	                        Object resTrans = getUtil().transformarParametro(grupo.getString("validacion"), valorParametroActual);
+	                        if (null == resTrans)
+	                            throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.TRANSFORMACION_FALLIDA.getMensaje(nombreCampoActual, getNombreEvento(), (String)valorParametroActual, grupo.getString("validacion")));
+	                        setParametros(nombreCampoActual, resTrans);
+	                    //}
+	                //}
+	            }
             }
 
             return true;
@@ -351,16 +359,32 @@ public class Eventos implements Callable<String> {
 
         @Override
         public String call() throws Exception {
+        	
+        	String resultadoTransaccion = "";
             
             String nombreTransaccion = transaccion.getString("transaccion");
             String tipoTransaccion = transaccion.getString("tipotransaccion");
             
-            PreparedStatement sentenciaSentenciasCql = getSentenciasPreparadas().get("SentenciaSentenciasCql");
+            // Obtener la sentencia CQL de la transacción.
+            String sentenciaCQL = transaccion.getString("sentenciacql");
             
-            String resultadoTransaccion = "";
+            // Obtener los filtros que se necesitan para ejecutar la sentencia CQL.
+            List<String> filtrosSentenciaCQL = transaccion.getList("filtrossentenciacql", String.class);
+            
+            //PreparedStatement sentenciaCql = getSesionBD().prepare(transaccion.getString("sentenciacql"));
+            
+            
+            
+            // Validar que los filtros necesarios para la sentencia CQL que ejecuta la transacción existen.
+            if (filtrosSentenciaCQL.isEmpty())
+                throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.CAMPOSCQL_NO_EXISTEN.getMensaje(nombreTransaccion, tipoTransaccion, getNombreEvento(), getPagina(), getSitioWeb()));
+        
+            // Validar que la sentencia CQL sea de tipo válido.
+            if (!getUtil().contienePalabra(tipoTransaccion, "SELECT,UPDATE,INSERT,DELETE"))
+                throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(nombreTransaccion, getNombreEvento(), getPagina(), getSitioWeb(), tipoTransaccion));
+        
                 
-            //Thread.sleep(1000);
-            List<Row> camposFormularios_Sentencias;         
+            //Thread.sleep(1000);        
             
             // Agregar las supercolumnas al Map de parámetros del formulario, debido a que
             // están presentes en casi todas las transacciones que componen un evento
@@ -370,34 +394,28 @@ public class Eventos implements Callable<String> {
             if (null == getParametros().get("pagina")) setParametros("pagina", getPagina());
             if (null == getParametros().get("idioma")) setParametros("idioma", getIdioma());
             
-            // Obtener los campos que contiene la sentencia CQL.
-            camposFormularios_Sentencias = getSesionBD().execute(sentenciaSentenciasCql.bind(getSitioWeb(), getPagina(), tipoTransaccion, nombreTransaccion)).all();
+            
         
-            // Validar que las columnas de la sentencia CQL que ejecuta la transacción existen.
-            if (camposFormularios_Sentencias.isEmpty())
-                throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.CAMPOSCQL_NO_EXISTEN.getMensaje(nombreTransaccion, tipoTransaccion, getNombreEvento(), getPagina(), getSitioWeb()));
-        
-            // Validar que la sentencia CQL sea de tipo válido.
-            if (!getUtil().contienePalabra(tipoTransaccion, "SELECT,UPDATE,INSERT,DELETE"))
-                throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(nombreTransaccion, getNombreEvento(), getPagina(), getSitioWeb(), tipoTransaccion));
-        
+            
+            
+            
+            
             // Extraer los valores recibidos desde el cliente (navegador web, dispositivo móvil)
             // y guardarlos en una lista para enviarlos a la sentencia preparada
             List<Object> valoresSentencia = new ArrayList<Object>();
-            for (Row campo : camposFormularios_Sentencias) {
+            for (Row campo : getCamposFormularioEvento()) {
                 // Solo se extraen los valores para las cláusulas SET de los UPDATES, WHERE, y VALUES de los INSERTS.
-                if (getUtil().contienePalabra(campo.getString("clausula"), "SET,WHERE,VALUES")) {
+                //if (getUtil().contienePalabra(campo.getString("clausula"), "SET,WHERE,VALUES")) {
                     // Si el campo de la sentencia tiene un valor por defecto se guardará este valor
                     // en vez de guardar el valor que viene en el Map de parámetros.
                     if (!getUtil().esVacio(campo.getString("valorpordefecto")))
                         valoresSentencia.add(campo.getString("valorpordefecto"));
                     else 
-                        valoresSentencia.add(getParametros().get(campo.getString("campo")));
-                }                        
+                        valoresSentencia.add(getParametros().get(campo.getString("columna")));
+                //}                        
             }
             
-            // Obtener la sentencia CQL de la transacción.
-            String sentenciaCQL = transaccion.getString("sentenciacql");
+            
             synchronized (Eventos.class) {
                 if (null == getSentenciasPreparadas().get(nombreTransaccion)) {
                     getSentenciasPreparadas().put(nombreTransaccion, getSesionBD().prepare(sentenciaCQL));
@@ -408,14 +426,20 @@ public class Eventos implements Callable<String> {
             ResultSet rs = getSesionBD().execute(getSentenciasPreparadas().get(nombreTransaccion).bind(valoresSentencia.toArray()));
             
             // Obtener los resultados de la transacción.
-            camposFormularios_Sentencias = rs.all();
+            List<Row> QQQQ = rs.all();
             
             // Obtener los nombres de las columnas que contiene la transacción.
             List<ColumnDefinitions.Definition> columnas = rs.getColumnDefinitions().asList();
             
             if (tipoTransaccion.equals("SELECT")) {
                 
-                resultadoTransaccion = nombreTransaccion + ":" + getUtil().transformarResultSet(camposFormularios_Sentencias, columnas, transaccion.getString("tipolista"));
+            	1. hay que validar que si no tiene filtros pero si tiene parametros
+            	2. hay que hacer lo de tipolista
+            	3. Prepared statement has only 1 variables, 2 values provided
+            	
+            	
+            	
+                resultadoTransaccion = nombreTransaccion + ":" + getUtil().transformarResultSet(QQQQ, columnas, transaccion.getString("tipolista"));
                 
             }                    
                    
