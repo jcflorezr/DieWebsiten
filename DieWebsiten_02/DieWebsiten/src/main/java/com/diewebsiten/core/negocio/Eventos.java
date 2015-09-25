@@ -309,7 +309,7 @@ public class Eventos implements Callable<String> {
         @Override
         public Boolean call() throws Exception {  
         	
-            String nombreCampoActual = campo.getString("columna");
+            String nombreCampoActual = campo.getString("column_name");
             String grupoValidacionesCampoActual = campo.getString("grupovalidacion");
             StringBuilder sentencia = new StringBuilder("SELECT grupo, tipo, validacion FROM diewebsiten.grupos_validaciones WHERE grupo = '").append(grupoValidacionesCampoActual).append("'");
             
@@ -362,23 +362,20 @@ public class Eventos implements Callable<String> {
         	
         	String resultadoTransaccion = "";
             
-            String nombreTransaccion = transaccion.getString("transaccion");
+        	// Nombre de la transacción.
+        	String nombreTransaccion = transaccion.getString("transaccion");
+            
+            // Tipo de transacción (SELECT, UPDATE, DELETE, INSERT).
             String tipoTransaccion = transaccion.getString("tipotransaccion");
             
-            // Obtener la sentencia CQL de la transacción.
+            // Sentencia CQL de la transacción.
             String sentenciaCQL = transaccion.getString("sentenciacql");
             
-            // Obtener los filtros que se necesitan para ejecutar la sentencia CQL.
+            // Filtros que se necesitan para ejecutar la transacción.
             List<String> filtrosSentenciaCQL = transaccion.getList("filtrossentenciacql", String.class);
             
             //PreparedStatement sentenciaCql = getSesionBD().prepare(transaccion.getString("sentenciacql"));
-            
-            
-            
-            // Validar que los filtros necesarios para la sentencia CQL que ejecuta la transacción existen.
-            if (filtrosSentenciaCQL.isEmpty())
-                throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.CAMPOSCQL_NO_EXISTEN.getMensaje(nombreTransaccion, tipoTransaccion, getNombreEvento(), getPagina(), getSitioWeb()));
-        
+          
             // Validar que la sentencia CQL sea de tipo válido.
             if (!getUtil().contienePalabra(tipoTransaccion, "SELECT,UPDATE,INSERT,DELETE"))
                 throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(nombreTransaccion, getNombreEvento(), getPagina(), getSitioWeb(), tipoTransaccion));
@@ -395,24 +392,33 @@ public class Eventos implements Callable<String> {
             if (null == getParametros().get("idioma")) setParametros("idioma", getIdioma());
             
             
-        
-            
-            
-            
-            
             // Extraer los valores recibidos desde el cliente (navegador web, dispositivo móvil)
             // y guardarlos en una lista para enviarlos a la sentencia preparada
             List<Object> valoresSentencia = new ArrayList<Object>();
-            for (Row campo : getCamposFormularioEvento()) {
-                // Solo se extraen los valores para las cláusulas SET de los UPDATES, WHERE, y VALUES de los INSERTS.
-                //if (getUtil().contienePalabra(campo.getString("clausula"), "SET,WHERE,VALUES")) {
-                    // Si el campo de la sentencia tiene un valor por defecto se guardará este valor
-                    // en vez de guardar el valor que viene en el Map de parámetros.
-                    if (!getUtil().esVacio(campo.getString("valorpordefecto")))
-                        valoresSentencia.add(campo.getString("valorpordefecto"));
-                    else 
-                        valoresSentencia.add(getParametros().get(campo.getString("columna")));
-                //}                        
+            
+            for (String filtro : filtrosSentenciaCQL) {
+            	boolean existe = false;
+	            for (Row campo : getCamposFormularioEvento()) {
+	            	
+	            	if (filtro.equals(campo.getString("column_name"))) {
+	                // Solo se extraen los valores para las cláusulas SET de los UPDATES, WHERE, y VALUES de los INSERTS.
+	                //if (getUtil().contienePalabra(campo.getString("clausula"), "SET,WHERE,VALUES")) {
+	                    // Si el campo de la sentencia tiene un valor por defecto se guardará este valor
+	                    // en vez de guardar el valor que viene en el Map de parámetros.
+	                    if (!getUtil().esVacio(campo.getString("valorpordefecto"))) {
+	                        valoresSentencia.add(campo.getString("valorpordefecto"));
+	                    } else {
+	                        valoresSentencia.add(getParametros().get(campo.getString("column_name")));
+	                    }
+	                    existe = true;
+	                    break;
+	                    
+	            	}
+                }
+	            
+	            // Validar que los filtros necesarios para la sentencia CQL que ejecuta la transacción existen.
+                if (!existe)
+                    throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.FILTRO_NO_EXISTE.getMensaje(filtro, nombreTransaccion, tipoTransaccion, getNombreEvento(), getPagina(), getSitioWeb()));
             }
             
             
@@ -426,20 +432,16 @@ public class Eventos implements Callable<String> {
             ResultSet rs = getSesionBD().execute(getSentenciasPreparadas().get(nombreTransaccion).bind(valoresSentencia.toArray()));
             
             // Obtener los resultados de la transacción.
-            List<Row> QQQQ = rs.all();
+            List<Row> resultado = rs.all();
             
             // Obtener los nombres de las columnas que contiene la transacción.
             List<ColumnDefinitions.Definition> columnas = rs.getColumnDefinitions().asList();
             
             if (tipoTransaccion.equals("SELECT")) {
                 
-            	1. hay que validar que si no tiene filtros pero si tiene parametros
-            	2. hay que hacer lo de tipolista
-            	3. Prepared statement has only 1 variables, 2 values provided
+            	validar la nueva forma de combinar los campos de las diferentes transacciones de un evento
             	
-            	
-            	
-                resultadoTransaccion = nombreTransaccion + ":" + getUtil().transformarResultSet(QQQQ, columnas, transaccion.getString("tipolista"));
+                resultadoTransaccion = getUtil().transformarResultSet(resultado, columnas, filtrosSentenciaCQL, /*transaccion.getString("tipolista")*/ null);
                 
             }                    
                    

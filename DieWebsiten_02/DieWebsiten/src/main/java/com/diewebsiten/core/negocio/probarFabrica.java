@@ -64,7 +64,9 @@ public class probarFabrica {
                                  " \"sitioweb\": \"miradorhumadea.com\"," +
                                  "\"tipo\": \"SW\"," +
                                  "\"basededatos\": \"diewebsiten\"," +
-                                 "\"tipotransaccion\": \"SELE@CT\"" +
+                                 "\"keyspace_name\": \"diewebsiten\"," +
+                                 "\"columnfamily_name\": \"eventos\"," +
+                                 "\"tipotransaccion\": \"SELECT\"" +
                                  "}";
             
             /*Map<String, Object> parametros11 = new HashMap<String, Object>();
@@ -131,6 +133,7 @@ public class probarFabrica {
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", parametros1)));
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
             
             
             for (Future<String> evento : grupoEventos) {

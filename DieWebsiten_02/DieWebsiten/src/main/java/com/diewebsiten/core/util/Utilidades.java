@@ -109,18 +109,17 @@ public class Utilidades {
      * @return
      * @throws Exception
      */
-    public String transformarResultSet (List<Row> ResultSet, List<ColumnDefinitions.Definition> columnas, String tipoLista) throws Exception {
+    public String transformarResultSet (List<Row> ResultSet, List<ColumnDefinitions.Definition> columnas, List<String> filtros, String tipoLista) throws Exception {
         
         JsonArray resultadoTransaccionArray = new JsonArray();
         JsonObject resultadoTransaccionObject = new JsonObject();
-        StringBuilder resultSetTransformado = new StringBuilder();
         
         // Que el tipo de lista que se desea retornar sea válido.
-        if (!contienePalabra(tipoLista, Constantes.TIPOS_LISTAS_SENTENCIAS_SELECT.getString())) {
-            String error = "El tipo de lista '" + tipoLista + " no es válido, por favor revisar la parametrización"
-                  + " en el campo diewebsiten.eventos.tipolista.";
-            throw new ExcepcionGenerica(error);
-        }                    
+//        if (!contienePalabra(tipoLista, Constantes.TIPOS_LISTAS_SENTENCIAS_SELECT.getString())) {
+//            String error = "El tipo de lista '" + tipoLista + " no es válido, por favor revisar la parametrización"
+//                  + " en el campo diewebsiten.eventos.tipolista.";
+//            throw new ExcepcionGenerica(error);
+//        }                    
         
         
         
@@ -132,19 +131,20 @@ public class Utilidades {
         
         // NOTA: Los tipos de lista "parValores" y "parAgrupada" deben tener queries que contengan
         //       únicamente dos campos.
-        if (contienePalabra(tipoLista, "parValores,parAgrupada")) {                        
+        //if (contienePalabra(tipoLista, "parValores,parAgrupada")) {                        
                                    
-        }                    
+        //}                    
         
-        if (tipoLista.equals("simple")) {                        
+        if (columnas.size() == 1) {                        
             // Si el tipo de lista es "simple" se enviará una lista.
-            // Ej: {transaccion : [valorColumna, valorColumna]}
+            // Ej: {nombreColumna : [valorColumna, valorColumna]}
             for (Row fila : ResultSet) {
                 for (int i = 0; i < columnas.size(); i++) {
                     resultadoTransaccionArray.add(new JsonPrimitive(columnas.get(i).getType().deserialize(fila.getBytesUnsafe(columnas.get(i).getName()), ProtocolVersion.NEWEST_SUPPORTED).toString()));
                 }
-            }                        
-        } else if (tipoLista.equals("compuesta")) {
+            }
+            //resultadoTransaccionObject.add(columnas.get(0).getName(), resultadoTransaccionArray);
+        } else if (columnas.size() > 1) {
             // Si el tipo de lista es "compuesta" se enviará una lista de objetos JSON.
             // Ej: {transaccion : [{nombreColumna : valorColumna}, {nombreColumna : valorColumna}]}
             for (Row fila : ResultSet) {
@@ -232,12 +232,27 @@ public class Utilidades {
             }                        
         }                     
         
-        // Guardar los resultados de la transacción dependiendo del parámetro "tipolista".
-        if (contienePalabra(tipoLista, "parValoresSimple,parAgrupadaSimple,parValoresCompuesta")) {
-            resultSetTransformado = new StringBuilder(resultadoTransaccionObject.toString()); 
-        } else if (contienePalabra(tipoLista, "simple,compuesta")) {
-            resultSetTransformado = new StringBuilder(resultadoTransaccionArray.toString());
+        StringBuilder resultSetTransformado = new StringBuilder();
+        int i = 0;
+        for (String filtro : filtros) {
+        	if (filtros.size() == i + 1)
+        		resultSetTransformado.insert(resultSetTransformado.length() - i,filtro + ":");
+        	else
+        		resultSetTransformado.insert(resultSetTransformado.length() - i,filtro + ":{}");
+		    i++;
         }
+        
+        // Guardar los resultados de la transacción dependiendo del parámetro "tipolista".
+	    if (contienePalabra(tipoLista, "parValoresSimple,parAgrupadaSimple,parValoresCompuesta")) {
+	        resultSetTransformado = new StringBuilder().append(resultadoTransaccionObject.toString()); 
+	    } else /*if (contienePalabra(tipoLista, "simple,compuesta"))*/ {
+	    	if (resultSetTransformado.length() > 0)
+	    		resultSetTransformado.insert(resultSetTransformado.length() - i + 1, "{" + columnas.get(0).getName() + ":" + resultadoTransaccionArray.toString() + "}");
+	    	else
+	    		// Esto es cuando la sentencia cql no tiene filtros
+	    		resultSetTransformado.append(columnas.get(0).getName() + ":" + resultadoTransaccionArray.toString());
+	    	
+	    }
         
         return resultSetTransformado.toString();
         

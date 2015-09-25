@@ -70,16 +70,18 @@ AHORA VERIFICAR LA FORMA DE IMPRIMIR UN FORMULARIO DESDE ESTAS ESTRUCTURAS
 }
 
 {
-	"#!keyspaces@!keyspace_name" : {
-		"#!column_families@!column_family_name" : {
-			"column_aliases" : "",
-			"key_aliases" : "",
-			"#!columns@!column_name" : {
-				"component_index" : "",							
-			},
-			"_!columnas@!column_name" : {
-				"grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
-			}
-		}			
+	"_!transacciones_por_tabla@tipotransaccion" : {
+		"_!transacciones_por_tabla#!keyspaces@!keyspace_name" : {
+			"_!transacciones_por_tabla#!column_families@!column_family_name" : {
+				"column_aliases" : "",
+				"key_aliases" : "",
+				"#!columns@!column_name" : {
+					"component_index" : "",							
+				},
+				"_!columnas@!column_name" : {
+					"grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
+				}
+			}			
+		}
 	}
 }

@@ -10,9 +10,9 @@ public enum Constantes {
     EXCEPCION_GENERICA("com.diewebsiten.modelo.Excepciones.ExcepcionGenerica"),
     NOMBRE_EVENTO_VACIO("No se ha especificado un evento."),    
     
-    SENTENCIA_TRANSACCIONES("SELECT tipotransaccion, transaccion, tabla, sentenciacql, filtrossentenciacql FROM diewebsiten.eventos WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
+    SENTENCIA_TRANSACCIONES("SELECT tipotransaccion, transaccion, columnfamily_name, sentenciacql, filtrossentenciacql FROM diewebsiten.eventos WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
     //SENTENCIA_FORMULARIOS("SELECT campo, alias FROM diewebsiten.formularios WHERE sitioweb = ? AND pagina = ? AND tipotransaccion = ? AND transaccion = ?"),
-    SENTENCIA_VALIDACIONES_EVENTO("SELECT columna, grupovalidacion, formaingreso, valorpordefecto FROM diewebsiten.formularios WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
+    SENTENCIA_VALIDACIONES_EVENTO("SELECT column_name, grupovalidacion, formaingreso, valorpordefecto FROM diewebsiten.formularios WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
     //SENTENCIA_SENTENCIAS_CQL("SELECT clausula, campo, valorpordefecto FROM diewebsiten.sentencias_cql WHERE sitioweb = ? AND pagina = ? AND tipotransaccion = ? AND transaccion = ?"),
     
     COLLECTIONS_CASSANDRA("SetType,ListType,MapType"),
@@ -91,12 +91,12 @@ public enum Constantes {
                      + " de la página '" + valores[1] + "' del sitio web '" + valores[0] + "'.";
             }
         },
-        CAMPOSCQL_NO_EXISTEN {
+        FILTRO_NO_EXISTE {
             @Override
             public String getMensaje(String... valores) {            
-                return "No se encontraron los filtros de la sentencia CQL de la transacción '" + valores[0] + "'" 
-                     + "de tipo '" + valores[1] + "' que corresponde al evento '" + valores[2] + "' "
-                     + "de la página '" + valores[3] + "' del sitio web '" + valores[4] + "'.";
+                return "No se encontró el filtro '" + valores[0] + "' de la sentencia CQL de tipo " + valores[2] + " de la transacción '" + valores[1] + "', " 
+                     + "en los campos que contiene el formulario del evento '" + valores[3] + "' "
+                     + "de la página '" + valores[4] + "' del sitio web '" + valores[5] + "'.";
             }
         },
         SENTENCIACQL_NO_SOPORTADA {
