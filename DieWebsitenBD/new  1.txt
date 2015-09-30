@@ -17,7 +17,9 @@ AHORA VERIFICAR LA FORMA DE IMPRIMIR UN FORMULARIO DESDE ESTAS ESTRUCTURAS
 
 
 
-
+sitiosweb@paginas@eventos
+sitiosweb@paginas@formularios
+sitiosweb@usuarios
 
 
 {
@@ -30,7 +32,7 @@ AHORA VERIFICAR LA FORMA DE IMPRIMIR UN FORMULARIO DESDE ESTAS ESTRUCTURAS
 				"@!transaccion": {
 					"descripcion": "",
 					"tipo": "",
-					"keyspace": "",
+					"keyspace_name": "",
 					"column_family": "",
 					"orden": 1,
 					"sentencia_cql" : "",
@@ -59,6 +61,9 @@ AHORA VERIFICAR LA FORMA DE IMPRIMIR UN FORMULARIO DESDE ESTAS ESTRUCTURAS
     }
 }
 
+
+grupos_validaciones@validaciones
+
 {
 	"_!grupos_validaciones@!grupovalidacion" : {
 		"_!grupos_validaciones_!validaciones@!tipo" : {
@@ -69,19 +74,35 @@ AHORA VERIFICAR LA FORMA DE IMPRIMIR UN FORMULARIO DESDE ESTAS ESTRUCTURAS
 	}
 }
 
+
+transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns
+transacciones_por_tabla@schema_keyspaces@schema_column_families@columnas
+
+
 {
-	"_!transacciones_por_tabla@tipotransaccion" : {
-		"_!transacciones_por_tabla#!keyspaces@!keyspace_name" : {
-			"_!transacciones_por_tabla#!column_families@!column_family_name" : {
-				"column_aliases" : "",
-				"key_aliases" : "",
-				"#!columns@!column_name" : {
-					"component_index" : "",							
-				},
-				"_!columnas@!column_name" : {
-					"grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
-				}
-			}			
-		}
+	"#!schema_keyspaces@!keyspace_name" : {
+		"#!schema_column_families@!columnfamily_name" : {
+			"column_aliases" : "",
+			"key_aliases" : "",
+			"#!schema_columns@!column_name" : {	
+				"component_index" : "",
+				"type" : ""							
+			},
+			"_!columnas@!column_name" : {
+				"grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
+			}
+		},
+		"_!transacciones_por_tabla@!columnfamily_name" : {
+			"tipotransaccion" : ""
+		}			
 	}
 }
+
+
+
+
+
+
+
+
+

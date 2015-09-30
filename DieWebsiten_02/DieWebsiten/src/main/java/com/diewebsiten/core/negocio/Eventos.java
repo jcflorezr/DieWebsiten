@@ -439,7 +439,7 @@ public class Eventos implements Callable<String> {
             
             if (tipoTransaccion.equals("SELECT")) {
                 
-            	validar la nueva forma de combinar los campos de las diferentes transacciones de un evento
+            	//validar la nueva forma de combinar los campos de las diferentes transacciones de un evento
             	
                 resultadoTransaccion = getUtil().transformarResultSet(resultado, columnas, filtrosSentenciaCQL, /*transaccion.getString("tipolista")*/ null);
                 
