@@ -102,6 +102,29 @@ transacciones_por_tabla@schema_keyspaces@schema_column_families@columnas
 
 
 
+{
+	"sitioweb": {
+		"keyspaces": ["system.keyspaces.keyspace_name"],
+		"pagina": {}
+	}
+}
+
+{
+	"keyspace_name" : {
+		"columnfamily_name" : {
+			"column_aliases" : "",
+			"key_aliases" : "",
+			"tipotransaccion" : ""
+			"column_name" : {	
+				"component_index" : "",
+				"type" : "",
+				"grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"						
+			}
+		}			
+	}
+}
+
+
 
 
 
