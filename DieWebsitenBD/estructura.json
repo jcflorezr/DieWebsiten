@@ -1,0 +1,79 @@
+{	"sitiosweb@paginas@usuarios@eventos@formularios@sesiones" : {
+		"!!rutas" : ["sitiosweb@paginas@eventos@formularios","sitiosweb@usuarios@sesiones"],
+		"_!sitiosweb@!sitioweb": {
+			"descripcion": "",      
+			"keyspaces": ["system.keyspaces.keyspace_name"],
+			"_!paginas@!pagina": {
+				"descripcion": "",          
+				"_!eventos@!evento": {				
+					"@!transaccion": {
+						"descripcion": "",
+						"tipo": "",
+						"keyspace_name": "",
+						"column_family": "",
+						"orden": 1,
+						"sentencia_cql" : "",
+						"filtros": [],
+						"campos_consulta": []  
+	                },
+					"_!formularios@!keyspace_name": {
+						"@!column_family_name": {
+							"@!column_name": {
+								"grupovalidacion": "diewebsiten.grupos_validaciones.grupovalidacion",
+								"formaingreso": "",
+								"valorpordefecto" : ""							
+							}							
+						}					
+					}					               
+	            }          
+	        },
+			"_!usuarios@!dominio" : {
+				"@!usuario" : {
+					"email" : "",
+					"contrasena" : "",
+					"_!sesiones@!sessionid" : {
+						"fechaultimoacceso" : ""
+					}
+				}
+			}
+	    }
+	},
+
+
+
+//grupos_validaciones@validaciones
+
+"grupos_validaciones@validaciones" : {
+	"_!grupos_validaciones@!grupovalidacion" : {
+		"_!grupos_validaciones_!validaciones@!tipo" : {
+			"_!grupos_validaciones_!validaciones@!validacion" : {
+					"descripcion" : ""
+				}
+			}	
+		}
+	},
+
+
+//transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns
+//transacciones_por_tabla@schema_keyspaces@schema_column_families@columnas
+
+
+"transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns@columnas" : {
+		"#!schema_keyspaces@!keyspace_name" : {
+			"#!schema_column_families@!columnfamily_name" : {
+				"column_aliases" : "",
+				"key_aliases" : "",
+				"#!schema_columns@!column_name" : {	
+					"component_index" : "",
+					"type" : ""							
+				},
+				"_!columnas@!column_name" : {
+					"grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
+				}
+			},
+			"_!transacciones_por_tabla@!columnfamily_name" : {
+				"tipotransaccion" : ""
+			}			
+		}
+	}
+}
