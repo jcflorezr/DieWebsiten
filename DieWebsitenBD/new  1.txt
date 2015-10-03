@@ -1,6 +1,8 @@
 mvn clean package compile
 mvn exec:java -Dexec.mainClass="com.diewebsiten.core.negocio.probarFabrica"
 
+select filtrossentenciacql, camposconsultasentenciacql, columnfamily_name from diewebsiten.eventos where sitioweb = 'localhost' and pagina = 'eventos' and evento = 'ConsultarInfoSitioWeb';
+
 
 
 
@@ -81,7 +83,7 @@ sitiosweb@usuarios@sesiones*/
 //transacciones_por_tabla@schema_keyspaces@schema_column_families@columnas
 
 
-"transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns@columnas" : {
+	"transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns@columnas" : {
 		"#!schema_keyspaces@!keyspace_name" : {
 			"#!schema_column_families@!columnfamily_name" : {
 				"column_aliases" : "",

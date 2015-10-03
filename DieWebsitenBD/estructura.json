@@ -41,12 +41,13 @@
 
 
 
-//grupos_validaciones@validaciones
+	//grupos_validaciones@validaciones
 
-"grupos_validaciones@validaciones" : {
-	"_!grupos_validaciones@!grupovalidacion" : {
-		"_!grupos_validaciones_!validaciones@!tipo" : {
-			"_!grupos_validaciones_!validaciones@!validacion" : {
+	"grupos_validaciones@validaciones" : {
+		"!!rutas" : ["grupos_validaciones@validaciones"],
+		"_!grupos_validaciones@!grupovalidacion" : {
+			"_!grupos_validaciones_!validaciones@!tipo" : {
+				"_!grupos_validaciones_!validaciones@!validacion" : {
 					"descripcion" : ""
 				}
 			}	
@@ -54,11 +55,11 @@
 	},
 
 
-//transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns
-//transacciones_por_tabla@schema_keyspaces@schema_column_families@columnas
+	//transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns
+	//transacciones_por_tabla@schema_keyspaces@schema_column_families@columnas
 
 
-"transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns@columnas" : {
+	"transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns@columnas" : {
 		"#!schema_keyspaces@!keyspace_name" : {
 			"#!schema_column_families@!columnfamily_name" : {
 				"column_aliases" : "",

@@ -3,6 +3,7 @@ package com.diewebsiten.core.negocio;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -17,6 +18,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class PruebasEstructurasEventos {
+	
+	private static Object objetoFinal;
 
 	public static void main(String[] args) throws Exception {
 		
@@ -24,53 +27,66 @@ public class PruebasEstructurasEventos {
 		//================================================//
 		// esto se debe hacer dinámicamente
 		
-		Map<String, List<String>> estructura = new LinkedHashMap<String, List<String>>();
+		//Map<String, List<String>> estructura = new LinkedHashMap<String, List<String>>();
 		
-		List<String> tablas = new ArrayList<String>();
-		tablas.add("paginas");
-		//tablas.add("sitiosweb");
+		String tabla = "paginas";
+		
 		List<String> filtros = new ArrayList<String>();
 		filtros.add("sitioweb");
 		List<String> columnas = new ArrayList<String>();
-		//columnas.add("keyspaces");
 		columnas.add("pagina");
-		
-		estructura.put("tablas", tablas);
-		estructura.put("filtros", filtros);
-		estructura.put("columnas", columnas);
 		
 		//================================================//
 		
 		
-		BufferedReader br = new BufferedReader(new FileReader("/Users/juaflore/DieWebsiten/DieWebsitenBD/estructura.json"));
+		//BufferedReader br = new BufferedReader(new FileReader("/Users/juaflore/DieWebsiten/DieWebsitenBD/estructura.json"));
+		BufferedReader br = new BufferedReader(new FileReader("/Users/juancamiloroman/DieWebsiten/DieWebsitenBD/estructura.json"));
 		Gson gson = new Gson();
-		Object jsonObj = gson.fromJson(br, Object.class);
+		
+		// ========== Obtener la coleccion donde se encuentra la tabla
+		Object jsonObj = encontrarObjeto(tabla, gson.fromJson(br, Object.class));
 		
 		
 		Object things = new Object();
-		things = jsonObj;
 		
 		
-		for (Map.Entry<String, List<String>> estruc : estructura.entrySet()) {
-			List<String> lista = estruc.getValue();
-			String ruta = "";
-			for (int i = 0; i < lista.size(); i++) {
-				if (estruc.getKey().equals("tablas")) {
-					things = encontrarObjeto(lista.get(i), things);
-					for (String rutaActual : ((Map<String, List<String>>)things).get("!!rutas")) {
-						if (rutaActual.matches(".*?\\b" + lista.get(0) + "\\b.*?")) {
-							
-							ruta = rutaActual;
-							
-							obtener la ruta hasta la tabla no mas
-							break;
-						}
+		String ruta = "";
+				
+				
+				
+		
+		for (String rutaActual : ((Map<String, List<String>>)jsonObj).get("!!rutas")) {
+			
+			// ========== Obtener la ruta donde se encuentra la tabla
+			if (rutaActual.matches(".*?\\b" + tabla + "\\b.*?")) {
+				
+				List<String> tablasRuta = new ArrayList<String>(Arrays.asList((StringUtils.substringBefore(rutaActual, tabla) + tabla).split("@")));
+				
+				// ========== obtener la coleccion para la ruta
+				int i = 0;
+				for (String tablaActual : tablasRuta) {
+					
+					jsonObj = (encontrarObjeto(tablaActual, jsonObj));
+					if (i == tablasRuta.size()) {
+						things = encontrarObjeto(tablaActual, jsonObj);
+						System.out.println("=============================");
+						System.out.println(things);
+					} else {
+						things = new Map().put(tablaActual, "");
 					}
+					
+					
+					REVISAR COMO SE PUEDE RETORNAR UN JSON DESDE CAMPOS INTERMEDIOS (CREAR NUEVA COLUMNA EN LA TABLA EVENTOS)
+					
+					
+					i++;
+					
 				}
 				
+				//ruta = rutaActual;
+				
+				break;
 			}
-			
-			
 		}
 		
 		
@@ -122,6 +138,8 @@ public class PruebasEstructurasEventos {
 		}
 		return null;
 	}
+	
+
 	
 	/*static Object formarEstructuraConsulta(Object things, String campo) {
 		
