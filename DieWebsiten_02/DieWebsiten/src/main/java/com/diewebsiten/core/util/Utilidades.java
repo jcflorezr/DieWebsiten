@@ -6,6 +6,7 @@ import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.Row;
 
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.diewebsiten.core.negocio.PruebasEstructurasEventos;
 
 import java.security.MessageDigest;
 
@@ -13,6 +14,7 @@ import java.text.SimpleDateFormat;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
@@ -33,6 +35,9 @@ import com.google.gson.JsonSyntaxException;
  * @author juancamiloroman
  */
 public class Utilidades {
+	
+	
+	private ConcurrentHashMap resCons = new ConcurrentHashMap();
     
     /**
      * 
@@ -109,7 +114,7 @@ public class Utilidades {
      * @return
      * @throws Exception
      */
-    public String transformarResultSet (List<Row> ResultSet, List<ColumnDefinitions.Definition> columnas, List<String> filtros, String tipoLista) throws Exception {
+    public String transformarResultSet (List<Row> ResultSet, List<ColumnDefinitions.Definition> columnas, List<String> filtros, List<String> camposIntermedios, List<String> camposConsulta, String tipoLista) throws Exception {
         
         JsonArray resultadoTransaccionArray = new JsonArray();
         JsonObject resultadoTransaccionObject = new JsonObject();
@@ -133,7 +138,15 @@ public class Utilidades {
         //       únicamente dos campos.
         //if (contienePalabra(tipoLista, "parValores,parAgrupada")) {                        
                                    
-        //}                    
+        //}
+        
+        PruebasEstructurasEventos.crearJson(ResultSet, columnas, filtros, camposIntermedios, camposConsulta);
+        
+        
+        
+        
+        
+        
         
         if (columnas.size() == 1) {                        
             // Si el tipo de lista es "simple" se enviará una lista.

@@ -438,10 +438,16 @@ public class Eventos implements Callable<String> {
             List<ColumnDefinitions.Definition> columnas = rs.getColumnDefinitions().asList();
             
             if (tipoTransaccion.equals("SELECT")) {
+            	
+            	// Columnas de consulta que contiene la transacción.
+                List<String> columnasConsultaSentenciaCQL = transaccion.getList("columnasconsultasentenciacql", String.class);
+                
+                // Filtros que se necesitan para ejecutar la transacción.
+                List<String> columnasIntermediasSentenciaCQL = transaccion.getList("columnasintermediassentenciacql", String.class);
                 
             	//validar la nueva forma de combinar los campos de las diferentes transacciones de un evento
             	
-                resultadoTransaccion = getUtil().transformarResultSet(resultado, columnas, filtrosSentenciaCQL, /*transaccion.getString("tipolista")*/ null);
+                resultadoTransaccion = getUtil().transformarResultSet(resultado, columnas, filtrosSentenciaCQL, columnasIntermediasSentenciaCQL, columnasIntermediasSentenciaCQL, null);
                 
             }                    
                    

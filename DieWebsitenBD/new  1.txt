@@ -11,8 +11,14 @@ _! --> tabla
 #! --> tabla del sistema
 @! --> primary key
 
-(cargar_eventos)el orden de las columnas dentro de la clausula select deben ir en orden de clustering.. si una de estas es primary key
-un filtro no puede ser columna de consulta
+
+CARGAR EVENTOS
+- el orden de las columnas dentro de la clausula select deben ir en orden de clustering cuando una de estas sea primary key
+
+COLUMNAS INTERMEDIAS
+- un filtro no puede ser columna de consulta
+- si una consulta solo tiene una columna, esta columna no puede ser intermedia
+- si una llave primaria es columna de consulta y despues de ella no hay mas columnas de consulta, entonces no puede ser columna intermedia
 
 
 
