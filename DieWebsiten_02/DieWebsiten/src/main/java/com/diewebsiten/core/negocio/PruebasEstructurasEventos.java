@@ -349,8 +349,8 @@ public class PruebasEstructurasEventos {
 		ConcurrentHashMap aux = new ConcurrentHashMap();
 		
 		
-		if (map1.isEmpty())
-			map1.put(s[0], new ConcurrentHashMap());
+		//if (map1.isEmpty())
+			//map1.put(s[0], new ConcurrentHashMap());
 		
 		//s = "2,3,4,5".split(",");
 		
@@ -373,30 +373,18 @@ public class PruebasEstructurasEventos {
 		for (String ss : s) {
 				
 			map2 = (ConcurrentHashMap)aux.get(ss);
-			System.out.println(s[i] + " map2 00: ---> " + map2);
+			
+			
 			if (null != map2) {
 				aux = map2;
 			} else {
-				System.out.println(s[i] + " map2 0: ---> " + map2);
-				map2 = new ConcurrentHashMap();
+				map2 = aux;
 				
 				for (;i<s.length;i++) {
 					
-					System.out.println("------------------------------------");
-					
-					
-					System.out.println(s[i] + " aux 1: ---> " + aux);
 					map2.put(s[i], new ConcurrentHashMap());
 					
-					//System.out.println(s[i] + " map2 1: ---> " + map2);
-					aux.putAll(map2);
-					System.out.println(s[i] + " aux 2: ---> " + aux);
-					//System.out.println(s[i] + " map2 2: ---> " + map2);
-					map2 = (ConcurrentHashMap)aux.get(s[i]);
-					//System.out.println(s[i] + " map2 3: ---> " + map2);
-					System.out.println(s[i] + " aux 3: ---> " + aux);
-					
-					
+					map2 = (ConcurrentHashMap)map2.get(s[i]);
 					
 				}
 				
@@ -409,6 +397,7 @@ public class PruebasEstructurasEventos {
 		System.out.println("aux: " + aux);
 		
 		throw new Exception("La ruta no fue encontrada");
+		
 	}
 	
 	static void llenar(ConcurrentHashMap aux, String[] s) {
