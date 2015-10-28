@@ -14,10 +14,10 @@ CREATE TABLE DIEWEBSITEN.COLUMNAS (
 ) WITH comment = '{"transacciones" : ["SELECT", "INSERT", "UPDATE", "DELETE"], "comentario" : ""}';
 
 CREATE TABLE DIEWEBSITEN.TRANSACCIONES_POR_TABLA (
-	TIPOTRANSACCION VARCHAR,
 	KEYSPACE_NAME VARCHAR,
 	COLUMNFAMILY_NAME VARCHAR,
-	PRIMARY KEY (TIPOTRANSACCION, KEYSPACE_NAME, COLUMNFAMILY_NAME)
+	TIPOTRANSACCION VARCHAR,
+	PRIMARY KEY (KEYSPACE_NAME, COLUMNFAMILY_NAME)
 )WITH comment = '{"transacciones" : ["SELECT", "INSERT", "UPDATE", "DELETE"], "comentario" : ""}';
 
 /*CREATE TABLE DIEWEBSITEN.SITIOSWEB_PAGINAS_ELEMENTOS (
@@ -57,9 +57,9 @@ CREATE TABLE DIEWEBSITEN.EVENTOS (
 	ORDEN INT,
 	DESCRIPCION VARCHAR,
 	SENTENCIACQL VARCHAR,
-	FILTROSSENTENCIACQL LIST<VARCHAR>,
-	COLUMNASCONSULTASENTENCIACQL LIST<VARCHAR>,
+	FILTROSSENTENCIACQL LIST<VARCHAR>,	
 	COLUMNASINTERMEDIASSENTENCIACQL LIST<VARCHAR>,
+	COLUMNASCONSULTASENTENCIACQL LIST<VARCHAR>,
 	--NECESITAFORMULARIO VARCHAR,
 	--TIPOLISTA VARCHAR,
 	PRIMARY KEY (SITIOWEB, PAGINA, EVENTO, TRANSACCION/*, TIPOTRANSACCION, BASEDEDATOS*/)
@@ -174,14 +174,14 @@ COPY diewebsiten.usuarios (sitioweb, usuario, dominio, contrasena) FROM 'C:\User
 COPY diewebsiten.sesiones (sitioweb, usuario, dominio, sessionid, fechaultimoacceso) FROM 'C:\Users\jflorezr\Documents\DW\DieWebsitenBD\cargar_sesiones.csv';
 COPY diewebsiten.colecciones (tipo, coleccion, tipolist, tiposet, tipomap) FROM 'C:\Users\jflorezr\Documents\DW\DieWebsitenBD\cargar_colecciones.csv';*/
 
-COPY diewebsiten.transacciones_por_tabla (tipotransaccion, keyspace_name, columnfamily_name) FROM '~/DieWebsiten/DieWebsitenBD/cargar_transacciones_por_tabla.csv';
+COPY diewebsiten.transacciones_por_tabla (keyspace_name, columnfamily_name, tipotransaccion) FROM '~/DieWebsiten/DieWebsitenBD/cargar_transacciones_por_tabla.csv';
 COPY diewebsiten.columnas (keyspace_name, columnfamily_name, column_name, grupovalidacion) FROM '~/DieWebsiten/DieWebsitenBD/cargar_columnas.csv';
 COPY diewebsiten.sitiosweb (sitioweb, nombre, descripcion, keyspaces) FROM '~/DieWebsiten/DieWebsitenBD/cargar_sitiosweb.csv';
 COPY diewebsiten.paginas (sitioweb, pagina, nombre, descripcion) FROM '~/DieWebsiten/DieWebsitenBD/cargar_paginas.csv';
 --COPY diewebsiten.despliegues (sitioweb, pagina, ruta) FROM '~/DieWebsiten/DieWebsitenBD/cargar_despliegues.csv';
 --COPY diewebsiten.codigos_por_pagina (sitioweb, idioma, pagina, nombre, codigo) FROM '~/DieWebsiten/DieWebsitenBD/cargar_codigos_por_pagina.csv';
 --COPY diewebsiten.enunciados (sitioweb, pagina, idioma, nivel, etiqueta, ruta, atributos, texto) FROM '~/DieWebsiten/DieWebsitenBD/cargar_enunciados.csv';
-COPY diewebsiten.eventos (sitioweb, pagina, evento, transaccion, tipotransaccion, keyspace_name, columnfamily_name, orden, descripcion, sentenciacql, filtrossentenciacql, columnasconsultasentenciacql, columnasintermediassentenciacql) FROM '~/DieWebsiten/DieWebsitenBD/cargar_eventos.csv';
+COPY diewebsiten.eventos (sitioweb, pagina, evento, transaccion, tipotransaccion, keyspace_name, columnfamily_name, orden, descripcion, sentenciacql, filtrossentenciacql, columnasintermediassentenciacql, columnasconsultasentenciacql) FROM '~/DieWebsiten/DieWebsitenBD/cargar_eventos.csv';
 COPY diewebsiten.grupos_validaciones (grupo, tipo, validacion) FROM '~/DieWebsiten/DieWebsitenBD/cargar_grupos_validaciones.csv';
 --COPY diewebsiten.sentencias_cql (sitioweb, pagina, tipotransaccion, transaccion, clausula, campo, alias, valorpordefecto) FROM '~/DieWebsiten/DieWebsitenBD/cargar_sentencias_cql.csv';
 COPY diewebsiten.formularios (sitioweb, pagina, evento, keyspace_name, columnfamily_name, column_name, grupovalidacion, formaingreso, valorpordefecto) FROM '~/DieWebsiten/DieWebsitenBD/cargar_formularios.csv';

@@ -37,7 +37,7 @@ import com.google.gson.JsonSyntaxException;
 public class Utilidades {
 	
 	
-	private ConcurrentHashMap resCons = new ConcurrentHashMap();
+	//private ConcurrentHashMap resultadoEvento = new ConcurrentHashMap();
     
     /**
      * 
@@ -107,167 +107,111 @@ public class Utilidades {
     
     
     /**
-     *
-     * @param ResultSet
+     * 
+     * @param resultSet
      * @param columnas
-     * @param tipoLista
+     * @param filtros
+     * @param columnasIntermedias
      * @return
      * @throws Exception
      */
-    public String transformarResultSet (List<Row> ResultSet, List<ColumnDefinitions.Definition> columnas, List<String> filtros, List<String> camposIntermedios, List<String> camposConsulta, String tipoLista) throws Exception {
-        
-        JsonArray resultadoTransaccionArray = new JsonArray();
-        JsonObject resultadoTransaccionObject = new JsonObject();
-        
-        // Que el tipo de lista que se desea retornar sea válido.
-//        if (!contienePalabra(tipoLista, Constantes.TIPOS_LISTAS_SENTENCIAS_SELECT.getString())) {
-//            String error = "El tipo de lista '" + tipoLista + " no es válido, por favor revisar la parametrización"
-//                  + " en el campo diewebsiten.eventos.tipolista.";
-//            throw new ExcepcionGenerica(error);
-//        }                    
-        
-        
-        
-        // AQUI SE DEBE CONSULTAR LAS CONCORDANCIAS ENTRE LOS NOMBRES DE LAS COLUMNAS
-        // DE LAS TABLAS DE LA BASE DE DATOS Y LOS NOMBRES DE LOS CAMPOS DE UN FORMULARIO
-        
-        
-        
-        
-        // NOTA: Los tipos de lista "parValores" y "parAgrupada" deben tener queries que contengan
-        //       únicamente dos campos.
-        //if (contienePalabra(tipoLista, "parValores,parAgrupada")) {                        
-                                   
-        //}
-        
-        PruebasEstructurasEventos.crearJson(ResultSet, columnas, filtros, camposIntermedios, camposConsulta);
-        
-        
-        
-        
-        
-        
-        
-        if (columnas.size() == 1) {                        
-            // Si el tipo de lista es "simple" se enviará una lista.
-            // Ej: {nombreColumna : [valorColumna, valorColumna]}
-            for (Row fila : ResultSet) {
-                for (int i = 0; i < columnas.size(); i++) {
-                    resultadoTransaccionArray.add(new JsonPrimitive(columnas.get(i).getType().deserialize(fila.getBytesUnsafe(columnas.get(i).getName()), ProtocolVersion.NEWEST_SUPPORTED).toString()));
-                }
-            }
-            //resultadoTransaccionObject.add(columnas.get(0).getName(), resultadoTransaccionArray);
-        } else if (columnas.size() > 1) {
-            // Si el tipo de lista es "compuesta" se enviará una lista de objetos JSON.
-            // Ej: {transaccion : [{nombreColumna : valorColumna}, {nombreColumna : valorColumna}]}
-            for (Row fila : ResultSet) {
-                for (int i = 0; i < columnas.size(); i++) {
-                    resultadoTransaccionObject.add(columnas.get(i).getName(), 
-                    							   new JsonPrimitive(columnas.get(i).getType().deserialize(fila.getBytesUnsafe(columnas.get(i).getName()), ProtocolVersion.NEWEST_SUPPORTED).toString()));                                
-                }
-                resultadoTransaccionArray.add(resultadoTransaccionObject);
-                resultadoTransaccionObject = new JsonObject();
-            }                        
-        } else if (contienePalabra(tipoLista, "parValoresSimple,parAgrupadaSimple")) {
-            
-            if (columnas.size() != 2 || columnas.get(0).getType().getName().toString().equals(Constantes.COLLECTIONS_CASSANDRA)) {
-                String batch = "El tipo de lista '" + tipoLista + "'";
-                batch += columnas.size() != 2 ? " sólo acepta dos (2) columnas en la sentencia 'SELECT'" 
-                                              : " no acepta una columna de tipo 'Collection' ( " + Constantes.COLLECTIONS_CASSANDRA + ") como identificador";
-                batch += ", por favor revisar la parametrización en el campo diewebsiten.eventos.sentenciacql.";
-                throw new ExcepcionGenerica(batch); 
-            }
-            
-            if (tipoLista.equals("parValoresSimple")) {
-                // Si el tipo de lista es "parValoresSimple" se enviará un objeto JSON con el valor
-                // de la primera columna como "key" y el valor de la segunda columna como "value".
-                // Ej: {transaccion : {valorColumna1 : valorColumna2, valorColumna1 : valorColumna2}
-                for (Row fila : ResultSet) {
-                    resultadoTransaccionObject.add(columnas.get(0).getType().deserialize(fila.getBytesUnsafe(columnas.get(0).getName()), ProtocolVersion.NEWEST_SUPPORTED).toString(), 
-                                                   new JsonPrimitive(columnas.get(1).getType().deserialize(fila.getBytesUnsafe(columnas.get(1).getName()), ProtocolVersion.NEWEST_SUPPORTED).toString()));
-        
-                }
-            } else if (tipoLista.equals("parAgrupadaSimple")) {          
-                // Si el tipo de lista es "parAgrupadaSimple" se enviará un objeto JSON con valores agrupados.
-                // Ej: {transaccion : {valorColumna1 : [valorColumna2, valorColumna2, valorColumna2],
-                //                     valorColumna1 : [valorColumna2, valorColumna2, valorColumna2]}
-                String valor;
-                String grupo;
-                for (Row fila : ResultSet) {
-                    valor = columnas.get(0).getType().deserialize(fila.getBytesUnsafe(columnas.get(0).getName()), ProtocolVersion.NEWEST_SUPPORTED).toString();
-                    grupo = columnas.get(1).getType().deserialize(fila.getBytesUnsafe(columnas.get(1).getName()), ProtocolVersion.NEWEST_SUPPORTED).toString();
-                    if (resultadoTransaccionObject.has(valor)) {
-                        resultadoTransaccionObject.addProperty(valor, resultadoTransaccionObject.get(valor) + "," + grupo);
-                    } else {
-                        resultadoTransaccionObject.addProperty(valor, grupo);
-                    } 
-                }                            
-            }                        
-        } else if (contienePalabra(tipoLista, "parValoresCompuesta,parAgrupadaCompuesta")) {
-            
-            if (columnas.get(0).getType().getName().toString().equals(Constantes.COLLECTIONS_CASSANDRA)) {
-                String batch = "El tipo de lista '" + tipoLista + "' no acepta una columna de tipo 'Collection' ( " +
-                    Constantes.COLLECTIONS_CASSANDRA + ")"
-                  + " como identificador, por favor revisar la parametrización en el campo diewebsiten.eventos.sentenciacql.";
-                throw new ExcepcionGenerica(batch); 
-            }
-            
-            if (tipoLista.equals("parValoresCompuesta")) {
-                // Si el tipo de lista es "parValoresCompuesta" se enviará un objeto JSON con el valor
-                // de la primera columna como "key" y los nombres y valores de las otras columnas como "value".
-                // Ej: {transaccion : {valorColumna1 : {nombreColumna2 : valorColumna2, nombreColumna3 : valorColumna3},
-                //                     valorColumna1 : {nombreColumna2 : valorColumna2, nombreColumna3 : valorColumna3}}
+    public String transformarResultSet (ConcurrentHashMap resultadoEvento, List<Row> resultSet, List<ColumnDefinitions.Definition> columnas, List<String> filtros, List<String> columnasIntermedias) throws Exception {
+		
+		
+		if (null == resultadoEvento)
+			throw new Exception("La colección donde se va a crear la estructura del resultado del evento debe estar inicializada");
 
-                for (Row fila : ResultSet) {
-                    JsonObject grupoActual = new JsonObject();
-                    for (int i = 1; i < columnas.size(); i++) {
-                        grupoActual.add(columnas.get(i).getName(), 
-                                        new JsonPrimitive(columnas.get(i).getType().deserialize(fila.getBytesUnsafe(columnas.get(i).getName()), ProtocolVersion.NEWEST_SUPPORTED).toString()));                                
-                    }
-                    resultadoTransaccionObject.add(columnas.get(0).getType().deserialize(fila.getBytesUnsafe(columnas.get(0).getName()), ProtocolVersion.NEWEST_SUPPORTED).toString(),
-                                                   grupoActual);
-                }
-            } else if (tipoLista.equals("parAgrupadaCompuesta")) {          
-                // Si el tipo de lista es "parAgrupada" se enviará un objeto JSON con valores agrupados.
-                // Ej: {transaccion : {valorColumna1 : [valorColumna2, valorColumna2, valorColumna2],
-                //                     valorColumna1 : [valorColumna2, valorColumna2, valorColumna2]}
-                //String valor;
-                //String grupo;
-                //for (Row fila : ResultSet) {
-                    //valor = columnas.get(0).getType().deserialize(fila.getBytesUnsafe(columnas.get(0).getName())).toString();
-                    //grupo = columnas.get(1).getType().deserialize(fila.getBytesUnsafe(columnas.get(1).getName())).toString();
-                    //if (resultadoTransaccionObject.has(valor)) {
-                        //resultadoTransaccionObject.put(valor, resultadoTransaccionObject.getString(valor) + "," + grupo);
-                    //} else {
-                        //resultadoTransaccionObject.put(valor, grupo);
-                    //} 
-                //}                           
-            }                        
-        }                     
-        
-        StringBuilder resultSetTransformado = new StringBuilder();
-        int i = 0;
-        for (String filtro : filtros) {
-        	if (filtros.size() == i + 1)
-        		resultSetTransformado.insert(resultSetTransformado.length() - i,filtro + ":");
-        	else
-        		resultSetTransformado.insert(resultSetTransformado.length() - i,filtro + ":{}");
-		    i++;
+		
+		// EL ORDEN DE LOS FILTROS YA VIENE ESTABLECIDO DESDE 
+		// LA BASE DE DATOS (TABLA EVENTOS) SEGÚN EL ORDEN EN QUE SE CREARON EN LA TABLA
+		
+		ConcurrentHashMap coleccionFiltros = null;
+		int i = 0;
+		
+		for (String filtro : filtros) {
+				
+			coleccionFiltros = (ConcurrentHashMap)resultadoEvento.get(filtro);			
+			
+			if (null == coleccionFiltros) {
+				
+				if (i == 0)
+					coleccionFiltros = resultadoEvento;
+				else
+					coleccionFiltros = (ConcurrentHashMap)resultadoEvento.get(filtros.get(i - 1));
+				
+				for (;i<filtros.size();i++) {
+					
+					coleccionFiltros.put(filtros.get(i), new ConcurrentHashMap());
+					
+					coleccionFiltros = (ConcurrentHashMap)coleccionFiltros.get(filtros.get(i));
+					
+				}
+				
+				break;
+				
+			}
+			
+			i++;
+			
+		}
+		
+		
+		// EL ORDEN DE LAS COLUMNAS INTERMEDIAS Y DE LAS COLUMNAS DE CONSULTA
+		// YA VIENE ESTABLECIDO DESDE LA BASE DE DATOS (TABLA EVENTOS) SEGÚN EL ORDEN EN QUE
+		// SE CREARON EN LA TABLA
+		
+		for (Row fila : resultSet) {
+			
+			ConcurrentHashMap coleccionColumnaActual = null;
+			ConcurrentHashMap posicion = null;
+			
+			i = 0;
+			
+            for (ColumnDefinitions.Definition columnaActual : columnas) {
+            	
+            	String nombreColumnaActual = columnaActual.getName();
+            	
+            	Object valorColumnaActual = columnaActual.getType().deserialize(fila.getBytesUnsafe(columnaActual.getName()), ProtocolVersion.NEWEST_SUPPORTED);
+            	
+            	if (!columnasIntermedias.isEmpty() && i < columnasIntermedias.size()) {
+            		
+            		if (!columnasIntermedias.get(i).equals(columnaActual.getName()))
+            			throw new Exception("El orden de las columnas de consulta en la cláusula SELECT no coincide con el orden de las columnas como están creadas en la tabla '" + columnaActual.getKeyspace() + "." + columnaActual.getTable() +"'");
+            		
+            		coleccionColumnaActual = (ConcurrentHashMap) coleccionFiltros.get(valorColumnaActual.toString()); 
+            		if (null == coleccionColumnaActual) {
+            			coleccionFiltros.put(valorColumnaActual.toString(), new ConcurrentHashMap());
+            			coleccionColumnaActual = (ConcurrentHashMap) coleccionFiltros.get(valorColumnaActual.toString());
+            		}
+            		
+            	} else {
+            		
+            		if (null == posicion) {
+            			posicion = null != coleccionColumnaActual ? coleccionColumnaActual : null != coleccionFiltros ? coleccionFiltros : resultadoEvento;
+            		}
+            		
+            		
+            		String valorColumnaExistente = (String) posicion.get(nombreColumnaActual);
+            		
+            		// Verificar si esta columna ya tiene un valor. Si es así se le añade el valor actual con una coma (,) por delante.												    	   
+            		if (null == valorColumnaExistente) {
+            			posicion.put(nombreColumnaActual, valorColumnaActual.toString());
+            		} else {
+            			posicion.put(nombreColumnaActual, valorColumnaExistente + "," + valorColumnaActual.toString());
+            		}
+            		
+            	}
+            	
+            	i++;
+            	
+            }
+            
         }
+		
+		//System.out.println("aux: " + new Gson().toJson(resultadoEvento));
         
-        // Guardar los resultados de la transacción dependiendo del parámetro "tipolista".
-	    if (contienePalabra(tipoLista, "parValoresSimple,parAgrupadaSimple,parValoresCompuesta")) {
-	        resultSetTransformado = new StringBuilder().append(resultadoTransaccionObject.toString()); 
-	    } else /*if (contienePalabra(tipoLista, "simple,compuesta"))*/ {
-	    	if (resultSetTransformado.length() > 0)
-	    		resultSetTransformado.insert(resultSetTransformado.length() - i + 1, "{" + columnas.get(0).getName() + ":" + resultadoTransaccionArray.toString() + "}");
-	    	else
-	    		// Esto es cuando la sentencia cql no tiene filtros
-	    		resultSetTransformado.append(columnas.get(0).getName() + ":" + resultadoTransaccionArray.toString());
-	    	
-	    }
         
-        return resultSetTransformado.toString();
+        return new Gson().toJson(resultadoEvento).toString();
         
     }
 

@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.lang3.StringUtils;
 
 import com.datastax.driver.core.ColumnDefinitions;
+import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.Row;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -325,66 +326,38 @@ public class PruebasEstructurasEventos {
 	}
 	
 	
-	public static void crearJson(List<Row> ResultSet, List<ColumnDefinitions.Definition> columnas, List<String> filtros, List<String> camposIntermedios, List<String> camposConsulta) throws Exception {
-		
-//		JsonObject jsonObj = new JsonObject();
-//		JsonObject aux = new JsonObject();
-//		
-//		
-//		jsonObj.add("1", new JsonObject());
-//		
-//		//aux = jsonObj;
-//		aux.add("ee", new JsonObject());
-//		
-//		
-//		jsonObj.getAsJsonObject("1").add(aux);
-//		System.out.println("2 --> " + aux.equals(jsonObj));
-//		//filtros.add("d");
-		
-		String[] s = "1,2,3,4,5".split(",");
-				
-				
+	public static void crearJson(List<Row> resultSet, List<ColumnDefinitions.Definition> columnas, List<String> filtros, List<String> columnasIntermedias, List<String> columnasConsulta) throws Exception {
+			
 		ConcurrentHashMap map1 = new ConcurrentHashMap();
-		
-		ConcurrentHashMap aux = new ConcurrentHashMap();
-		
-		
-		//if (map1.isEmpty())
-			//map1.put(s[0], new ConcurrentHashMap());
-		
-		//s = "2,3,4,5".split(",");
+//		encontrar(map1, filtros);
 		
 		
-		encontrar(map1, s);
+		if (null == map1)
+			throw new Exception("La colección donde se va a crear la estructura debe estar inicializada");
+//		else if (filtros.isEmpty())
+//			throw new Exception("La ruta no puede ser vacía");
 		
+		// EL ORDEN DE LOS FILTROS YA VIENE ESTABLECIDO DESDE 
+		// LA BASE DE DATOS (TABLA EVENTOS) SEGÚN EL ORDEN EN QUE SE CREARON EN LA TABLA
 		
-	}
-	
-	static ConcurrentHashMap encontrar (ConcurrentHashMap aux, String[] s) throws Exception {
-		
-		if (null == aux)
-			throw new Exception("La colección donde se va a buscar el elemento no puede ser vacía");
-		else if (s.length < 1)
-			throw new Exception("La ruta no puede ser vacía");
-		
-		ConcurrentHashMap map2;
-		
+		ConcurrentHashMap map2 = null;
 		int i = 0;
-		for (String ss : s) {
+		for (String filtro : filtros) {
 				
-			map2 = (ConcurrentHashMap)aux.get(ss);
+			map2 = (ConcurrentHashMap)map1.get(filtro);			
 			
-			
-			if (null != map2) {
-				aux = map2;
-			} else {
-				map2 = aux;
+			if (null == map2) {
 				
-				for (;i<s.length;i++) {
+				if (i == 0)
+					map2 = map1;
+				else
+					map2 = (ConcurrentHashMap)map1.get(filtros.get(i - 1));
+				
+				for (;i<filtros.size();i++) {
 					
-					map2.put(s[i], new ConcurrentHashMap());
+					map2.put(filtros.get(i), new ConcurrentHashMap());
 					
-					map2 = (ConcurrentHashMap)map2.get(s[i]);
+					map2 = (ConcurrentHashMap)map2.get(filtros.get(i));
 					
 				}
 				
@@ -394,32 +367,90 @@ public class PruebasEstructurasEventos {
 			
 			i++;
 		}
-		System.out.println("aux: " + aux);
+		//System.out.println("aux: " + map1);
+		//System.out.println("map2: " + map2);
+		
+		
+		// EL ORDEN DE LAS COLUMNAS INTERMEDIAS Y DE LAS COLUMNAS DE CONSULTA
+		// YA VIENE ESTABLECIDO DESDE LA BASE DE DATOS (TABLA EVENTOS) SEGÚN EL ORDEN EN QUE
+		// SE CREARON EN LA TABLA
+		
+		for (Row fila : resultSet) {
+			
+			ConcurrentHashMap coleccionColumnaActual = null;
+			ConcurrentHashMap posicion = null;
+			
+			i = 0;
+            for (ColumnDefinitions.Definition columnaActual : columnas) {
+            	
+            	String nombreColumnaActual = columnaActual.getName();
+            	
+            	Object valorColumnaActual = columnaActual.getType().deserialize(fila.getBytesUnsafe(columnaActual.getName()), ProtocolVersion.NEWEST_SUPPORTED);
+            	
+            	if (!columnasIntermedias.isEmpty() && i < columnasIntermedias.size()) {
+            		
+            		if (!columnasIntermedias.get(i).equals(columnaActual.getName()))
+            			throw new Exception("El orden de las columnas de consulta en la cláusula SELECT no coincide con el orden de las columnas como están creadas en la tabla '" + columnaActual.getKeyspace() + "." + columnaActual.getTable() +"'");
+            		
+            		coleccionColumnaActual = (ConcurrentHashMap) map2.get(valorColumnaActual.toString()); 
+            		if (null == coleccionColumnaActual) {
+            			map2.put(valorColumnaActual.toString(), new ConcurrentHashMap());
+            			coleccionColumnaActual = (ConcurrentHashMap) map2.get(valorColumnaActual.toString());
+            		}
+            		
+            	} else {
+            		
+            		
+            		if (null == posicion) {
+            			posicion = null != coleccionColumnaActual ? coleccionColumnaActual : null != map2 ? map2 : map1;
+            		}
+            		
+            		
+            		String valorColumnaExistente = (String) posicion.get(nombreColumnaActual);
+            		
+            		// Verificar si esta columna ya tiene un valor. Si es así se le añade el valor actual con una coma (,) por delante.												    	   
+            		if (null == valorColumnaExistente) {
+            			posicion.put(nombreColumnaActual, valorColumnaActual.toString());
+            		} else {
+            			posicion.put(nombreColumnaActual, valorColumnaExistente + "," + valorColumnaActual.toString());
+            		}
+            		
+            	}
+            	
+            	i++;
+            	
+            	//System.out.println(posicion);
+            		
+            	//System.out.println("map2: " + map2);
+            	
+            }
+            
+        }
+		
+		System.out.println("aux: " + new Gson().toJson(map1));
+		
 		
 		throw new Exception("La ruta no fue encontrada");
 		
 	}
 	
-	static void llenar(ConcurrentHashMap aux, String[] s) {
+	
+	void llenarColumnasConsulta (ConcurrentHashMap m, String s) {
 		
-		for (String ss : s) {
-			if (aux)
-			map2.put(ss, new ConcurrentHashMap());
-			aux.putAll(map2);
-			System.out.println("A: " + map1);
-			aux = new ConcurrentHashMap();
-		}
 		
-		System.out.println("B: " + map1);	
-		
-		 
 		
 	}
+	
+//	static ConcurrentHashMap encontrar (ConcurrentHashMap aux, List<String> s) throws Exception {
+//		
+	
+//		
+//		
+//	}
 	
 	
 	
 }
 	
 	
-
 
