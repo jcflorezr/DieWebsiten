@@ -6,7 +6,6 @@ import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.Row;
 
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.diewebsiten.core.negocio.PruebasEstructurasEventos;
 
 import java.security.MessageDigest;
 
