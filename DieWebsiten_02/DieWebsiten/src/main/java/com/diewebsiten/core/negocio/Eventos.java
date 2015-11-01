@@ -13,12 +13,10 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
 import com.diewebsiten.core.util.Utilidades;
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -178,7 +176,7 @@ public class Eventos implements Callable<String> {
     public String call() {
         try {
            if (validarFormularioEvento())
-                return ejecutarEvento();
+                return ejecutarEvento().toString();
            else
                 return "{\"VAL_" + getNombreEvento() + "\" : " + new Gson().toJson(getParametros()) + "}";
        } catch (Exception e) {
@@ -252,7 +250,7 @@ public class Eventos implements Callable<String> {
      */
     private String ejecutarEvento() throws Exception {
         
-    	ConcurrentHashMap resultadoEvento = new ConcurrentHashMap();
+    	JsonObject resultadoEvento = new JsonObject();
         ExecutorService ejecucionParalelaTransacciones = Executors.newFixedThreadPool(10);
         List<Row> transacciones;
         
@@ -271,11 +269,12 @@ public class Eventos implements Callable<String> {
                 grupoEjecucionTransacciones.add(ejecucionParalelaTransacciones.submit(new Transacciones(transaccion, resultadoEvento)));                
             }
             
-            StringBuilder resultadoTransacciones = new StringBuilder();            
+            //StringBuilder resultadoTransacciones = new StringBuilder();            
             for (Future<Void> ejecucionTransaccionActual : grupoEjecucionTransacciones) {
 //                resultadoTransacciones.append(",").append(
                 		ejecucionTransaccionActual.get();
 //                		.get());
+                		
             }
             
             //resultadoEvento = (JsonObject) new JsonParser().parse("{" + getNombreEvento() + ":" + resultadoTransacciones.toString().substring(1) + "}");
@@ -355,9 +354,9 @@ public class Eventos implements Callable<String> {
     private class Transacciones implements Callable<Void> {
         
         private final Row transaccion;
-        private ConcurrentHashMap resultadoEvento; 
+        private JsonObject resultadoEvento; 
         
-        Transacciones (Row transaccion, ConcurrentHashMap resultadoEvento) {
+        Transacciones (Row transaccion, JsonObject resultadoEvento) {
             this.transaccion = transaccion;
             this.resultadoEvento = resultadoEvento;
         }
@@ -377,7 +376,7 @@ public class Eventos implements Callable<String> {
             String sentenciaCQL = transaccion.getString("sentenciacql");
             
             // Filtros que se necesitan para ejecutar la transacción.
-            List<String> filtrosSentenciaCQL = transaccion.getList("filtrossentenciacql", String.class);
+            List<String> filtrosSentenciaCQL = new ArrayList<String>(transaccion.getList("filtrossentenciacql", String.class));
             
             //PreparedStatement sentenciaCql = getSesionBD().prepare(transaccion.getString("sentenciacql"));
           
@@ -432,7 +431,7 @@ public class Eventos implements Callable<String> {
                     getSentenciasPreparadas().put(nombreTransaccion, getSesionBD().prepare(sentenciaCQL));
                 }
             }                       
-            
+
             // Ejecutar la sentencia CQL de la transacción.
             ResultSet rs = getSesionBD().execute(getSentenciasPreparadas().get(nombreTransaccion).bind(valoresSentencia.toArray()));
             
@@ -448,9 +447,8 @@ public class Eventos implements Callable<String> {
                 //List<String> columnasConsultaSentenciaCQL = transaccion.getList("columnasconsultasentenciacql", String.class);
                 
                 // Filtros que se necesitan para ejecutar la transacción.
-                List<String> columnasIntermediasSentenciaCQL = transaccion.getList("columnasintermediassentenciacql", String.class);
-            	
-//                resultadoTransaccion = 
+                List<String> columnasIntermediasSentenciaCQL = new ArrayList<String> (transaccion.getList("columnasintermediassentenciacql", String.class));
+ 
                 getUtil().transformarResultSet(this.resultadoEvento, resultadoTransaccionActual, columnas, filtrosSentenciaCQL, columnasIntermediasSentenciaCQL);
                 
             }                    

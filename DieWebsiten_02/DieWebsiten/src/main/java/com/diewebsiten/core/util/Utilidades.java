@@ -112,11 +112,9 @@ public class Utilidades {
      * @param columnas
      * @param filtros
      * @param columnasIntermedias
-     * @return
      * @throws Exception
      */
-    public String transformarResultSet (ConcurrentHashMap resultadoEvento, List<Row> resultSet, List<ColumnDefinitions.Definition> columnas, List<String> filtros, List<String> columnasIntermedias) throws Exception {
-		
+    public void transformarResultSet (JsonObject resultadoEvento, List<Row> resultSet, List<ColumnDefinitions.Definition> columnas, List<String> filtros, List<String> columnasIntermedias) throws Exception {
 		
 		if (null == resultadoEvento)
 			throw new Exception("La colección donde se va a crear la estructura del resultado del evento debe estar inicializada");
@@ -125,33 +123,34 @@ public class Utilidades {
 		// EL ORDEN DE LOS FILTROS YA VIENE ESTABLECIDO DESDE 
 		// LA BASE DE DATOS (TABLA EVENTOS) SEGÚN EL ORDEN EN QUE SE CREARON EN LA TABLA
 		
-		ConcurrentHashMap coleccionFiltros = null;
+		JsonObject coleccionFiltros = resultadoEvento;
 		int i = 0;
 		
+		filtros.addAll(columnasIntermedias);
+		
 		for (String filtro : filtros) {
-				
-			coleccionFiltros = (ConcurrentHashMap)resultadoEvento.get(filtro);			
+
+			JsonObject coleccionFiltroActual = coleccionFiltros.getAsJsonObject(filtro);			
 			
-			if (null == coleccionFiltros) {
+			if (null == coleccionFiltroActual) {
 				
 				if (i == 0)
 					coleccionFiltros = resultadoEvento;
-				else
-					coleccionFiltros = (ConcurrentHashMap)resultadoEvento.get(filtros.get(i - 1));
 				
+				// Agregar por primera vez los filtros o columnas intermedias faltantes
 				for (;i<filtros.size();i++) {
-					
-					coleccionFiltros.put(filtros.get(i), new ConcurrentHashMap());
-					
-					coleccionFiltros = (ConcurrentHashMap)coleccionFiltros.get(filtros.get(i));
-					
+					coleccionFiltros.add(filtros.get(i), new JsonObject());
+					coleccionFiltros = coleccionFiltros.getAsJsonObject(filtros.get(i));
 				}
 				
 				break;
 				
+			} else {
+				coleccionFiltros = coleccionFiltroActual;
 			}
 			
 			i++;
+			
 			
 		}
 		
@@ -162,8 +161,8 @@ public class Utilidades {
 		
 		for (Row fila : resultSet) {
 			
-			ConcurrentHashMap coleccionColumnaActual = null;
-			ConcurrentHashMap posicion = null;
+			JsonObject coleccionColumnaActual = null;
+			JsonObject posicion = null;
 			
 			i = 0;
 			
@@ -178,27 +177,24 @@ public class Utilidades {
             		if (!columnasIntermedias.get(i).equals(columnaActual.getName()))
             			throw new Exception("El orden de las columnas de consulta en la cláusula SELECT no coincide con el orden de las columnas como están creadas en la tabla '" + columnaActual.getKeyspace() + "." + columnaActual.getTable() +"'");
             		
-            		coleccionColumnaActual = (ConcurrentHashMap) coleccionFiltros.get(valorColumnaActual.toString()); 
+            		coleccionColumnaActual = coleccionFiltros.getAsJsonObject(valorColumnaActual.toString()); 
             		if (null == coleccionColumnaActual) {
-            			coleccionFiltros.put(valorColumnaActual.toString(), new ConcurrentHashMap());
-            			coleccionColumnaActual = (ConcurrentHashMap) coleccionFiltros.get(valorColumnaActual.toString());
+            			coleccionFiltros.add(valorColumnaActual.toString(), new JsonObject());
+            			coleccionColumnaActual = coleccionFiltros.getAsJsonObject(valorColumnaActual.toString());
             		}
             		
             	} else {
             		
-            		if (null == posicion) {
+            		if (null == posicion) 
             			posicion = null != coleccionColumnaActual ? coleccionColumnaActual : null != coleccionFiltros ? coleccionFiltros : resultadoEvento;
-            		}
-            		
-            		
-            		String valorColumnaExistente = (String) posicion.get(nombreColumnaActual);
-            		
+            			
+            		JsonElement valorColumnaExistente = posicion.get(nombreColumnaActual);
+            			
             		// Verificar si esta columna ya tiene un valor. Si es así se le añade el valor actual con una coma (,) por delante.												    	   
-            		if (null == valorColumnaExistente) {
-            			posicion.put(nombreColumnaActual, valorColumnaActual.toString());
-            		} else {
-            			posicion.put(nombreColumnaActual, valorColumnaExistente + "," + valorColumnaActual.toString());
-            		}
+            		if (null == valorColumnaExistente)
+            			posicion.addProperty(nombreColumnaActual, valorColumnaActual.toString());
+            		else
+            			posicion.addProperty(nombreColumnaActual, valorColumnaExistente.getAsString() + "," + valorColumnaActual.toString());
             		
             	}
             	
@@ -207,11 +203,6 @@ public class Utilidades {
             }
             
         }
-		
-		//System.out.println("aux: " + new Gson().toJson(resultadoEvento));
-        
-        
-        return new Gson().toJson(resultadoEvento).toString();
         
     }
 

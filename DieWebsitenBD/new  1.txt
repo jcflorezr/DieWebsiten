@@ -126,8 +126,7 @@ sitiosweb@usuarios@sesiones*/
 			"column_aliases" : "",
 			"key_aliases" : "",
 			"tipotransaccion" : "",
-			"column_name" : {	
-				"component_index" : "",
+			"column_name" : {
 				"type" : "",
 				"grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"						
 			}
