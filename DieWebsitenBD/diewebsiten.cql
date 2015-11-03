@@ -69,13 +69,13 @@ CREATE TABLE DIEWEBSITEN.FORMULARIOS (
 	SITIOWEB VARCHAR,
 	PAGINA VARCHAR,
 	EVENTO VARCHAR,
-	KEYSPACE_NAME VARCHAR,
-	COLUMNFAMILY_NAME VARCHAR,
+	/*KEYSPACE_NAME VARCHAR,
+	COLUMNFAMILY_NAME VARCHAR,*/
 	COLUMN_NAME VARCHAR,	
 	GRUPOVALIDACION VARCHAR,
 	FORMAINGRESO VARCHAR,
 	VALORPORDEFECTO VARCHAR,
-	PRIMARY KEY (SITIOWEB, PAGINA, EVENTO, KEYSPACE_NAME, COLUMNFAMILY_NAME, COLUMN_NAME)
+	PRIMARY KEY (SITIOWEB, PAGINA, EVENTO,/* KEYSPACE_NAME, COLUMNFAMILY_NAME,*/ COLUMN_NAME)
 )WITH comment = '{"transacciones" : ["SELECT", "INSERT", "UPDATE", "DELETE"], "comentario" : ""}';
 
 /*CREATE TABLE DIEWEBSITEN.SENTENCIAS_CQL (
@@ -184,7 +184,7 @@ COPY diewebsiten.paginas (sitioweb, pagina, nombre, descripcion) FROM '~/DieWebs
 COPY diewebsiten.eventos (sitioweb, pagina, evento, transaccion, tipotransaccion, keyspace_name, columnfamily_name, orden, descripcion, sentenciacql, filtrossentenciacql, columnasintermediassentenciacql, columnasconsultasentenciacql) FROM '~/DieWebsiten/DieWebsitenBD/cargar_eventos.csv';
 COPY diewebsiten.grupos_validaciones (grupo, tipo, validacion) FROM '~/DieWebsiten/DieWebsitenBD/cargar_grupos_validaciones.csv';
 --COPY diewebsiten.sentencias_cql (sitioweb, pagina, tipotransaccion, transaccion, clausula, campo, alias, valorpordefecto) FROM '~/DieWebsiten/DieWebsitenBD/cargar_sentencias_cql.csv';
-COPY diewebsiten.formularios (sitioweb, pagina, evento, keyspace_name, columnfamily_name, column_name, grupovalidacion, formaingreso, valorpordefecto) FROM '~/DieWebsiten/DieWebsitenBD/cargar_formularios.csv';
+COPY diewebsiten.formularios (sitioweb, pagina, evento, /*keyspace_name, columnfamily_name,*/ column_name, grupovalidacion, formaingreso, valorpordefecto) FROM '~/DieWebsiten/DieWebsitenBD/cargar_formularios.csv';
 COPY diewebsiten.validaciones (tipo, validacion, descripcion) FROM '~/DieWebsiten/DieWebsitenBD/cargar_validaciones.csv';
 --COPY diewebsiten.usuarios (sitioweb, usuario, dominio, contrasena) FROM '~/DieWebsiten/DieWebsitenBD/cargar_usuarios.csv';
 --COPY diewebsiten.sesiones (sitioweb, usuario, dominio, sessionid, fechaultimoacceso) FROM '~/DieWebsiten/DieWebsitenBD/cargar_sesiones.csv';

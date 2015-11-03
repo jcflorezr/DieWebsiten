@@ -1,19 +1,10 @@
 
 package com.diewebsiten.core.util;
 
-import com.datastax.driver.core.ColumnDefinitions;
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.Row;
-
-import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-
 import java.security.MessageDigest;
-
 import java.text.SimpleDateFormat;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
@@ -21,12 +12,12 @@ import org.apache.commons.validator.routines.DateValidator;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.apache.commons.validator.routines.UrlValidator;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
+import com.datastax.driver.core.ColumnDefinitions;
+import com.datastax.driver.core.ProtocolVersion;
+import com.datastax.driver.core.Row;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 
 /**

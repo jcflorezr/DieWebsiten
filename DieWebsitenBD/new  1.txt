@@ -1,24 +1,24 @@
 mvn clean package compile
 mvn exec:java -Dexec.mainClass="com.diewebsiten.core.negocio.probarFabrica"
 
-select filtrossentenciacql, camposconsultasentenciacql, columnfamily_name from diewebsiten.eventos where sitioweb = 'localhost' and pagina = 'eventos' and evento = 'ConsultarInfoSitioWeb';
 
 
 
 
+!_ --> tabla
+!# --> tabla del sistema
+!@ --> primary key / columna intermedia
+!$ --> columna recuperada
+!& --> columna poblada desde el sistema
 
-_! --> tabla
-#! --> tabla del sistema
-@! --> primary key
 
 
-CARGAR EVENTOS
-- el orden de las columnas dentro de la clausula select deben ir en orden de clustering cuando una de estas sea primary key
+
 
 COLUMNAS INTERMEDIAS
 - un filtro no puede ser columna de consulta
-- si una consulta solo tiene una columna, esta columna no puede ser intermedia
-- si una llave primaria es columna de consulta y despues de ella no hay mas columnas de consulta, entonces no puede ser columna intermedia
+- si una llave primaria de una tabla es columna de consulta y despues de ella no hay mas columnas de consulta, entonces no puede ser columna intermedia
+- 
 
 
 
@@ -31,39 +31,36 @@ AHORA VERIFICAR LA FORMA DE IMPRIMIR UN FORMULARIO DESDE ESTAS ESTRUCTURAS
 sitiosweb@usuarios@sesiones*/
 
 
-{"sitiosweb@paginas@usuarios@eventos@formularios" : {
-	"_!sitiosweb@!sitioweb": {
+{	"sitiosweb@paginas@usuarios@eventos@formularios" : {
+		"!_sitiosweb!@sitioweb": {
 			"descripcion": "",      
-			"keyspaces": ["system.keyspaces.keyspace_name"],
-			"_!paginas@!pagina": {
+			"!#keyspaces": ["system.schema_keyspaces.keyspace_name"],
+			"!_paginas!@pagina": {
 				"descripcion": "",          
-				"_!eventos@!evento": {				
-					"@!transaccion": {
+				"!_eventos!@evento": {				
+					"!@transaccion": {
 						"descripcion": "",
 						"tipo": "",
-						"keyspace_name": "",
-						"column_family": "",
-						"orden": 1,
-						"sentencia_cql" : "",
-						"campos_formulario": []  
+						"!$keyspace_name": "diewebsiten.sitiosweb.keyspaces",
+						"!$column_family": "columnas.columnfamily_name",
+						"!&orden": 1,
+						"!&sentencia_cql" : "",
+						"!&filtrossentenciacql": [],
+						"!&columnasintermediassentenciacql": []  
 	                },
-					"_!formularios@!keyspace_name": {
-						"@!column_family_name": {
-							"@!column_name": {
-								"grupovalidacion": "diewebsiten.grupos_validaciones.grupovalidacion",
-								"formaingreso": "",
-								"valorpordefecto" : ""							
-							}							
-						}					
+					"!_formularios!@column_name": {
+						"!#grupovalidacion": "diewebsiten.columnas.column_name.grupovalidacion",
+						"formaingreso": "",
+						"valorpordefecto" : ""							
 					}					               
 	            }          
 	        },
-			"_!usuarios@!dominio" : {
-				"@!usuario" : {
+			"!_usuarios!@dominio" : {
+				"!@usuario" : {
 					"email" : "",
 					"contrasena" : "",
-					"_!sesiones@!sessionid" : {
-						"fechaultimoacceso" : ""
+					"!_sesiones!@sessionid" : {
+						"!&fechaultimoacceso" : ""
 					}
 				}
 			}
@@ -72,12 +69,12 @@ sitiosweb@usuarios@sesiones*/
 
 
 
-//grupos_validaciones@validaciones
+	//grupos_validaciones@validaciones
 
-"grupos_validaciones@validaciones" : {
-	"_!grupos_validaciones@!grupovalidacion" : {
-		"_!grupos_validaciones_!validaciones@!tipo" : {
-			"_!grupos_validaciones_!validaciones@!validacion" : {
+	"grupos_validaciones@validaciones" : {
+		"!_grupos_validaciones!@grupovalidacion" : {
+			"!_grupos_validaciones!_validaciones!@tipo" : {
+				"!_grupos_validaciones!_validaciones!@validacion" : {
 					"descripcion" : ""
 				}
 			}	
@@ -85,24 +82,24 @@ sitiosweb@usuarios@sesiones*/
 	},
 
 
-//transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns
-//transacciones_por_tabla@schema_keyspaces@schema_column_families@columnas
+	//transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns
+	//transacciones_por_tabla@schema_keyspaces@schema_column_families@columnas
 
 
 	"transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns@columnas" : {
-		"#!schema_keyspaces@!keyspace_name" : {
-			"#!schema_column_families@!columnfamily_name" : {
+		"!#schema_keyspaces!@keyspace_name" : {
+			"!#schema_column_families!@columnfamily_name" : {
 				"column_aliases" : "",
 				"key_aliases" : "",
-				"#!schema_columns@!column_name" : {	
+				"!#schema_columns!@column_name" : {	
 					"component_index" : "",
 					"type" : ""							
 				},
-				"_!columnas@!column_name" : {
+				"!_columnas!@column_name" : {
 					"grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
 				}
 			},
-			"_!transacciones_por_tabla@!columnfamily_name" : {
+			"!_transacciones_por_tabla!@columnfamily_name" : {
 				"tipotransaccion" : ""
 			}			
 		}

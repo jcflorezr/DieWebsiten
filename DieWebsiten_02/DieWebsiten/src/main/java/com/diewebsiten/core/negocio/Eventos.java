@@ -1,12 +1,18 @@
-/**
- * ANTES DE SUBIR A PRODUCCION
- * 
- * 1. convertir variable "batch" a StringBuilder
- */
-
 
 package com.diewebsiten.core.negocio;
 
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.PreparedStatement;
@@ -18,23 +24,8 @@ import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
 import com.diewebsiten.core.util.Utilidades;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 
 
 /**
@@ -363,8 +354,6 @@ public class Eventos implements Callable<String> {
 
         @Override
         public Void call() throws Exception {
-        	
-        	String resultadoTransaccion = "";
             
         	// Nombre de la transacción.
         	String nombreTransaccion = transaccion.getString("transaccion");
