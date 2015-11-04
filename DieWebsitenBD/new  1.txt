@@ -5,11 +5,11 @@ mvn exec:java -Dexec.mainClass="com.diewebsiten.core.negocio.probarFabrica"
 
 
 
-!_ --> tabla
-!# --> tabla del sistema
-!@ --> primary key / columna intermedia
-!$ --> columna recuperada
-!& --> columna poblada desde el sistema
+!!_ --> tabla
+!!# --> tabla del sistema
+!!@ --> primary key / columna intermedia
+!!$ --> columna recuperada (antes de insertar valores en esta clase de columnas se debe validar que el valor ya exista en la columna de referencia)
+!!& --> columna poblada desde el sistema
 
 
 
@@ -25,6 +25,9 @@ COLUMNAS INTERMEDIAS
 
 AHORA VERIFICAR LA FORMA DE IMPRIMIR UN FORMULARIO DESDE ESTAS ESTRUCTURAS
 
+1. POR AHORA LAS BASES DE DATOS SE DISEÑAN A MANO A TRAVÉS DE ESTAS ESTRUCTURAS
+2. LAS TABLAS SE DEBEN CREAN DESDE ESTAS ESTRUCTURAS
+3. LOS FORMULARIOS Y SUS ESTRUCTURAS HTML O MOBILE YA SE CREARÁN DESPUÉS DE LOS EVENTOS
 
 
 /*sitiosweb@paginas@eventos@formularios
@@ -32,35 +35,35 @@ sitiosweb@usuarios@sesiones*/
 
 
 {	"sitiosweb@paginas@usuarios@eventos@formularios" : {
-		"!_sitiosweb!@sitioweb": {
+		"!!_sitiosweb!!@sitioweb": {
 			"descripcion": "",      
-			"!#keyspaces": ["system.schema_keyspaces.keyspace_name"],
-			"!_paginas!@pagina": {
+			"!!$keyspaces": ["system.schema_keyspaces.keyspace_name"],
+			"!!_paginas!!@pagina": {
 				"descripcion": "",          
-				"!_eventos!@evento": {				
-					"!@transaccion": {
+				"!!_eventos!!@evento": {				
+					"!!@transaccion": {
 						"descripcion": "",
 						"tipo": "",
-						"!$keyspace_name": "diewebsiten.sitiosweb.keyspaces",
-						"!$column_family": "columnas.columnfamily_name",
-						"!&orden": 1,
-						"!&sentencia_cql" : "",
-						"!&filtrossentenciacql": [],
-						"!&columnasintermediassentenciacql": []  
+						"!!$keyspace_name": "diewebsiten.sitiosweb.keyspaces",
+						"!!$column_family": "columnas.columnfamily_name",
+						"!!&orden": 1,
+						"!!&sentencia_cql" : "",
+						"!!&filtrossentenciacql": [],
+						"!!&columnasintermediassentenciacql": []  
 	                },
-					"!_formularios!@column_name": {
-						"!#grupovalidacion": "diewebsiten.columnas.column_name.grupovalidacion",
-						"formaingreso": "",
+					"!!_formularios!!@column_name": {
+						"!!#grupovalidacion": "diewebsiten.columnas.column_name.grupovalidacion",
+						//"formaingreso": "",
 						"valorpordefecto" : ""							
 					}					               
 	            }          
 	        },
-			"!_usuarios!@dominio" : {
-				"!@usuario" : {
+			"!!_usuarios!!@dominio" : {
+				"!!@usuario" : {
 					"email" : "",
 					"contrasena" : "",
-					"!_sesiones!@sessionid" : {
-						"!&fechaultimoacceso" : ""
+					"!!_sesiones!@#sessionid" : {
+						"!!&fechaultimoacceso" : ""
 					}
 				}
 			}
@@ -72,9 +75,9 @@ sitiosweb@usuarios@sesiones*/
 	//grupos_validaciones@validaciones
 
 	"grupos_validaciones@validaciones" : {
-		"!_grupos_validaciones!@grupovalidacion" : {
-			"!_grupos_validaciones!_validaciones!@tipo" : {
-				"!_grupos_validaciones!_validaciones!@validacion" : {
+		"!!_grupos_validaciones!!@grupovalidacion" : {
+			"!!_grupos_validaciones!!_validaciones!!@tipo" : {
+				"!!_grupos_validaciones!!_validaciones!!@validacion" : {
 					"descripcion" : ""
 				}
 			}	
@@ -87,19 +90,19 @@ sitiosweb@usuarios@sesiones*/
 
 
 	"transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns@columnas" : {
-		"!#schema_keyspaces!@keyspace_name" : {
-			"!#schema_column_families!@columnfamily_name" : {
+		"!!#schema_keyspaces!!@keyspace_name" : {
+			"!!#schema_column_families!!@columnfamily_name" : {
 				"column_aliases" : "",
 				"key_aliases" : "",
-				"!#schema_columns!@column_name" : {	
+				"!!#schema_columns!!@column_name" : {	
 					"component_index" : "",
 					"type" : ""							
 				},
-				"!_columnas!@column_name" : {
+				"!!_columnas!!@column_name" : {
 					"grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
 				}
 			},
-			"!_transacciones_por_tabla!@columnfamily_name" : {
+			"!!_transacciones_por_tabla!!@columnfamily_name" : {
 				"tipotransaccion" : ""
 			}			
 		}
