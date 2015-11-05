@@ -10,6 +10,7 @@ mvn exec:java -Dexec.mainClass="com.diewebsiten.core.negocio.probarFabrica"
 !!@ --> primary key / columna intermedia
 !!$ --> columna recuperada (antes de insertar valores en esta clase de columnas se debe validar que el valor ya exista en la columna de referencia)
 !!& --> columna poblada desde el sistema
+!!* --> columna regular (este literal solo se usa cuando se usa desambiguación de tablas, ver el ejemplo de "!!_validaciones!!*descripcion")
 
 
 
@@ -27,116 +28,80 @@ COLUMNAS INTERMEDIAS
 1. POR AHORA LAS BASES DE DATOS SE DISEÑAN A MANO A TRAVÉS DE ESTAS ESTRUCTURAS
 2. LAS TABLAS SE DEBEN CREAN DESDE ESTAS ESTRUCTURAS
 
+(IntegridadDatos)
+3. A PARTIR DE ESTAS ESTRUCTURAS SE DEBE CREAR UNA HERRAMIENTA ENCARGADA DE MANTENER LA INTEGRIDAD DE LOS DATOS
+
 (AdministracionFormularios)
-3. LOS FORMULARIOS Y SUS ESTRUCTURAS HTML O MOBILE YA SE CREARÁN DESPUÉS DE LOS EVENTOS
+4. LOS FORMULARIOS Y SUS ESTRUCTURAS HTML O MOBILE YA SE CREARÁN DESPUÉS DE LOS EVENTOS
 
 
 /*sitiosweb@paginas@eventos@formularios
 sitiosweb@usuarios@sesiones*/
 
 
-{	"sitiosweb@paginas@usuarios@eventos@formularios" : {
-		"!!_sitiosweb!!@sitioweb": {
-			"descripcion": "",      
-			"!!$keyspaces": ["system.schema_keyspaces.keyspace_name"],
-			"!!_paginas!!@pagina": {
-				"descripcion": "",          
-				"!!_eventos!!@evento": {				
-					"!!@transaccion": {
-						"descripcion": "",
-						"tipo": "",
-						"!!$keyspace_name": "diewebsiten.sitiosweb.keyspaces",
-						"!!$column_family": "columnas.columnfamily_name",
-						"!!&orden": 1,
-						"!!&sentencia_cql" : "",
-						"!!&filtrossentenciacql": [],
-						"!!&columnasintermediassentenciacql": []  
-	                },
-					"!!_formularios!!@column_name": {
-						"!!#grupovalidacion": "diewebsiten.columnas.column_name.grupovalidacion",
-						//"formaingreso": "",
-						"valorpordefecto" : ""							
-					}					               
-	            }          
-	        },
-			"!!_usuarios!!@dominio" : {
-				"!!@usuario" : {
-					"email" : "",
-					"contrasena" : "",
-					"!!_sesiones!@#sessionid" : {
-						"!!&fechaultimoacceso" : ""
-					}
+{	
+	"!!_sitiosweb!!@sitioweb": {
+		"descripcion": "",      
+		"!!$keyspaces": ["system.schema_keyspaces.keyspace_name"],
+		"!!_paginas!!@pagina": {
+			"descripcion": "",          
+			"!!_eventos!!@evento": {				
+				"!!@transaccion": {
+					"descripcion": "",
+					"tipo": "",
+					"!!$keyspace_name": "diewebsiten.sitiosweb.keyspaces",
+					"!!$column_family": "columnas.columnfamily_name",
+					"!!&orden": 1,
+					"!!&sentencia_cql" : "",
+					"!!&filtrossentenciacql": [],
+					"!!&columnasintermediassentenciacql": []  
+                },
+				"!!_formularios!!@column_name": {
+					"!!#grupovalidacion": "diewebsiten.columnas.column_name.grupovalidacion",
+					//"formaingreso": "",
+					"valorpordefecto" : ""							
+				}					               
+            }          
+        },
+		"!!_usuarios!!@dominio" : {
+			"!!@usuario" : {
+				"email" : "",
+				"contrasena" : "",
+				"!!_sesiones!@#sessionid" : {
+					"!!&fechaultimoacceso" : ""
 				}
 			}
-	    }
-	},
+		}
+    },
 
 
 
 	//grupos_validaciones@validaciones
 
-	"grupos_validaciones@validaciones" : {
-		"!!_grupos_validaciones!!@grupovalidacion" : {
-			"!!_grupos_validaciones!!_validaciones!!@tipo" : {
-				"!!_grupos_validaciones!!_validaciones!!@validacion" : {
-					"descripcion" : ""
-				}
-			}	
-		}
+		
+	"!!_grupos_validaciones!!@grupovalidacion" : {
+		"!!_validaciones!!_grupos_validaciones!!@tipo" : {
+			"!!_grupos_validaciones!!_validaciones!!@validacion" : {
+				"!!_validaciones!!*descripcion" : ""
+			}
+		}	
 	},
 
 
 	//transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns
 	//transacciones_por_tabla@schema_keyspaces@schema_column_families@columnas
 
-
-	"transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns@columnas" : {
-		"!!#schema_keyspaces!!@keyspace_name" : {
-			"!!#schema_column_families!!@columnfamily_name" : {
-				"column_aliases" : "",
-				"key_aliases" : "",
-				"!!#schema_columns!!@column_name" : {	
-					"component_index" : "",
-					"type" : ""							
-				},
-				"!!_columnas!!@column_name" : {
-					"grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
-				}
+	"!!#schema_keyspaces!!@keyspace_name" : {
+		"!!#schema_column_families!!_transacciones_por_tabla!!@columnfamily_name" : {
+			"!!#schema_column_families!!*column_aliases" : "",
+			"!!#schema_column_families!!*key_aliases" : "",
+			"!!_transacciones_por_tabla!!*tipotransaccion" : "",
+			"!!#schema_columns!!_columnas!!@column_name" : {	
+				"!!#schema_columns!!*component_index" : "",
+				"!!#schema_columns!!*type" : "",
+				"!!_columnas!!*grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
 			},
-			"!!_transacciones_por_tabla!!@columnfamily_name" : {
-				"tipotransaccion" : ""
-			}			
-		}
-	}
-}
-
-
-
-
-
-{
-	"sitioweb": {
-		"keyspaces": ["system.keyspaces.keyspace_name"],
-		"pagina": {}
-	}
-}
-
-{
-	"keyspace_name" : {
-		"columnfamily_name" : {
-			"column_aliases" : "",
-			"key_aliases" : "",
-			"tipotransaccion" : "",
-			"column_name" : {
-				"type" : "",
-				"grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"						
-			}
 		}			
 	}
+	
 }
-
-
-
-
-
-
