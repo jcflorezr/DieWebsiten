@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
@@ -24,6 +25,7 @@ import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
 import com.diewebsiten.core.util.Utilidades;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
@@ -438,7 +440,7 @@ public class Eventos implements Callable<String> {
                 // Filtros que se necesitan para ejecutar la transacción.
                 List<String> columnasIntermediasSentenciaCQL = new ArrayList<String> (transaccion.getList("columnasintermediassentenciacql", String.class));
  
-                getUtil().transformarResultSet(this.resultadoEvento, resultadoTransaccionActual, columnas, filtrosSentenciaCQL, columnasIntermediasSentenciaCQL);
+                transformarResultSet(this.resultadoEvento, resultadoTransaccionActual, columnas, filtrosSentenciaCQL, columnasIntermediasSentenciaCQL);
                 
             }                    
                  
@@ -451,7 +453,105 @@ public class Eventos implements Callable<String> {
     
     
     
-    
+    /**
+     * 
+     * @param resultSet
+     * @param columnas
+     * @param filtros
+     * @param columnasIntermedias
+     * @throws Exception
+     */
+    private void transformarResultSet (JsonObject resultadoEvento, List<Row> resultSet, List<ColumnDefinitions.Definition> columnas, List<String> filtros, List<String> columnasIntermedias) throws Exception {
+		
+		if (null == resultadoEvento)
+			throw new Exception("La colección donde se va a crear la estructura del resultado del evento debe estar inicializada");
+
+		
+		// EL ORDEN DE LOS FILTROS YA VIENE ESTABLECIDO DESDE 
+		// LA BASE DE DATOS (TABLA EVENTOS) SEGÚN EL ORDEN EN QUE SE CREARON EN LA TABLA
+		
+		JsonObject coleccionFiltros = resultadoEvento;
+		int i = 0;
+		
+		filtros.addAll(columnasIntermedias);
+		
+		for (String filtro : filtros) {
+
+			JsonObject coleccionFiltroActual = coleccionFiltros.getAsJsonObject(filtro);			
+			
+			if (null == coleccionFiltroActual) {
+				
+				if (i == 0)
+					coleccionFiltros = resultadoEvento;
+				
+				// Agregar por primera vez los filtros o columnas intermedias faltantes
+				for (;i<filtros.size();i++) {
+					coleccionFiltros.add(filtros.get(i), new JsonObject());
+					coleccionFiltros = coleccionFiltros.getAsJsonObject(filtros.get(i));
+				}
+				
+				break;
+				
+			} else {
+				coleccionFiltros = coleccionFiltroActual;
+			}
+			
+			i++;
+			
+			
+		}
+		
+		
+		// EL ORDEN DE LAS COLUMNAS INTERMEDIAS Y DE LAS COLUMNAS DE CONSULTA
+		// YA VIENE ESTABLECIDO DESDE LA BASE DE DATOS (TABLA EVENTOS) SEGÚN EL ORDEN EN QUE
+		// SE CREARON EN LA TABLA
+		
+		for (Row fila : resultSet) {
+			
+			JsonObject coleccionColumnaActual = null;
+			JsonObject posicion = null;
+			
+			i = 0;
+			
+            for (ColumnDefinitions.Definition columnaActual : columnas) {
+            	
+            	String nombreColumnaActual = columnaActual.getName();
+            	
+            	Object valorColumnaActual = columnaActual.getType().deserialize(fila.getBytesUnsafe(columnaActual.getName()), ProtocolVersion.NEWEST_SUPPORTED);
+            	
+            	if (!columnasIntermedias.isEmpty() && i < columnasIntermedias.size()) {
+            		
+            		if (!columnasIntermedias.get(i).equals(columnaActual.getName()))
+            			throw new Exception("El orden de las columnas de consulta en la cláusula SELECT no coincide con el orden de las columnas como están creadas en la tabla '" + columnaActual.getKeyspace() + "." + columnaActual.getTable() +"'");
+            		
+            		coleccionColumnaActual = coleccionFiltros.getAsJsonObject(valorColumnaActual.toString()); 
+            		if (null == coleccionColumnaActual) {
+            			coleccionFiltros.add(valorColumnaActual.toString(), new JsonObject());
+            			coleccionColumnaActual = coleccionFiltros.getAsJsonObject(valorColumnaActual.toString());
+            		}
+            		
+            	} else {
+            		
+            		if (null == posicion) 
+            			posicion = null != coleccionColumnaActual ? coleccionColumnaActual : null != coleccionFiltros ? coleccionFiltros : resultadoEvento;
+            			
+            		JsonElement valorColumnaExistente = posicion.get(nombreColumnaActual);
+            			
+            		// Verificar si esta columna ya tiene un valor. Si es así se le añade el valor actual con una coma (,) por delante.												    	   
+            		if (null == valorColumnaExistente)
+            			posicion.addProperty(nombreColumnaActual, valorColumnaActual.toString());
+            		else
+            			posicion.addProperty(nombreColumnaActual, valorColumnaExistente.getAsString() + "," + valorColumnaActual.toString());
+            		
+            	}
+            	
+            	i++;
+            	
+            }
+            
+        }
+        
+    }
     
     
     
@@ -469,7 +569,7 @@ public class Eventos implements Callable<String> {
      * @return sentencia CQL preparada. Ej: SELECT campo1 FROM base_de_datos.tabla WHERE campo2 = ?
      * @throws java.lang.Exception 
      */
-    public String generarSentenciasCQL(String sitioWeb, String pagina, String transaccion, String tipoSentencia, String tabla) throws Exception {
+    private String generarSentenciasCQL(String sitioWeb, String pagina, String transaccion, String tipoSentencia, String tabla) throws Exception {
 
         try {
             
