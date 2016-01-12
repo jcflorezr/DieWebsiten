@@ -1,5 +1,15 @@
 package com.diewebsiten.core.negocio;
 
+import java.io.FileReader;
+import java.util.Arrays;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
+
 public class CreacionDinamicaTablas {
 	
 	
@@ -25,10 +35,26 @@ public class CreacionDinamicaTablas {
 	
 	
 	
-	Para empezar a echar el código
+//	Para empezar a echar el código
+//	
+//	entrar a SitiosWeb.. y luego guardar en cada map las tablas hijas.. luego entrar a paginas y despues de crear todas las hijas de paginas se 
+//	sigue con usuarios y asi sucesivamente
 	
-	entrar a SitiosWeb.. y luego guardar en cada map las tablas hijas.. luego entrar a paginas y despues de crear todas las hijas de paginas se 
-	sigue con usuarios y asi sucesivamente
+	
+	public static void main (String[] args) throws Exception {
+		
+		//JsonReader estructura = new JsonReader(new FileReader("/Users/juaflore/DieWebsiten/DieWebsitenBD/PruebaCreacionDinamicaTablas.json"));
+//		JsonReader estructura = new JsonReader(new FileReader("/Users/juancamiloroman/DieWebsiten/DieWebsitenBD/PruebaCreacionDinamicaTablas.json"));
+		
+//		JsonObject estructura = new JsonParser().parse(new FileReader("/Users/juaflore/DieWebsiten/DieWebsitenBD/PruebaCreacionDinamicaTablas.json")).getAsJsonObject();
+		
+//		System.out.println(estructura);
+		
+		
+		System.out.println(Arrays.asList(StringUtils.split("¡_!sitiosweb¡@!sitioweb", "¡")));
+		System.out.println(Arrays.asList(StringUtils.split("¡@!transaccion", "¡")));
+		
+	}
 	
 
 }

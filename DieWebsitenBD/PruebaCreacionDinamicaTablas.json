@@ -1,0 +1,65 @@
+{	
+	"¡_!sitiosweb¡@!sitioweb": {
+		"descripcion": "",      
+		"¡$!keyspaces": ["system.schema_keyspaces.keyspace_name"],
+		"¡_!paginas¡@!pagina": {
+			"descripcion": "",          
+			"¡_!eventos¡@!evento": {				
+				"¡@!transaccion": {
+					"descripcion": "",
+					"tipo": "",
+					"¡$!keyspace_name": "diewebsiten.sitiosweb.keyspaces",
+					"¡$!column_family": "columnas.columnfamily_name",
+					"¡&!orden": 1,
+					"¡&!sentencia_cql" : "",
+					"¡&!filtrossentenciacql": [],
+					"¡&!columnasintermediassentenciacql": []  
+                },
+				"¡_!formularios¡@!column_name": {
+					"¡#!grupovalidacion": "diewebsiten.columnas.column_name.grupovalidacion",
+					//"formaingreso": "",
+					"valorpordefecto" : ""							
+				}					               
+            }          
+        },
+		"¡_!usuarios¡@!dominio" : {
+			"¡@!usuario" : {
+				"email" : "",
+				"contrasena" : "",
+				"¡_!sesiones¡@#!sessionid" : {
+					"¡&!fechaultimoacceso" : ""
+				}
+			}
+		}
+    },
+
+
+
+	//grupos_validaciones@validaciones
+
+		
+	"¡_!grupos_validaciones¡@!grupovalidacion" : {
+		"¡_!validaciones¡_!grupos_validaciones¡@!tipo" : {
+			"¡_!grupos_validaciones¡_!validaciones¡@!validacion" : {
+				"¡_!validaciones¡*!descripcion" : ""
+			}
+		}	
+	},
+
+
+	//transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns
+	//transacciones_por_tabla@schema_keyspaces@schema_column_families@columnas
+
+	"¡#!schema_keyspaces¡@!keyspace_name" : {
+		"¡#!schema_column_families¡_!transacciones_por_tabla¡@!columnfamily_name" : {
+			"¡#!schema_column_families¡*!column_aliases" : "",
+			"¡#!schema_column_families¡*!key_aliases" : "",
+			"¡_!transacciones_por_tabla¡*!tipotransaccion" : "",
+			"¡#!schema_columns¡_!columnas¡@!column_name" : {	
+				"¡#!schema_columns¡*!component_index" : "",
+				"¡#!schema_columns¡*!type" : "",
+				"¡_!columnas¡*!grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
+			},
+		}			
+	}	
+}

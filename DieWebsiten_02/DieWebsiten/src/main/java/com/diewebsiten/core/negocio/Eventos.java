@@ -534,8 +534,13 @@ public class Eventos implements Callable<String> {
             		
             		if (null == posicion) 
             			posicion = null != coleccionColumnaActual ? coleccionColumnaActual : null != coleccionFiltros ? coleccionFiltros : resultadoEvento;
-            			
-            		JsonElement valorColumnaExistente = posicion.get(nombreColumnaActual);
+            		
+            		JsonElement valorColumnaExistente;
+            		try {
+            			valorColumnaExistente = posicion.get(nombreColumnaActual);
+					} catch (ClassCastException e) {
+						throw new Exception("Ya existe una llave con el valor: " + nombreColumnaActual + ", esto significa que hay una columna de una tabla que tiene un nombre igual a este valor");
+					}
             			
             		// Verificar si esta columna ya tiene un valor. Si es así se le añade el valor actual con una coma (,) por delante.												    	   
             		if (null == valorColumnaExistente)
