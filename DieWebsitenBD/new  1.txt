@@ -5,12 +5,12 @@ mvn exec:java -Dexec.mainClass="com.diewebsiten.core.negocio.probarFabrica"
 
 
 
-¡_! --> tabla
-¡#! --> tabla del sistema
-¡@! --> primary key / columna intermedia
-¡$! --> columna recuperada (antes de insertar valores en esta clase de columnas se debe validar que el valor ya exista en la columna de referencia)
-¡&! --> columna poblada desde el sistema
-¡*! --> columna regular (este literal solo se usa cuando se usa desambiguación de tablas, ver el ejemplo de "¡_!validaciones¡*!descripcion")
+¡__! --> tabla
+¡_#! --> tabla del sistema
+¡-@! --> primary key / columna intermedia
+¡-$! --> columna recuperada (antes de insertar valores en esta clase de columnas se debe validar que el valor ya exista en la columna de referencia)
+¡-&! --> columna poblada desde el sistema
+¡-*! --> columna regular (este literal solo se usa cuando se usa desambiguación de tablas, ver el ejemplo de "¡__!validaciones¡-*!descripcion")
 
 
 
@@ -40,35 +40,35 @@ sitiosweb@usuarios@sesiones*/
 
 
 {	
-	"¡_!sitiosweb¡@!sitioweb": {
+	"¡__!sitiosweb¡-@!sitioweb": {
 		"descripcion": "",      
-		"¡$!keyspaces": ["system.schema_keyspaces.keyspace_name"],
-		"¡_!paginas¡@!pagina": {
+		"¡-$!keyspaces": ["system.schema_keyspaces.keyspace_name"],
+		"¡__!paginas¡-@!pagina": {
 			"descripcion": "",          
-			"¡_!eventos¡@!evento": {				
-				"¡@!transaccion": {
+			"¡__!eventos¡-@!evento": {				
+				"¡-@!transaccion": {
 					"descripcion": "",
 					"tipo": "",
-					"¡$!keyspace_name": "diewebsiten.sitiosweb.keyspaces",
-					"¡$!column_family": "columnas.columnfamily_name",
-					"¡&!orden": 1,
-					"¡&!sentencia_cql" : "",
-					"¡&!filtrossentenciacql": [],
-					"¡&!columnasintermediassentenciacql": []  
+					"¡-$!keyspace_name": "diewebsiten.sitiosweb.keyspaces",
+					"¡-$!column_family": "columnas.columnfamily_name",
+					"¡-&!orden": 1,
+					"¡-&!sentencia_cql" : "",
+					"¡-&!filtrossentenciacql": [],
+					"¡-&!columnasintermediassentenciacql": []  
                 },
-				"¡_!formularios¡@!column_name": {
-					"¡#!grupovalidacion": "diewebsiten.columnas.column_name.grupovalidacion",
+				"¡__!formularios¡-@!column_name": {
+					"¡_#!grupovalidacion": "diewebsiten.columnas.column_name.grupovalidacion",
 					//"formaingreso": "",
 					"valorpordefecto" : ""							
 				}					               
             }          
         },
-		"¡_!usuarios¡@!dominio" : {
-			"¡@!usuario" : {
+		"¡__!usuarios¡-@!dominio" : {
+			"¡-@!usuario" : {
 				"email" : "",
 				"contrasena" : "",
-				"¡_!sesiones¡@#!sessionid" : {
-					"¡&!fechaultimoacceso" : ""
+				"¡__!sesiones¡@#!sessionid" : {
+					"¡-&!fechaultimoacceso" : ""
 				}
 			}
 		}
@@ -79,10 +79,10 @@ sitiosweb@usuarios@sesiones*/
 	//grupos_validaciones@validaciones
 
 		
-	"¡_!grupos_validaciones¡@!grupovalidacion" : {
-		"¡_!validaciones¡_!grupos_validaciones¡@!tipo" : {
-			"¡_!grupos_validaciones¡_!validaciones¡@!validacion" : {
-				"¡_!validaciones¡*!descripcion" : ""
+	"¡__!grupos_validaciones¡-@!grupovalidacion" : {
+		"¡__!validaciones¡__!grupos_validaciones¡-@!tipo" : {
+			"¡__!grupos_validaciones¡__!validaciones¡-@!validacion" : {
+				"¡__!validaciones¡-*!descripcion" : ""
 			}
 		}	
 	},
@@ -91,15 +91,15 @@ sitiosweb@usuarios@sesiones*/
 	//transacciones_por_tabla@schema_keyspaces@schema_column_families@schema_columns
 	//transacciones_por_tabla@schema_keyspaces@schema_column_families@columnas
 
-	"¡#!schema_keyspaces¡@!keyspace_name" : {
-		"¡#!schema_column_families¡_!transacciones_por_tabla¡@!columnfamily_name" : {
-			"¡#!schema_column_families¡*!column_aliases" : "",
-			"¡#!schema_column_families¡*!key_aliases" : "",
-			"¡_!transacciones_por_tabla¡*!tipotransaccion" : "",
-			"¡#!schema_columns¡_!columnas¡@!column_name" : {	
-				"¡#!schema_columns¡*!component_index" : "",
-				"¡#!schema_columns¡*!type" : "",
-				"¡_!columnas¡*!grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
+	"¡_#!schema_keyspaces¡-@!keyspace_name" : {
+		"¡_#!schema_column_families¡__!transacciones_por_tabla¡-@!columnfamily_name" : {
+			"¡_#!schema_column_families¡-*!column_aliases" : "",
+			"¡_#!schema_column_families¡-*!key_aliases" : "",
+			"¡__!transacciones_por_tabla¡-*!tipotransaccion" : "",
+			"¡_#!schema_columns¡__!columnas¡-@!column_name" : {	
+				"¡_#!schema_columns¡-*!component_index" : "",
+				"¡_#!schema_columns¡-*!type" : "",
+				"¡__!columnas¡-*!grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
 			},
 		}			
 	}
