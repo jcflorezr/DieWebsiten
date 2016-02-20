@@ -1,8 +1,8 @@
-package com.courses.junit_and_mockito.dao;
+package com.courses.junit_and_mockito.orders.dao;
 
 import java.sql.SQLException;
 
-import com.courses.junit_and_mockito.dto.Order;
+import com.courses.junit_and_mockito.orders.dto.Order;
 
 public interface OrderDAO {
 	

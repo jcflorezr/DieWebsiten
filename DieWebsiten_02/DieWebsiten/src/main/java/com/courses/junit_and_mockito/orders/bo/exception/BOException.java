@@ -1,4 +1,4 @@
-package com.courses.junit_and_mockito.bo.exception;
+package com.courses.junit_and_mockito.orders.bo.exception;
 
 public class BOException extends Exception {
 

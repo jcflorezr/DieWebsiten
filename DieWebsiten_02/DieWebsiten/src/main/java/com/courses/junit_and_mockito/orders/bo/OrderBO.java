@@ -1,7 +1,7 @@
-package com.courses.junit_and_mockito.bo;
+package com.courses.junit_and_mockito.orders.bo;
 
-import com.courses.junit_and_mockito.bo.exception.BOException;
-import com.courses.junit_and_mockito.dto.Order;
+import com.courses.junit_and_mockito.orders.bo.exception.BOException;
+import com.courses.junit_and_mockito.orders.dto.Order;
 
 public interface OrderBO {
 	

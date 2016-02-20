@@ -1,4 +1,4 @@
-package com.courses.junit_and_mockito.bo;
+package com.courses.junit_and_mockito.orders.bo;
 
 import java.sql.SQLException;
 
@@ -10,9 +10,10 @@ import org.mockito.MockitoAnnotations;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-import com.courses.junit_and_mockito.bo.exception.BOException;
-import com.courses.junit_and_mockito.dao.OrderDAO;
-import com.courses.junit_and_mockito.dto.Order;
+import com.courses.junit_and_mockito.orders.bo.OrderBOImpl;
+import com.courses.junit_and_mockito.orders.bo.exception.BOException;
+import com.courses.junit_and_mockito.orders.dao.OrderDAO;
+import com.courses.junit_and_mockito.orders.dto.Order;
 
 public class OrderBOImplTest {
 
@@ -43,7 +44,7 @@ public class OrderBOImplTest {
 	public void shouldNotCreateAnOrder() throws SQLException, BOException {
 		
 		Order order = new Order();
-		when(dao.create(order)).thenReturn(new Integer(0));
+		when(dao.create(any(Order.class))).thenReturn(new Integer(0));
 		
 		assertFalse(bo.placeOrder(order));
 		verify(dao).create(order);
@@ -54,7 +55,7 @@ public class OrderBOImplTest {
 	public void createAnOrderShouldThrowAnException() throws SQLException, BOException {
 		
 		Order order = new Order();
-		when(dao.create(order)).thenThrow(SQLException.class);
+		when(dao.create(any(Order.class))).thenThrow(SQLException.class);
 		boolean result = bo.placeOrder(order);
 		
 	}
@@ -63,8 +64,8 @@ public class OrderBOImplTest {
 	public void shouldCancelAnOrder() throws SQLException, BOException {
 		
 		Order order = new Order();
-		when(dao.read(123)).thenReturn(order);
-		when(dao.update(order)).thenReturn(1);
+		when(dao.read(anyInt())).thenReturn(order);
+		when(dao.update(any(Order.class))).thenReturn(1);
 		
 		assertTrue(bo.cancelOrder(123));
 		
@@ -77,7 +78,7 @@ public class OrderBOImplTest {
 	public void shouldNotCancelAnOrder () throws SQLException, BOException {
 		
 		Order order = new Order();
-		when(dao.read(123)).thenReturn(order);
+		when(dao.read(anyInt())).thenReturn(order);
 		when(dao.update(order)).thenReturn(0);
 		
 		assertFalse(bo.cancelOrder(123));

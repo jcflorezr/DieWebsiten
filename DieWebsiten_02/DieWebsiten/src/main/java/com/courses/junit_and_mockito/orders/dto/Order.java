@@ -1,4 +1,4 @@
-package com.courses.junit_and_mockito.dto;
+package com.courses.junit_and_mockito.orders.dto;
 
 public class Order {
 	
