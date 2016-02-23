@@ -20,6 +20,11 @@
 			<version>1.9.5</version>
 		</dependency>
 		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-release-with-junit-mockito-dependencies</artifactId>
+			<version>1.5.1</version>
+		</dependency>
+		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
 			<version>3.0.1</version>
