@@ -1,12 +1,10 @@
 
 package com.diewebsiten.core.util;
 
-import com.diewebsiten.core.negocio.Eventos;
+import com.diewebsiten.core.negocio.eventos.Eventos;
 
 import java.io.File;
-
 import java.text.SimpleDateFormat;
-
 import java.util.Date;
 
 import org.apache.log4j.ConsoleAppender;

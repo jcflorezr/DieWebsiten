@@ -34,7 +34,7 @@ public class Utilidades {
      * @param objeto
      * @return 
      */
-    public boolean esVacio(Object objeto) {
+    public static boolean esVacio(Object objeto) {
         
         boolean vacio = true;
         
@@ -52,7 +52,7 @@ public class Utilidades {
      * @param cadena
      * @return 
      */
-    public boolean esJSON(String cadena) {
+    public static boolean esJSON(String cadena) {
         try {
         	new JsonParser().parse(cadena);
         	return true;
@@ -68,7 +68,7 @@ public class Utilidades {
      * @param cadena
      * @return 
      */
-    public boolean contienePalabra (String palabra, String cadena) {
+    public static boolean contienePalabra (String palabra, String cadena) {
         return cadena.matches(".*?\\b" + palabra + "\\b.*?");
     }// contienePalabra
     
@@ -77,7 +77,7 @@ public class Utilidades {
      * @param cadena
      * @return 
      */
-    public String encriptarString(String cadena) throws Exception {
+    public static String encriptarString(String cadena) throws Exception {
                   
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         md.update(cadena.getBytes());
