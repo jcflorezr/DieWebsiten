@@ -10,6 +10,7 @@ public class Main {
 		car = new Bugati("bugati", 20, 20);
 		car.assembleCar();
 		System.out.println(car.getClass());
+		
 	}
 
 }
