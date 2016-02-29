@@ -6,7 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
+import static org.apache.commons.lang3.StringUtils.*;
 import org.apache.commons.lang3.text.WordUtils;
 import org.apache.commons.validator.routines.DateValidator;
 import org.apache.commons.validator.routines.EmailValidator;
@@ -116,32 +116,32 @@ public class Utilidades {
        
            case V_ALFANUMERICO_CON_ESPACIOS:            
                // Validar que el campo actual sea alfanumérico y sin espacios en blanco.
-               if (!StringUtils.isAlphanumeric(parametro.toString()))
+               if (!isAlphanumeric(parametro.toString()))
                    resultadoValidacion.add("Campo alfanumerico sin espacios en blanco. Ejemplo: JuaN123");
            break;        
            case V_ALFANUMERICO_SIN_ESPACIOS:                
                // Validar que el campo actual sea alfanumérico y con espacios en blanco.
-               if (!StringUtils.isAlphanumericSpace(parametro.toString()))
+               if (!isAlphanumericSpace(parametro.toString()))
                    resultadoValidacion.add("Campo alfanumerico con posibles espacios en blanco. Ejemplo: JuaN 123 456");
            break;        
            case V_NUMERICO_SIN_ESPACIOS:                
                // Validar que el campo actual sea numérico y sin espacios en blanco.
-               if (!StringUtils.isNumeric(parametro.toString()))
+               if (!isNumeric(parametro.toString()))
                    resultadoValidacion.add("Campo numérico sin espacios en blanco. Ejemplo: 123456");
            break;                
            case V_NUMERICO_CON_ESPACIOS:                
                // Validar que el campo actual sea numérico y con espacios en blanco.
-               if (!StringUtils.isNumericSpace(parametro.toString()))
+               if (!isNumericSpace(parametro.toString()))
                    resultadoValidacion.add("Campo numérico con posibles espacios en blanco. Ejemplo: 123 456 789");
            break;        
            case V_CARACTER_SIN_ESPACIOS:                
                // Validar que el campo actual sea de caracteres y sin espacios en blanco.
-               if (!StringUtils.isAlpha(parametro.toString()))
+               if (!isAlpha(parametro.toString()))
                    resultadoValidacion.add("Campo caracter sin espacios en blanco. Ejemplo: abcDEF");
            break;                    
            case V_CARACTER_CON_ESPACIOS:                
                // Validar que el campo actual sea de caracteres y sin espacios en blanco.
-               if (!StringUtils.isAlphaSpace(parametro.toString())) 
+               if (!isAlphaSpace(parametro.toString())) 
                    resultadoValidacion.add("Campo caracter con posibles espacios en blanco. Ejemplo: abc DEF hg");
            break;        
            case V_EMAIL:                
@@ -192,8 +192,8 @@ public class Utilidades {
                 // Si el campo es de tipo email se divide en dos campos.
                 // Ej: email@dominio.com --> {usuario: email, dominio: dominio.com}
             	JsonObject transformacion = new JsonObject();
-                transformacion.addProperty("usuario", StringUtils.substringBefore(parametro.toString(), "@"));
-                transformacion.addProperty("dominio", StringUtils.substringAfter(parametro.toString(), "@"));
+                transformacion.addProperty("usuario", substringBefore(parametro.toString(), "@"));
+                transformacion.addProperty("dominio", substringAfter(parametro.toString(), "@"));
                 return transformacion.toString();           
             case T_CIFRADO:            
                 // Si el campo necesita cifrarse se transforma a una cadena de caracteres base 64. 
@@ -204,10 +204,10 @@ public class Utilidades {
                 return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(parametro.toString());        
             case T_MINUSCULAS:                
                 // Si el campo es de tipo "Lower" se transforman todos sus caracteres a minúsculas
-                return StringUtils.lowerCase(parametro.toString());                
+                return lowerCase(parametro.toString());                
             case T_MAYUSCULAS :                
                 // Si el campo es de tipo "Upper" se transforman todos sus caracteres a mayúsculas
-                return StringUtils.upperCase(parametro.toString());       
+                return upperCase(parametro.toString());       
             case T_IDIOMA :                
                 /***************************************************************************/
                 /*************************** LOGICA PARA LOS CAMPOS TIPO IDIOMA *****************************/
@@ -215,12 +215,12 @@ public class Utilidades {
             case T_CAMELCASE_CLASE :
                 // string que se convertira en camel case clase --> StringQueSeConvertiraEnCamelCaseClase
                 if (parametro.toString().matches("^\\s*$"))                    
-                    return StringUtils.deleteWhitespace(WordUtils.capitalizeFully(parametro.toString()));
+                    return deleteWhitespace(WordUtils.capitalizeFully(parametro.toString()));
             break;        
             case T_CAMELCASE_METODO :                
                 // string que se convertira en camel case metodo --> stringQueSeConvertiraEnCamelCaseMetodo
                 //if (parametro.toString().matches("^\\s*$")) 
-                    return StringUtils.uncapitalize(StringUtils.deleteWhitespace(WordUtils.capitalizeFully(parametro.toString())));
+                    return uncapitalize(deleteWhitespace(WordUtils.capitalizeFully(parametro.toString())));
             //break;                    
             case T_GUIONBAJO :                
                 /***************************************************************************/
