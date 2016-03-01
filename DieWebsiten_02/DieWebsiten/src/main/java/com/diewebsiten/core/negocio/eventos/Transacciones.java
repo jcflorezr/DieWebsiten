@@ -9,6 +9,7 @@ import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import static com.diewebsiten.core.util.Utilidades.*;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -22,6 +23,9 @@ class Transacciones implements Callable<Void> {
         this.resultadoEvento = resultadoEvento;
     }
 
+    /* (non-Javadoc)
+     * @see java.util.concurrent.Callable#call()
+     */
     @Override
     public Void call() throws Exception {
         
@@ -40,7 +44,7 @@ class Transacciones implements Callable<Void> {
         //PreparedStatement sentenciaCql = getSesionBD().prepare(transaccion.getString("sentenciacql"));
       
         // Validar que la sentencia CQL sea de tipo válido.
-        if (!getUtil().contienePalabra(tipoTransaccion, "SELECT,UPDATE,INSERT,DELETE"))
+        if (!contienePalabra(tipoTransaccion, "SELECT,UPDATE,INSERT,DELETE"))
             throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(nombreTransaccion, getNombreEvento(), getPagina(), getSitioWeb(), tipoTransaccion));
     
             
@@ -50,9 +54,9 @@ class Transacciones implements Callable<Void> {
         // están presentes en casi todas las transacciones que componen un evento
         // NOTA: solo se agregan estas supercolumnas en caso de que el Map de parámetros
         //       no las contenga.
-        if (null == getParametros().get("sitioweb")) setParametros("sitioweb", getSitioWeb());
-        if (null == getParametros().get("pagina")) setParametros("pagina", getPagina());
-        if (null == getParametros().get("idioma")) setParametros("idioma", getIdioma());
+//        if (null == getParametros().get("sitioweb")) setParametros("sitioweb", getSitioWeb());
+//        if (null == getParametros().get("pagina")) setParametros("pagina", getPagina());
+//        if (null == getParametros().get("idioma")) setParametros("idioma", getIdioma());
         
         
         // Extraer los valores recibidos desde el cliente (navegador web, dispositivo móvil)
@@ -68,7 +72,7 @@ class Transacciones implements Callable<Void> {
                 //if (getUtil().contienePalabra(campo.getString("clausula"), "SET,WHERE,VALUES")) {
                     // Si el campo de la sentencia tiene un valor por defecto se guardará este valor
                     // en vez de guardar el valor que viene en el Map de parámetros.
-                    if (!getUtil().esVacio(campo.getString("valorpordefecto"))) {
+                    if (!esVacio(campo.getString("valorpordefecto"))) {
                         valoresSentencia.add(campo.getString("valorpordefecto"));
                     } else {
                         valoresSentencia.add(getParametros().get(campo.getString("column_name")));
@@ -84,8 +88,8 @@ class Transacciones implements Callable<Void> {
                 throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.FILTRO_NO_EXISTE.getMensaje(filtro, nombreTransaccion, tipoTransaccion, getNombreEvento(), getPagina(), getSitioWeb()));
         }
         
-        
-        synchronized (Eventos.class) {
+        // preparar las sentencias de cada transaccion
+        synchronized (Transacciones.class) {
             if (null == getSentenciasPreparadas().get(nombreTransaccion)) {
                 getSentenciasPreparadas().put(nombreTransaccion, getSesionBD().prepare(sentenciaCQL));
             }

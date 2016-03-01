@@ -20,11 +20,13 @@ import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.diewebsiten.core.negocio.Fabrica;
 import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
-import com.diewebsiten.core.util.Utilidades;
+
+import static com.diewebsiten.core.util.Utilidades.*;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -45,10 +47,10 @@ public class Eventos implements Callable<String> {
     private String nombreEvento;
     private Map<String, Object> parametros;
     private List<Row> camposFormularioEvento;
-	private static Map<String, PreparedStatement> sentenciasPreparadas;
-    private static Session sesionBD;
+	
+    private ProveedorCassandra proveedorCassandra;
     private boolean validacionExitosa;
-    private final Utilidades util;
+    //private final Utilidades util;
     
     /**
      * Este constructor se encarga de recibir un evento, este evento contiene transacciones de consulta,
@@ -65,26 +67,27 @@ public class Eventos implements Callable<String> {
      */
     public Eventos(String url, String nombreEvento, String parametros) throws Exception {
 
-        util = new Utilidades();
+        //util = new Utilidades();
         
         // Validar que el nombre del evento no llegue vacío.
-        if (getUtil().esVacio(nombreEvento)) 
+        if (esVacio(nombreEvento)) {
             throw new ExcepcionGenerica(Constantes.NOMBRE_EVENTO_VACIO.getString());
-        
-        // Obtener el nombre del evento que se ejecutará.
-        this.nombreEvento = nombreEvento;
+        } else {
+        	// Obtener el nombre del evento que se ejecutará.
+            this.nombreEvento = nombreEvento;
+        }
         
         // Obtener la dirección URL del sitio web que está realizando la petición.
         this.sitioWeb = StringUtils.substringBefore(url, ":@:")/*.equals("localhost") ? "127.0.0.1" : sitioWeb*/;
         
         // Si el parámetro "parametros" viene vacío se convierte a formato JSONObject vacío.
-        parametros = getUtil().esVacio(parametros) ? "{}" : parametros;
+        parametros = esVacio(parametros) ? "{}" : parametros;
             
         // Guardar los parámetros con los que se ejcutará el evento.
         this.parametros = new Gson().fromJson(parametros, new TypeToken<Map<String, Object>>(){}.getType());
         
         // Obtener el nombre de la página del sitio web que está realizando la petición.
-        this.pagina = !getUtil().esVacio(StringUtils.substringAfter(url, ":@:")) ? StringUtils.substringAfter(url, ":@:") : "";
+        this.pagina = !esVacio(StringUtils.substringAfter(url, ":@:")) ? StringUtils.substringAfter(url, ":@:") : "";
         
         // Obtener el código del idioma en el que se desplegará la página, si no existe el código
         // se desplegará por defecto en idioma español (ES).        
@@ -92,79 +95,11 @@ public class Eventos implements Callable<String> {
         
         this.validacionExitosa = true;
         
+        this.proveedorCassandra = ProveedorCassandra.getInstance();
+        
     }
     
-    public String getSitioWeb() {
-        return sitioWeb;
-    }
-
-    public String getPagina() {
-        return pagina;
-    }
-
-    public String getIdioma() {
-        return idioma;
-    }
-
-    public String getNombreEvento() {
-        return nombreEvento;
-    }
-
-    private Map<String, Object> getParametros() {
-        return parametros;
-    }
-
-    public void setParametros(Map<String, Object> parametros) {
-        this.parametros = parametros;
-    }
     
-    public void setParametros(String nombreParametro, Object valorParametro) {
-        this.parametros.put(nombreParametro, valorParametro);
-    }
-    
-    public static void setSentenciasPreparadas() {
-        synchronized (Eventos.class) {
-            if (null == sentenciasPreparadas) {
-                sentenciasPreparadas = new HashMap<String, PreparedStatement>();
-                sentenciasPreparadas.put("SentenciaTransacciones", getSesionBD().prepare(Constantes.SENTENCIA_TRANSACCIONES.getString()));
-                //sentenciasPreparadas.put("SentenciaFormularios", getSesionBD().prepare(Constantes.SENTENCIA_FORMULARIOS.getString()));
-                //sentenciasPreparadas.put("SentenciaSentenciasCql", getSesionBD().prepare(Constantes.SENTENCIA_SENTENCIAS_CQL.getString()));
-                sentenciasPreparadas.put("SentenciaValidacionesEvento", getSesionBD().prepare(Constantes.SENTENCIA_VALIDACIONES_EVENTO.getString()));
-            }
-        }
-    }
-
-    public Map<String, PreparedStatement> getSentenciasPreparadas() {
-        return sentenciasPreparadas;
-    }
-
-    public static void setSesionBD() throws Exception {
-        sesionBD = Fabrica.conectar();
-    }
-
-    public static Session getSesionBD() {
-        return sesionBD;
-    }
-
-    private Utilidades getUtil() {
-        return util;
-    }
-    
-    private void setValidacionExitosa(boolean validacionExitosa) {
-        this.validacionExitosa = validacionExitosa;
-    }
-
-    private boolean isValidacionExitosa() {
-        return validacionExitosa;
-    }
-    
-    public List<Row> getCamposFormularioEvento() {
-		return camposFormularioEvento;
-	}
-
-	public void setCamposFormularioEvento(List<Row> camposFormularioEvento) {
-		this.camposFormularioEvento = camposFormularioEvento;
-	}
     
     @Override
     public String call() {
@@ -190,14 +125,13 @@ public class Eventos implements Callable<String> {
         ExecutorService ejecucionParalelaValidaciones = Executors.newFixedThreadPool(10);
 
         try {
-
-            PreparedStatement sentenciaValidacionesEvento = getSentenciasPreparadas().get("SentenciaValidacionesEvento");
             
-            List<Row> camposFormularioEvento = getSesionBD().execute(sentenciaValidacionesEvento.bind(getSitioWeb(), getPagina(), getNombreEvento())).all();
+            List<Row> camposFormularioEvento = getProveedorCassandra().obtenerDataSet(Constantes.SNT_VALIDACIONES_EVENTO.getString(), getSitioWeb(), getPagina(), getNombreEvento());
 
             // Si no se encontraron campos para la ejecución de este evento significa que no los necesita.
-            if (camposFormularioEvento.isEmpty())
+            if (camposFormularioEvento.isEmpty()) {
                 return true;
+            }
 
             // Validar si el evento posee campos y validar que existan los parámetros que necesitan dichos campos para su ejecución.
             if (!camposFormularioEvento.isEmpty() && getParametros().isEmpty())
@@ -251,7 +185,7 @@ public class Eventos implements Callable<String> {
         try {
 
             // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-            transacciones = getSesionBD().execute(getSentenciasPreparadas().get("SentenciaTransacciones").bind(getSitioWeb(), getPagina(), getNombreEvento())).all();
+            transacciones = getProveedorCassandra().obtenerDataSet(Constantes.SNT_TRANSACCIONES.getString(), getSitioWeb(), getPagina(), getNombreEvento());
 
             // Validar que el evento existe.
             if (transacciones.isEmpty()) 
@@ -279,14 +213,7 @@ public class Eventos implements Callable<String> {
         
         return resultadoEvento.toString();
 
-    }// ejecutarEvento
-    
-    
-    // ================ CLASE Validaciones ================ //
-    
-
-
-    // ================ CLASE Transacciones =============== //
+    }
     
     
     
@@ -313,11 +240,9 @@ public class Eventos implements Callable<String> {
 
         try {
             
-            Utilidades u = new Utilidades();
-            
             // Obtener los campos que contiene la sentencia CQL.
             StringBuilder sentenciaCQL = new StringBuilder("SELECT clausula, campo FROM diewebsiten.sentencias_cql WHERE sitioweb = ? AND pagina = ? AND tipotransaccion = ? AND transaccion = ?");
-            List<Row> camposSentencia = getSesionBD().execute(getSesionBD().prepare(sentenciaCQL.toString()).bind(sitioWeb, pagina, tipoSentencia, transaccion)).all();
+            List<Row> camposSentencia = getProveedorCassandra().obtenerDataSet(sentenciaCQL.toString(), sitioWeb, pagina, tipoSentencia, transaccion);
 
             // Validar que los campos del formulario existen.
             if (camposSentencia.isEmpty()) {
@@ -328,7 +253,7 @@ public class Eventos implements Callable<String> {
             }
 
             // Que la sentencia CQL sea de tipo válido.
-            if (!u.contienePalabra(tipoSentencia, "SELECT,UPDATE,INSERT,DELETE")) {
+            if (!contienePalabra(tipoSentencia, "SELECT,UPDATE,INSERT,DELETE")) {
                 sentenciaCQL = new StringBuilder("La transacción '" + transaccion + "' de la página '" + pagina + "' del sitio web '" + sitioWeb + "' " 
                              + "tiene un tipo de transacción no válido: '" + tipoSentencia + "'. "
                              + "Los tipos de transacción válidos son: SELECT, UPDATE, INSERT o DELETE.");
@@ -370,7 +295,7 @@ public class Eventos implements Callable<String> {
                         clausulas.put(campo.getString("clausula"), clausulas.get("clausula") + " AND " + campo.getString("campo") + " = ?");
                         clausulas.put("VALUES", "?");
                     // {"SET" : "campo1 = ?"} | {"WHERE" : "campo1 = ?"}
-                    } else if (u.contienePalabra(campo.getString("clausula"), "SET,WHERE")) {
+                    } else if (contienePalabra(campo.getString("clausula"), "SET,WHERE")) {
                         clausulas.put(campo.getString("clausula"), campo.getString("campo") + " = ?");                        
                     }
                 }              
@@ -398,4 +323,57 @@ public class Eventos implements Callable<String> {
         
     }// generarSentenciasCQL
     
+    
+    
+    
+    
+    
+    
+    public String getSitioWeb() {
+        return sitioWeb;
+    }
+
+    public String getPagina() {
+        return pagina;
+    }
+
+    public String getIdioma() {
+        return idioma;
+    }
+
+    public String getNombreEvento() {
+        return nombreEvento;
+    }
+
+    private Map<String, Object> getParametros() {
+        return parametros;
+    }
+
+    public void setParametros(Map<String, Object> parametros) {
+        this.parametros = parametros;
+    }
+    
+    public void setParametros(String nombreParametro, Object valorParametro) {
+        this.parametros.put(nombreParametro, valorParametro);
+    }
+    
+    private void setValidacionExitosa(boolean validacionExitosa) {
+        this.validacionExitosa = validacionExitosa;
+    }
+
+    private boolean isValidacionExitosa() {
+        return validacionExitosa;
+    }
+    
+    public List<Row> getCamposFormularioEvento() {
+		return camposFormularioEvento;
+	}
+
+	public void setCamposFormularioEvento(List<Row> camposFormularioEvento) {
+		this.camposFormularioEvento = camposFormularioEvento;
+	}
+	
+	private ProveedorCassandra getProveedorCassandra() {
+		return this.proveedorCassandra;
+	}
 }

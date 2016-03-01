@@ -1,6 +1,7 @@
 package com.diewebsiten.core.negocio;
 
 import com.datastax.driver.core.PreparedStatement;
+import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
 import com.diewebsiten.core.negocio.eventos.Eventos;
 import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
@@ -154,7 +155,7 @@ public class probarFabrica {
         } catch (Exception e) {
             Log.getInstance().imprimirErrorEnLog(e);
         } finally {
-            Fabrica.cerrarConexion();
+            ProveedorCassandra.cerrarConexion();
         }
         
     }
