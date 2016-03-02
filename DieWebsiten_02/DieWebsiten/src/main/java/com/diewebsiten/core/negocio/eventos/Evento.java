@@ -39,7 +39,7 @@ import com.google.gson.reflect.TypeToken;
  *
  * @author Juan Camilo Flórez Román (www.diewebstien.com).
  */
-public class Eventos implements Callable<String> {
+public class Evento implements Callable<String> {
     
     private String sitioWeb;
     private String pagina;
@@ -65,7 +65,7 @@ public class Eventos implements Callable<String> {
      * @return String de tipo JSON con la respuesta de cada transacción que contiene el evento.
      * @throws java.lang.Exception
      */
-    public Eventos(String url, String nombreEvento, String parametros) throws Exception {
+    public Evento(String url, String nombreEvento, String parametros) throws Exception {
 
         //util = new Utilidades();
         
@@ -126,7 +126,7 @@ public class Eventos implements Callable<String> {
 
         try {
             
-            List<Row> camposFormularioEvento = getProveedorCassandra().obtenerDataSet(Constantes.SNT_VALIDACIONES_EVENTO.getString(), getSitioWeb(), getPagina(), getNombreEvento());
+            List<Row> camposFormularioEvento = getProveedorCassandra().consultar(Constantes.SNT_VALIDACIONES_EVENTO.getString(), getSitioWeb(), getPagina(), getNombreEvento());
 
             // Si no se encontraron campos para la ejecución de este evento significa que no los necesita.
             if (camposFormularioEvento.isEmpty()) {
@@ -180,12 +180,12 @@ public class Eventos implements Callable<String> {
         
     	JsonObject resultadoEvento = new JsonObject();
         ExecutorService ejecucionParalelaTransacciones = Executors.newFixedThreadPool(10);
-        List<Row> transacciones;
+        List<?> transacciones;
         
         try {
 
             // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-            transacciones = getProveedorCassandra().obtenerDataSet(Constantes.SNT_TRANSACCIONES.getString(), getSitioWeb(), getPagina(), getNombreEvento());
+            transacciones = getProveedorCassandra().consultar(Constantes.SNT_TRANSACCIONES.getString(), getSitioWeb(), getPagina(), getNombreEvento());
 
             // Validar que el evento existe.
             if (transacciones.isEmpty()) 
@@ -194,7 +194,7 @@ public class Eventos implements Callable<String> {
             List<Future<Void>> grupoEjecucionTransacciones = new ArrayList<Future<Void>>();
             
             for (Row transaccion : transacciones) {                
-                grupoEjecucionTransacciones.add(ejecucionParalelaTransacciones.submit(new Transacciones(transaccion, resultadoEvento)));                
+                grupoEjecucionTransacciones.add(ejecucionParalelaTransacciones.submit(new Transacciones(transaccion, resultadoEvento, this)));                
             }
             
             //StringBuilder resultadoTransacciones = new StringBuilder();            
@@ -242,7 +242,7 @@ public class Eventos implements Callable<String> {
             
             // Obtener los campos que contiene la sentencia CQL.
             StringBuilder sentenciaCQL = new StringBuilder("SELECT clausula, campo FROM diewebsiten.sentencias_cql WHERE sitioweb = ? AND pagina = ? AND tipotransaccion = ? AND transaccion = ?");
-            List<Row> camposSentencia = getProveedorCassandra().obtenerDataSet(sentenciaCQL.toString(), sitioWeb, pagina, tipoSentencia, transaccion);
+            List<Row> camposSentencia = getProveedorCassandra().consultar(sentenciaCQL.toString(), sitioWeb, pagina, tipoSentencia, transaccion);
 
             // Validar que los campos del formulario existen.
             if (camposSentencia.isEmpty()) {
@@ -373,7 +373,7 @@ public class Eventos implements Callable<String> {
 		this.camposFormularioEvento = camposFormularioEvento;
 	}
 	
-	private ProveedorCassandra getProveedorCassandra() {
+	public ProveedorCassandra getProveedorCassandra() {
 		return this.proveedorCassandra;
 	}
 }

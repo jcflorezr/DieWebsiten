@@ -1,7 +1,7 @@
 
 package com.diewebsiten.core.util;
 
-import com.diewebsiten.core.negocio.eventos.Eventos;
+import com.diewebsiten.core.negocio.eventos.Evento;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -18,7 +18,7 @@ public class Log {
     
     private Logger logger;
     private static Log log;
-    private Eventos evento;
+    private Evento evento;
 
     /**
      * Devuelve una instancia única de la clase que implementa el Log de la aplicación
@@ -30,7 +30,7 @@ public class Log {
         return log;
     } //getInstance
     
-    public static synchronized Log getInstance(Eventos t) {
+    public static synchronized Log getInstance(Evento t) {
         if (log == null) 
             log = new Log();            
         log.evento = t;

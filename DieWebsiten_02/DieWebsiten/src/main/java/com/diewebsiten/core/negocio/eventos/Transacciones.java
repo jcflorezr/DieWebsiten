@@ -16,11 +16,13 @@ import com.google.gson.JsonObject;
 class Transacciones implements Callable<Void> {
     
     private final Row transaccion;
-    private JsonObject resultadoEvento; 
+    private JsonObject resultadoEvento;
+    private Evento evento;
     
-    Transacciones (Row transaccion, JsonObject resultadoEvento) {
+    Transacciones (Row transaccion, JsonObject resultadoEvento, Evento evento) {
         this.transaccion = transaccion;
         this.resultadoEvento = resultadoEvento;
+        this.evento = evento;
     }
 
     /* (non-Javadoc)
@@ -90,16 +92,17 @@ class Transacciones implements Callable<Void> {
         
         // preparar las sentencias de cada transaccion
         synchronized (Transacciones.class) {
-            if (null == getSentenciasPreparadas().get(nombreTransaccion)) {
-                getSentenciasPreparadas().put(nombreTransaccion, getSesionBD().prepare(sentenciaCQL));
-            }
-        }                       
-
-        // Ejecutar la sentencia CQL de la transacción.
-        ResultSet rs = getSesionBD().execute(getSentenciasPreparadas().get(nombreTransaccion).bind(valoresSentencia.toArray()));
+        	getEvento().getProveedorCassandra().agregarSentenciaPreparada(nombreTransaccion, sentenciaCQL);
+        }
+        
+//        // Ejecutar la sentencia CQL de la transacción.
+//        ResultSet rs = getSesionBD().execute(getSentenciasPreparadas().get(nombreTransaccion).bind(valoresSentencia.toArray()));
+//        
+//        // Obtener los resultados de la transacción.
+//        List<Row> resultadoTransaccionActual = rs.all();
         
         // Obtener los resultados de la transacción.
-        List<Row> resultadoTransaccionActual = rs.all();
+        List<Row> resultadoTransaccionActual = getEvento().getProveedorCassandra().consultar(nombreTransaccion, valoresSentencia.toArray());
         
         // Obtener los nombres de las columnas que contiene la transacción.
         List<ColumnDefinitions.Definition> columnas = rs.getColumnDefinitions().asList();
@@ -116,7 +119,8 @@ class Transacciones implements Callable<Void> {
             
         }                    
              
-        //return resultadoTransaccion; 
+        // Es necesario retornar null debido a que este método es de tipo Void en vez de void. Esto es debido a que 
+        // este metodo se ejecuta por varios hilos al mismo tiempo
         return null;
         
     }
@@ -220,5 +224,19 @@ class Transacciones implements Callable<Void> {
         }
         
     }
+
+	private Evento getEvento() {
+		return evento;
+	}
+
+	private void setEvento(Evento evento) {
+		this.evento = evento;
+	}
+    
+    
+    
+    
+    
+    
     
 }

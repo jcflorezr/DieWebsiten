@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.ServletSecurityElement;
+
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
@@ -17,7 +19,7 @@ import com.diewebsiten.core.util.Constantes;
  *
  * @author Juan Camilo Flórez Román (www.diewebsiten.com)
  */
-public class ProveedorCassandra extends ProveedorBaseDeDatos {
+public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
     private static ProveedorCassandra proveedorCassandra;
 	private Cluster cluster;
@@ -83,7 +85,8 @@ public class ProveedorCassandra extends ProveedorBaseDeDatos {
      * @throws ExcepcionGenerica en caso de que el nombre de la sentencia no coincida con 
      * 							 ninguna de las sentencias existentes
      */
-    public List<Row> obtenerDataSet(String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
+    @Override
+    public List<?> consultar(String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
     	PreparedStatement sentenciaPreparada = getSentenciasPreparadas().get(nombreSentencia);
     	if (sentenciaPreparada == null) {
     		throw new ExcepcionGenerica("No se puede ejecutar la sentencia '" + nombreSentencia + "' porque no existe.");
@@ -94,6 +97,22 @@ public class ProveedorCassandra extends ProveedorBaseDeDatos {
     	}
     }
     
+    public List<?> consultar(boolean metadata, String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
+    	PreparedStatement sentenciaPreparada = getSentenciasPreparadas().get(nombreSentencia);
+    	if (sentenciaPreparada == null) {
+    		throw new ExcepcionGenerica("No se puede ejecutar la sentencia '" + nombreSentencia + "' porque no existe.");
+    	} else if (parametros.length == 0) {
+    		return getSesion().execute(sentenciaPreparada.getQueryString()).all();
+    	} else {
+    		return getSesion().execute(sentenciaPreparada.bind(parametros)).all();
+    	}
+    }
+    
+    private List<Row> retornarResultSet () {
+    	
+    }
+    
+    private List<Column.>
     
     // =============================
     // ==== Getters and Setters ====
@@ -102,6 +121,13 @@ public class ProveedorCassandra extends ProveedorBaseDeDatos {
 
     public Map<String, PreparedStatement> getSentenciasPreparadas() {
         return sentenciasPreparadas;
+    }
+    
+    public void agregarSentenciaPreparada(String nombreSentencia, String sentencia) {
+    	PreparedStatement sentenciasPreparadas = getSentenciasPreparadas().get(nombreSentencia);
+        if (null == sentenciasPreparadas) {
+            getSentenciasPreparadas().put(nombreSentencia, getSesion().prepare(sentencia));
+        }
     }
     
     private Session getSesion() {

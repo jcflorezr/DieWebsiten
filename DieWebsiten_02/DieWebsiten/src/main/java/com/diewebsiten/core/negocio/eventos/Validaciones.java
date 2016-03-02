@@ -11,11 +11,11 @@ import com.diewebsiten.core.util.Constantes;
 class Validaciones implements Callable<Boolean> {
     
     private final Row campo;
-    private ProveedorCassandra proveedorCassandra;
+    private Evento evento;
     
-    public Validaciones(Row campo) {            
+    public Validaciones(Row campo, Evento evento) {            
         this.campo = campo;
-        this.proveedorCassandra = ProveedorCassandra.getInstance();
+        this.evento = evento;
     }
     
     /**
@@ -36,7 +36,7 @@ class Validaciones implements Callable<Boolean> {
         String grupoValidacionesCampoActual = campo.getString("grupovalidacion");
         StringBuilder sentencia = new StringBuilder("SELECT grupo, tipo, validacion FROM diewebsiten.grupos_validaciones WHERE grupo = '").append(grupoValidacionesCampoActual).append("'");
         
-        List<Row> grupoValidacion = getProveedorCassandra().obtenerDataSet(sentencia.toString());
+        List<Row> grupoValidacion = getEvento().getProveedorCassandra().consultar(sentencia.toString());
 
         // Validar que existen las validaciones del grupo.
         if (grupoValidacion.isEmpty())
@@ -71,8 +71,8 @@ class Validaciones implements Callable<Boolean> {
     
     
     
-    private ProveedorCassandra getProveedorCassandra() {
-		return this.proveedorCassandra;
+    private Evento getEvento() {
+		return this.evento;
 	}
     
 }

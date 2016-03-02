@@ -2,7 +2,7 @@ package com.diewebsiten.core.negocio;
 
 import com.datastax.driver.core.PreparedStatement;
 import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
-import com.diewebsiten.core.negocio.eventos.Eventos;
+import com.diewebsiten.core.negocio.eventos.Evento;
 import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
 import com.diewebsiten.core.util.Utilidades;
@@ -115,8 +115,8 @@ public class probarFabrica {
             */
 
 
-            Eventos.setSesionBD();
-            Eventos.setSentenciasPreparadas();
+            Evento.setSesionBD();
+            Evento.setSentenciasPreparadas();
             
             ExecutorService ejecucionEventos = Executors.newFixedThreadPool(10);
             
@@ -126,13 +126,13 @@ public class probarFabrica {
             
             
             
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", parametros1)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
             
             
             for (Future<String> evento : grupoEventos) {
