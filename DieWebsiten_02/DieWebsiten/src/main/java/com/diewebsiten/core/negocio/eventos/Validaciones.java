@@ -7,6 +7,7 @@ import com.datastax.driver.core.Row;
 import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Constantes;
+import com.diewebsiten.core.util.Utilidades;
 
 class Validaciones implements Callable<Boolean> {
     
@@ -40,27 +41,23 @@ class Validaciones implements Callable<Boolean> {
 
         // Validar que existen las validaciones del grupo.
         if (grupoValidacion.isEmpty())
-            throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.VALIDACIONES_NO_EXISTEN.getMensaje(getSitioWeb(), getPagina(), getNombreEvento()));            
+            throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.VALIDACIONES_NO_EXISTEN.getMensaje(getEvento().getSitioWeb(), getEvento().getPagina(), getEvento().getNombreEvento()));            
+        
+        Utilidades util = new Utilidades();
         
         for (Row grupo : grupoValidacion) {
             Object valorParametroActual = getEvento().getParametros().get(nombreCampoActual);
             if (grupo.getString("tipo").equals(Constantes.VALIDACION.getString())) {                
-                //for (String validacion : grupoValidacion.get(0).getSet("validaciones", String.class)) {
-                    List<String> resVal = validarParametro(grupo.getString("validacion"), valorParametroActual);
-                    if (!resVal.isEmpty()) {
-                    	getEvento().setParametros(nombreCampoActual, resVal);
-                        return false;
-                    }
-                //}
+                List<String> resVal = util.validarParametro(grupo.getString("validacion"), valorParametroActual);
+                if (!resVal.isEmpty()) {
+                	getEvento().setParametros(nombreCampoActual, resVal);
+                    return false;
+                }
             } else {                
-                //if (!grupoValidacion.get(0).isNull("transformaciones")) {
-                    //for (String transformacion : grupoValidacion.get(0).getSet("transformaciones", String.class)) {
-                        Object resTrans = transformarParametro(grupo.getString("validacion"), valorParametroActual);
-                        if (null == resTrans)
-                            throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.TRANSFORMACION_FALLIDA.getMensaje(nombreCampoActual, getEvento().getNombreEvento(), (String)valorParametroActual, grupo.getString("validacion")));
-                        getEvento().setParametros(nombreCampoActual, resTrans);
-                    //}
-                //}
+                Object resTrans = util.transformarParametro(grupo.getString("validacion"), valorParametroActual);
+                if (null == resTrans)
+                    throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.TRANSFORMACION_FALLIDA.getMensaje(nombreCampoActual, getEvento().getNombreEvento(), (String)valorParametroActual, grupo.getString("validacion")));
+                getEvento().setParametros(nombreCampoActual, resTrans);
             }
         }
 

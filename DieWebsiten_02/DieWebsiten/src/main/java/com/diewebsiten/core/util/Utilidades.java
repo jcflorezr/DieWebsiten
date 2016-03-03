@@ -100,8 +100,8 @@ public class Utilidades {
      * @param parametro
      * @return
      */
-    public static boolean esAlfanumerico(Object parametro) {
-    	return isAlphanumeric(parametro.toString());
+    public static boolean esAlfanumerico(String parametro) {
+    	return isAlphanumeric(parametro);
     }
     
     /**
@@ -109,8 +109,8 @@ public class Utilidades {
      * @param parametro
      * @return
      */
-    public static boolean esAlfanumericoConEspacios(Object parametro) {
-    	return isAlphanumericSpace(parametro.toString());
+    public static boolean esAlfanumericoConEspacios(String parametro) {
+    	return isAlphanumericSpace(parametro);
     }
     
     /**
@@ -118,8 +118,8 @@ public class Utilidades {
      * @param parametro
      * @return
      */
-    public static boolean esNumerico(Object parametro) {
-    	return isNumeric(parametro.toString());
+    public static boolean esNumerico(String parametro) {
+    	return isNumeric(parametro);
     }
     
     /**
@@ -127,8 +127,8 @@ public class Utilidades {
      * @param parametro
      * @return
      */
-    public static boolean esNumericoConEspacios(Object parametro) {
-    	return isNumericSpace(parametro.toString());
+    public static boolean esNumericoConEspacios(String parametro) {
+    	return isNumericSpace(parametro);
     }
     
     /**
@@ -136,8 +136,8 @@ public class Utilidades {
      * @param parametro
      * @return
      */
-    public static boolean esCaracter(Object parametro) {
-    	return isAlpha(parametro.toString());
+    public static boolean esCaracter(String parametro) {
+    	return isAlpha(parametro);
     }
     
     /**
@@ -145,8 +145,8 @@ public class Utilidades {
      * @param parametro
      * @return
      */
-    public static boolean esCaracterConEspacios(Object parametro) {
-    	return isAlphaSpace(parametro.toString());
+    public static boolean esCaracterConEspacios(String parametro) {
+    	return isAlphaSpace(parametro);
     }
     
     /**
@@ -154,8 +154,8 @@ public class Utilidades {
      * @param parametro
      * @return
      */
-    public static boolean esEmailValido(Object parametro) {
-    	return EmailValidator.getInstance().isValid(parametro.toString());
+    public static boolean esEmailValido(String parametro) {
+    	return EmailValidator.getInstance().isValid(parametro);
     }
     
     /**
@@ -163,8 +163,8 @@ public class Utilidades {
      * @param parametro
      * @return
      */
-    public static boolean esFechaHora(Object parametro) {
-    	return DateValidator.getInstance().isValid(parametro.toString(), "yyyy-MM-dd HH:mm:ss");
+    public static boolean esFechaHora(String parametro) {
+    	return DateValidator.getInstance().isValid(parametro, "yyyy-MM-dd HH:mm:ss");
     }
     
     /**
@@ -172,8 +172,8 @@ public class Utilidades {
      * @param parametro
      * @return
      */
-    public static boolean esDireccionUrl(Object parametro) {
-    	return UrlValidator.getInstance().isValid(parametro.toString());
+    public static boolean esDireccionUrl(String parametro) {
+    	return UrlValidator.getInstance().isValid(parametro);
     }
     
     /**
@@ -181,8 +181,8 @@ public class Utilidades {
      * @param parametro
      * @return
      */
-    public static boolean esDominioSitioWeb(Object parametro) {
-    	return parametro.toString().matches("[a-z0-9._-]+");
+    public static boolean esDominioSitioWeb(String parametro) {
+    	return parametro.matches("[a-z0-9._-]+");
     }
     
     /**
@@ -190,8 +190,8 @@ public class Utilidades {
      * @param parametro
      * @return
      */
-    public static boolean esNumericoConPuntos(Object parametro) {
-    	return parametro.toString().matches("[.]+");
+    public static boolean esNumericoConPuntos(String parametro) {
+    	return parametro.matches("[.]+");
     }
     
     
@@ -199,7 +199,7 @@ public class Utilidades {
 
     @SuppressWarnings("fallthrough")
     public List<String> validarParametro(String nombreValidacion, Object parametro) throws Exception {
-        Thread.sleep(1000);
+        //Thread.sleep(1000);
         List<String> resultadoValidacion = new ArrayList<String>();
         
        if (esVacio(nombreValidacion))
@@ -214,57 +214,57 @@ public class Utilidades {
        
            case V_ALFANUMERICO_CON_ESPACIOS:            
                // Validar que el campo actual sea alfanumérico y sin espacios en blanco.
-               if (!esAlfanumerico(parametro))
+               if (!esAlfanumerico((String) parametro))
                    resultadoValidacion.add("Campo alfanumerico sin espacios en blanco. Ejemplo: JuaN123");
            break;        
            case V_ALFANUMERICO_SIN_ESPACIOS:                
                // Validar que el campo actual sea alfanumérico y con espacios en blanco.
-               if (!esAlfanumericoConEspacios(parametro))
+               if (!esAlfanumericoConEspacios((String) parametro))
                    resultadoValidacion.add("Campo alfanumerico con posibles espacios en blanco. Ejemplo: JuaN 123 456");
            break;        
            case V_NUMERICO_SIN_ESPACIOS:                
                // Validar que el campo actual sea numérico y sin espacios en blanco.
-               if (!esNumerico(parametro))
+               if (!esNumerico((String) parametro))
                    resultadoValidacion.add("Campo numérico sin espacios en blanco. Ejemplo: 123456");
            break;                
            case V_NUMERICO_CON_ESPACIOS:                
                // Validar que el campo actual sea numérico y con espacios en blanco.
-               if (!esNumericoConEspacios(parametro))
+               if (!esNumericoConEspacios((String) parametro))
                    resultadoValidacion.add("Campo numérico con posibles espacios en blanco. Ejemplo: 123 456 789");
            break;        
            case V_CARACTER_SIN_ESPACIOS:                
                // Validar que el campo actual sea de caracteres y sin espacios en blanco.
-               if (!esCaracter(parametro))
+               if (!esCaracter((String) parametro))
                    resultadoValidacion.add("Campo caracter sin espacios en blanco. Ejemplo: abcDEF");
            break;                    
            case V_CARACTER_CON_ESPACIOS:                
                // Validar que el campo actual sea de caracteres y sin espacios en blanco.
-               if (!esCaracterConEspacios(parametro)) 
+               if (!esCaracterConEspacios((String) parametro)) 
                    resultadoValidacion.add("Campo caracter con posibles espacios en blanco. Ejemplo: abc DEF hg");
            break;        
            case V_EMAIL:                
                // Validar que el campo actual sea una dirección de correo electrónico válida.
-               if (!esEmailValido(parametro))
+               if (!esEmailValido((String) parametro))
                    resultadoValidacion.add("Dirección de correo electrónico no válida");
            break;                    
            case V_FECHAHORA:                
                // Validar que el campo actual sea una cadena con formato fecha y hora.
-               if (!esFechaHora(parametro))
+               if (!esFechaHora((String) parametro))
                    resultadoValidacion.add("Formato de fecha y hora no válido. Formato esperado: aaaa-MM-dd HH:mm:ss");
            break;                    
            case V_URL:                
                // Validar que el campo actual sea una dirección url.
-               if (!esDireccionUrl(parametro))
+               if (!esDireccionUrl((String) parametro))
                    resultadoValidacion.add("Dirección url no válida");
            break;            
            case V_DOMINIO:                
                // Validar que el campo actual sea un nombre de un dominio de un sitio web.
-               if (!esDominioSitioWeb(parametro))
+               if (!esDominioSitioWeb((String) parametro))
                    resultadoValidacion.add("El campo sólo acepta números (0-9), letras en minúscula (a-z), puntos (.) o guiones (_-)");
            break;
            case V_PUNTO:                
                // 
-               if (!esNumericoConPuntos(parametro))
+               if (!esNumericoConPuntos((String) parametro))
                    resultadoValidacion.add("El campo sólo debe tener números (0-9) y puntos (.). Ejemplo: 1.5.8");
            break;
            default:
@@ -273,14 +273,14 @@ public class Utilidades {
        }
        
        if (!resultadoValidacion.isEmpty()) 
-           resultadoValidacion.add(parametro.toString());
+           resultadoValidacion.add((String) parametro);
            
        return resultadoValidacion;
         
     }    
     
     public Object transformarParametro (String nombreTransformacion, Object parametro) throws Exception {
-        Thread.sleep(1000);
+        //Thread.sleep(1000);
         if (esVacio(parametro) || esVacio(nombreTransformacion))
             throw new Exception("No se puede hacer una validacion con valores nulos. Nombre Validación: " + nombreTransformacion + ". Parámetro : " + parametro);
                 
