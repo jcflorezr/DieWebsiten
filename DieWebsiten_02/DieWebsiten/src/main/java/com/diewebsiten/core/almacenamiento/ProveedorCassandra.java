@@ -7,7 +7,9 @@ import java.util.Map;
 import javax.servlet.ServletSecurityElement;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
@@ -86,33 +88,37 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * 							 ninguna de las sentencias existentes
      */
     @Override
-    public List<?> consultar(String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
+    public List<Row> consultar(String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
+    	return retornarResultSet(null, nombreSentencia, parametros);
+    }
+    
+    /**
+     * 
+     * @param metadata
+     * @param nombreSentencia
+     * @param parametros
+     * @return
+     * @throws ExcepcionGenerica
+     */
+    public List<Row> consultar(List<ColumnDefinitions.Definition> metadata, String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
+    	return retornarResultSet(metadata, nombreSentencia, parametros);
+    }
+    
+    private List<Row> retornarResultSet (List<ColumnDefinitions.Definition> metadata, String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
     	PreparedStatement sentenciaPreparada = getSentenciasPreparadas().get(nombreSentencia);
+    	ResultSet resultSet;
     	if (sentenciaPreparada == null) {
     		throw new ExcepcionGenerica("No se puede ejecutar la sentencia '" + nombreSentencia + "' porque no existe.");
     	} else if (parametros.length == 0) {
-    		return getSesion().execute(sentenciaPreparada.getQueryString()).all();
+    		resultSet = getSesion().execute(sentenciaPreparada.getQueryString());
     	} else {
-    		return getSesion().execute(sentenciaPreparada.bind(parametros)).all();
+    		resultSet = getSesion().execute(sentenciaPreparada.bind(parametros));
     	}
-    }
-    
-    public List<?> consultar(boolean metadata, String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
-    	PreparedStatement sentenciaPreparada = getSentenciasPreparadas().get(nombreSentencia);
-    	if (sentenciaPreparada == null) {
-    		throw new ExcepcionGenerica("No se puede ejecutar la sentencia '" + nombreSentencia + "' porque no existe.");
-    	} else if (parametros.length == 0) {
-    		return getSesion().execute(sentenciaPreparada.getQueryString()).all();
-    	} else {
-    		return getSesion().execute(sentenciaPreparada.bind(parametros)).all();
+    	if (metadata != null) {
+    		metadata = resultSet.getColumnDefinitions().asList();
     	}
+    	return resultSet.all();
     }
-    
-    private List<Row> retornarResultSet () {
-    	
-    }
-    
-    private List<Column.>
     
     // =============================
     // ==== Getters and Setters ====

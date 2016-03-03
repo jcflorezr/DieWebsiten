@@ -95,17 +95,10 @@ class Transacciones implements Callable<Void> {
         	getEvento().getProveedorCassandra().agregarSentenciaPreparada(nombreTransaccion, sentenciaCQL);
         }
         
-//        // Ejecutar la sentencia CQL de la transacción.
-//        ResultSet rs = getSesionBD().execute(getSentenciasPreparadas().get(nombreTransaccion).bind(valoresSentencia.toArray()));
-//        
-//        // Obtener los resultados de la transacción.
-//        List<Row> resultadoTransaccionActual = rs.all();
+        List<ColumnDefinitions.Definition> columnas = new ArrayList<>();
         
         // Obtener los resultados de la transacción.
-        List<Row> resultadoTransaccionActual = getEvento().getProveedorCassandra().consultar(nombreTransaccion, valoresSentencia.toArray());
-        
-        // Obtener los nombres de las columnas que contiene la transacción.
-        List<ColumnDefinitions.Definition> columnas = rs.getColumnDefinitions().asList();
+        List<Row> resultadoTransaccionActual = getEvento().getProveedorCassandra().consultar(columnas, nombreTransaccion, valoresSentencia.toArray());
         
         if (tipoTransaccion.equals("SELECT")) {
         	
