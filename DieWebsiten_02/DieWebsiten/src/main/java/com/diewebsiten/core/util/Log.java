@@ -124,13 +124,13 @@ public class Log {
                 return;
             }
             
-            log.error("----------------------------------- ERROR -----------------------------------------");
-            
-            if (null != log.evento) {
-                log.error("SITIO WEB: " + log.evento.getSitioWeb());
-                log.error("PÁGINA: " + log.evento.getPagina());
-                log.error("EVENTO: " + log.evento.getNombreEvento());
-            }
+//            log.error("----------------------------------- ERROR -----------------------------------------");
+//            
+//            if (null != log.evento) {
+//                log.error("SITIO WEB: " + log.evento.getSitioWeb());
+//                log.error("PÁGINA: " + log.evento.getPagina());
+//                log.error("EVENTO: " + log.evento.getNombreEvento());
+//            }
             log.error("EXCEPCIÓN --> " + tipoExcepcion);
             log.error("MENSAJE   --> " + t.getMessage());
 

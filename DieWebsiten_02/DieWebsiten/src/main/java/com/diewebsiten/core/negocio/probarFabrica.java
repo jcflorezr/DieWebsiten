@@ -5,7 +5,7 @@ import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
 import com.diewebsiten.core.negocio.eventos.Evento;
 import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
-import com.diewebsiten.core.util.Utilidades;
+import com.diewebsiten.core.util.UtilidadTransformaciones;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -115,8 +115,8 @@ public class probarFabrica {
             */
 
 
-            Evento.setSesionBD();
-            Evento.setSentenciasPreparadas();
+            //Evento.setSesionBD();
+            //Evento.setSentenciasPreparadas();
             
             ExecutorService ejecucionEventos = Executors.newFixedThreadPool(10);
             
@@ -155,7 +155,7 @@ public class probarFabrica {
         } catch (Exception e) {
             Log.getInstance().imprimirErrorEnLog(e);
         } finally {
-            ProveedorCassandra.cerrarConexion();
+            //ProveedorCassandra.getInstance().cerrarConexion();
         }
         
     }

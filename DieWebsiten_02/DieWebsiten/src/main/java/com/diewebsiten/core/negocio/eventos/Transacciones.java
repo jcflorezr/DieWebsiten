@@ -6,10 +6,9 @@ import java.util.concurrent.Callable;
 
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import static com.diewebsiten.core.util.Utilidades.*;
+import static com.diewebsiten.core.util.UtilidadValidaciones.*;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -25,12 +24,21 @@ class Transacciones implements Callable<Void> {
         this.evento = evento;
     }
 
-    /* (non-Javadoc)
+    /** 
      * @see java.util.concurrent.Callable#call()
      */
     @Override
     public Void call() throws Exception {
         
+    	return ejecutarTransaccion();
+        
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    private Void ejecutarTransaccion() throws Exception {
     	// Nombre de la transacción.
     	String nombreTransaccion = transaccion.getString("transaccion");
         
@@ -42,12 +50,11 @@ class Transacciones implements Callable<Void> {
         
         // Filtros que se necesitan para ejecutar la transacción.
         List<String> filtrosSentenciaCQL = new ArrayList<String>(transaccion.getList("filtrossentenciacql", String.class));
-        
-        //PreparedStatement sentenciaCql = getSesionBD().prepare(transaccion.getString("sentenciacql"));
       
         // Validar que la sentencia CQL sea de tipo válido.
-        if (!contienePalabra(tipoTransaccion, "SELECT,UPDATE,INSERT,DELETE"))
-            throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(nombreTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb(), tipoTransaccion));
+        if (!contienePalabra(tipoTransaccion, "SELECT,UPDATE,INSERT,DELETE")) {
+			throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(nombreTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb(), tipoTransaccion));
+		}
     
             
         //Thread.sleep(1000);        
@@ -86,8 +93,9 @@ class Transacciones implements Callable<Void> {
             }
             
             // Validar que los filtros necesarios para la sentencia CQL que ejecuta la transacción existen.
-            if (!existe)
-                throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.FILTRO_NO_EXISTE.getMensaje(filtro, nombreTransaccion, tipoTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb()));
+            if (!existe) {
+				throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.FILTRO_NO_EXISTE.getMensaje(filtro, nombreTransaccion, tipoTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb()));
+			}
         }
         
         // preparar las sentencias de cada transaccion
@@ -115,7 +123,6 @@ class Transacciones implements Callable<Void> {
         // Es necesario retornar null debido a que este método es de tipo Void en vez de void. Esto es debido a que 
         // este metodo se ejecuta por varios hilos al mismo tiempo
         return null;
-        
     }
     
     /**
@@ -217,16 +224,13 @@ class Transacciones implements Callable<Void> {
         
     }
     
+    
     // =============================
     // ==== Getters and Setters ====
     // =============================
 
 	private Evento getEvento() {
 		return evento;
-	}
-
-	private void setEvento(Evento evento) {
-		this.evento = evento;
 	}
     
 }

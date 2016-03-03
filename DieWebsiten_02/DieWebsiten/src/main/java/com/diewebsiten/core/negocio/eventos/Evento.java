@@ -2,8 +2,10 @@
 package com.diewebsiten.core.negocio.eventos;
 
 
+import static com.diewebsiten.core.util.UtilidadValidaciones.contienePalabra;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esVacio;
+
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,21 +16,13 @@ import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.datastax.driver.core.ColumnDefinitions;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
-
-import static com.diewebsiten.core.util.Utilidades.*;
-
+import com.diewebsiten.core.util.UtilidadValidaciones;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
@@ -125,7 +119,7 @@ public class Evento implements Callable<String> {
 
         try {
             
-            List<Row> camposFormularioEvento = getProveedorCassandra().consultar(Constantes.SNT_VALIDACIONES_EVENTO.getString(), getSitioWeb(), getPagina(), getNombreEvento());
+            List<Row> camposFormularioEvento = getProveedorCassandra().consultar(Constantes.NMBR_SNT_VALIDACIONES_EVENTO.getString(), getSitioWeb(), getPagina(), getNombreEvento());
 
             // Si no se encontraron campos para la ejecución de este evento significa que no los necesita.
             if (camposFormularioEvento.isEmpty()) {
@@ -143,8 +137,9 @@ public class Evento implements Callable<String> {
             }
 
             for (Future<Boolean> ejecucionValidacionActual : grupoEjecucionValidaciones) {
-                if (!ejecucionValidacionActual.get())
-                    setValidacionExitosa(false);
+                if (!ejecucionValidacionActual.get()) {
+					setValidacionExitosa(false);
+				}
             }
 
             if (!isValidacionExitosa())
@@ -174,7 +169,7 @@ public class Evento implements Callable<String> {
         try {
 
             // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-            transacciones = getProveedorCassandra().consultar(Constantes.SNT_TRANSACCIONES.getString(), getSitioWeb(), getPagina(), getNombreEvento());
+            transacciones = getProveedorCassandra().consultar(Constantes.NMBR_SNT_TRANSACCIONES.getString(), getSitioWeb(), getPagina(), getNombreEvento());
 
             // Validar que el evento existe.
             if (transacciones.isEmpty()) 
@@ -236,7 +231,7 @@ public class Evento implements Callable<String> {
             }
 
             // Que la sentencia CQL sea de tipo válido.
-            if (!contienePalabra(tipoSentencia, "SELECT,UPDATE,INSERT,DELETE")) {
+            if (!UtilidadValidaciones.contienePalabra(tipoSentencia, "SELECT,UPDATE,INSERT,DELETE")) {
                 sentenciaCQL = new StringBuilder("La transacción '" + transaccion + "' de la página '" + pagina + "' del sitio web '" + sitioWeb + "' " 
                              + "tiene un tipo de transacción no válido: '" + tipoSentencia + "'. "
                              + "Los tipos de transacción válidos son: SELECT, UPDATE, INSERT o DELETE.");
@@ -308,23 +303,24 @@ public class Evento implements Callable<String> {
     
     
     
+    // =============================
+    // ==== Getters and Setters ====
+    // =============================
     
     
-    
-    
-    public String getSitioWeb() {
+    String getSitioWeb() {
         return sitioWeb;
     }
 
-    public String getPagina() {
+    String getPagina() {
         return pagina;
     }
 
-    public String getIdioma() {
+    String getIdioma() {
         return idioma;
     }
 
-    public String getNombreEvento() {
+    String getNombreEvento() {
         return nombreEvento;
     }
 
@@ -352,7 +348,7 @@ public class Evento implements Callable<String> {
 		return camposFormularioEvento;
 	}
 
-	public void setCamposFormularioEvento(List<Row> camposFormularioEvento) {
+	void setCamposFormularioEvento(List<Row> camposFormularioEvento) {
 		this.camposFormularioEvento = camposFormularioEvento;
 	}
 	
