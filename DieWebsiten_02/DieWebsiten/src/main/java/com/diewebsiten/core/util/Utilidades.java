@@ -93,8 +93,106 @@ public class Utilidades {
         
         return cadena;
         
-    }// encriptarString
+    }
     
+    /**
+     * 
+     * @param parametro
+     * @return
+     */
+    public static boolean esAlfanumerico(Object parametro) {
+    	return isAlphanumeric(parametro.toString());
+    }
+    
+    /**
+     * 
+     * @param parametro
+     * @return
+     */
+    public static boolean esAlfanumericoConEspacios(Object parametro) {
+    	return isAlphanumericSpace(parametro.toString());
+    }
+    
+    /**
+     * 
+     * @param parametro
+     * @return
+     */
+    public static boolean esNumerico(Object parametro) {
+    	return isNumeric(parametro.toString());
+    }
+    
+    /**
+     * 
+     * @param parametro
+     * @return
+     */
+    public static boolean esNumericoConEspacios(Object parametro) {
+    	return isNumericSpace(parametro.toString());
+    }
+    
+    /**
+     * 
+     * @param parametro
+     * @return
+     */
+    public static boolean esCaracter(Object parametro) {
+    	return isAlpha(parametro.toString());
+    }
+    
+    /**
+     * 
+     * @param parametro
+     * @return
+     */
+    public static boolean esCaracterConEspacios(Object parametro) {
+    	return isAlphaSpace(parametro.toString());
+    }
+    
+    /**
+     * 
+     * @param parametro
+     * @return
+     */
+    public static boolean esEmailValido(Object parametro) {
+    	return EmailValidator.getInstance().isValid(parametro.toString());
+    }
+    
+    /**
+     * 
+     * @param parametro
+     * @return
+     */
+    public static boolean esFechaHora(Object parametro) {
+    	return DateValidator.getInstance().isValid(parametro.toString(), "yyyy-MM-dd HH:mm:ss");
+    }
+    
+    /**
+     * 
+     * @param parametro
+     * @return
+     */
+    public static boolean esDireccionUrl(Object parametro) {
+    	return UrlValidator.getInstance().isValid(parametro.toString());
+    }
+    
+    /**
+     * 
+     * @param parametro
+     * @return
+     */
+    public static boolean esDominioSitioWeb(Object parametro) {
+    	return parametro.toString().matches("[a-z0-9._-]+");
+    }
+    
+    /**
+     * Validar que el valor sea numérico y con puntos. Ejemplo: 1.5.8
+     * @param parametro
+     * @return
+     */
+    public static boolean esNumericoConPuntos(Object parametro) {
+    	return parametro.toString().matches("[.]+");
+    }
     
     
 
@@ -116,57 +214,57 @@ public class Utilidades {
        
            case V_ALFANUMERICO_CON_ESPACIOS:            
                // Validar que el campo actual sea alfanumérico y sin espacios en blanco.
-               if (!isAlphanumeric(parametro.toString()))
+               if (!esAlfanumerico(parametro))
                    resultadoValidacion.add("Campo alfanumerico sin espacios en blanco. Ejemplo: JuaN123");
            break;        
            case V_ALFANUMERICO_SIN_ESPACIOS:                
                // Validar que el campo actual sea alfanumérico y con espacios en blanco.
-               if (!isAlphanumericSpace(parametro.toString()))
+               if (!esAlfanumericoConEspacios(parametro))
                    resultadoValidacion.add("Campo alfanumerico con posibles espacios en blanco. Ejemplo: JuaN 123 456");
            break;        
            case V_NUMERICO_SIN_ESPACIOS:                
                // Validar que el campo actual sea numérico y sin espacios en blanco.
-               if (!isNumeric(parametro.toString()))
+               if (!esNumerico(parametro))
                    resultadoValidacion.add("Campo numérico sin espacios en blanco. Ejemplo: 123456");
            break;                
            case V_NUMERICO_CON_ESPACIOS:                
                // Validar que el campo actual sea numérico y con espacios en blanco.
-               if (!isNumericSpace(parametro.toString()))
+               if (!esNumericoConEspacios(parametro))
                    resultadoValidacion.add("Campo numérico con posibles espacios en blanco. Ejemplo: 123 456 789");
            break;        
            case V_CARACTER_SIN_ESPACIOS:                
                // Validar que el campo actual sea de caracteres y sin espacios en blanco.
-               if (!isAlpha(parametro.toString()))
+               if (!esCaracter(parametro))
                    resultadoValidacion.add("Campo caracter sin espacios en blanco. Ejemplo: abcDEF");
            break;                    
            case V_CARACTER_CON_ESPACIOS:                
                // Validar que el campo actual sea de caracteres y sin espacios en blanco.
-               if (!isAlphaSpace(parametro.toString())) 
+               if (!esCaracterConEspacios(parametro)) 
                    resultadoValidacion.add("Campo caracter con posibles espacios en blanco. Ejemplo: abc DEF hg");
            break;        
            case V_EMAIL:                
                // Validar que el campo actual sea una dirección de correo electrónico válida.
-               if (!EmailValidator.getInstance().isValid(parametro.toString()))
+               if (!esEmailValido(parametro))
                    resultadoValidacion.add("Dirección de correo electrónico no válida");
            break;                    
            case V_FECHAHORA:                
                // Validar que el campo actual sea una cadena con formato fecha y hora.
-               if (!DateValidator.getInstance().isValid(parametro.toString(), "yyyy-MM-dd HH:mm:ss"))
+               if (!esFechaHora(parametro))
                    resultadoValidacion.add("Formato de fecha y hora no válido. Formato esperado: aaaa-MM-dd HH:mm:ss");
            break;                    
            case V_URL:                
                // Validar que el campo actual sea una dirección url.
-               if (!UrlValidator.getInstance().isValid(parametro.toString()))
+               if (!esDireccionUrl(parametro))
                    resultadoValidacion.add("Dirección url no válida");
            break;            
            case V_DOMINIO:                
                // Validar que el campo actual sea un nombre de un dominio de un sitio web.
-               if (!parametro.toString().matches("[a-z0-9._-]+"))
+               if (!esDominioSitioWeb(parametro))
                    resultadoValidacion.add("El campo sólo acepta números (0-9), letras en minúscula (a-z), puntos (.) o guiones (_-)");
            break;
            case V_PUNTO:                
-               // Validar que el campo actual contenga el caracter punto (.)
-               if (!parametro.toString().matches("[.]+"))
+               // 
+               if (!esNumericoConPuntos(parametro))
                    resultadoValidacion.add("El campo sólo debe tener números (0-9) y puntos (.). Ejemplo: 1.5.8");
            break;
            default:

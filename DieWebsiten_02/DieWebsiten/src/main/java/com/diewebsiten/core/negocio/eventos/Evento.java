@@ -50,7 +50,6 @@ public class Evento implements Callable<String> {
 	
     private ProveedorCassandra proveedorCassandra;
     private boolean validacionExitosa;
-    //private final Utilidades util;
     
     /**
      * Este constructor se encarga de recibir un evento, este evento contiene transacciones de consulta,
@@ -140,7 +139,7 @@ public class Evento implements Callable<String> {
             List<Future<Boolean>> grupoEjecucionValidaciones = new ArrayList<Future<Boolean>>();
 
             for (Row campoFormularioEvento : camposFormularioEvento) {
-                grupoEjecucionValidaciones.add(ejecucionParalelaValidaciones.submit(new Validaciones(campoFormularioEvento)));
+                grupoEjecucionValidaciones.add(ejecucionParalelaValidaciones.submit(new Validaciones(campoFormularioEvento, this)));
             }
 
             for (Future<Boolean> ejecucionValidacionActual : grupoEjecucionValidaciones) {
@@ -150,16 +149,6 @@ public class Evento implements Callable<String> {
 
             if (!isValidacionExitosa())
                 return isValidacionExitosa();
-
-            /*grupoEjecucionValidaciones = new ArrayList<Future<Boolean>>();
-
-            for (Row campoFormularioEvento : camposFormularioEvento) {
-                grupoEjecucionValidaciones.add(ejecucionParalelaValidaciones.submit(new Validaciones(campoFormularioEvento)));
-            }
-
-            for (Future<Boolean> ejecucionValidacionActual : grupoEjecucionValidaciones) {
-                ejecucionValidacionActual.get();
-            }*/
             
             // Guardar los campos del formulario del evento en una variable global
             setCamposFormularioEvento(camposFormularioEvento);
@@ -180,7 +169,7 @@ public class Evento implements Callable<String> {
         
     	JsonObject resultadoEvento = new JsonObject();
         ExecutorService ejecucionParalelaTransacciones = Executors.newFixedThreadPool(10);
-        List<?> transacciones;
+        List<Row> transacciones;
         
         try {
 
@@ -197,15 +186,9 @@ public class Evento implements Callable<String> {
                 grupoEjecucionTransacciones.add(ejecucionParalelaTransacciones.submit(new Transacciones(transaccion, resultadoEvento, this)));                
             }
             
-            //StringBuilder resultadoTransacciones = new StringBuilder();            
             for (Future<Void> ejecucionTransaccionActual : grupoEjecucionTransacciones) {
-//                resultadoTransacciones.append(",").append(
-                		ejecucionTransaccionActual.get();
-//                		.get());
-                		
+                ejecucionTransaccionActual.get();		
             }
-            
-            //resultadoEvento = (JsonObject) new JsonParser().parse("{" + getNombreEvento() + ":" + resultadoTransacciones.toString().substring(1) + "}");
             
         } finally {
             ejecucionParalelaTransacciones.shutdown();
@@ -345,15 +328,15 @@ public class Evento implements Callable<String> {
         return nombreEvento;
     }
 
-    private Map<String, Object> getParametros() {
+    Map<String, Object> getParametros() {
         return parametros;
     }
 
-    public void setParametros(Map<String, Object> parametros) {
+    private void setParametros(Map<String, Object> parametros) {
         this.parametros = parametros;
     }
     
-    public void setParametros(String nombreParametro, Object valorParametro) {
+    void setParametros(String nombreParametro, Object valorParametro) {
         this.parametros.put(nombreParametro, valorParametro);
     }
     
@@ -365,7 +348,7 @@ public class Evento implements Callable<String> {
         return validacionExitosa;
     }
     
-    public List<Row> getCamposFormularioEvento() {
+    List<Row> getCamposFormularioEvento() {
 		return camposFormularioEvento;
 	}
 
@@ -373,7 +356,7 @@ public class Evento implements Callable<String> {
 		this.camposFormularioEvento = camposFormularioEvento;
 	}
 	
-	public ProveedorCassandra getProveedorCassandra() {
+	ProveedorCassandra getProveedorCassandra() {
 		return this.proveedorCassandra;
 	}
 }

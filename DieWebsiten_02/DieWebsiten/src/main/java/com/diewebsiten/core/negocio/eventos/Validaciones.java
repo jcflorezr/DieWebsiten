@@ -43,12 +43,12 @@ class Validaciones implements Callable<Boolean> {
             throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.VALIDACIONES_NO_EXISTEN.getMensaje(getSitioWeb(), getPagina(), getNombreEvento()));            
         
         for (Row grupo : grupoValidacion) {
-            Object valorParametroActual = getParametros().get(nombreCampoActual);
+            Object valorParametroActual = getEvento().getParametros().get(nombreCampoActual);
             if (grupo.getString("tipo").equals(Constantes.VALIDACION.getString())) {                
                 //for (String validacion : grupoValidacion.get(0).getSet("validaciones", String.class)) {
                     List<String> resVal = validarParametro(grupo.getString("validacion"), valorParametroActual);
                     if (!resVal.isEmpty()) {
-                        setParametros(nombreCampoActual, resVal);
+                    	getEvento().setParametros(nombreCampoActual, resVal);
                         return false;
                     }
                 //}
@@ -57,8 +57,8 @@ class Validaciones implements Callable<Boolean> {
                     //for (String transformacion : grupoValidacion.get(0).getSet("transformaciones", String.class)) {
                         Object resTrans = transformarParametro(grupo.getString("validacion"), valorParametroActual);
                         if (null == resTrans)
-                            throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.TRANSFORMACION_FALLIDA.getMensaje(nombreCampoActual, getNombreEvento(), (String)valorParametroActual, grupo.getString("validacion")));
-                        setParametros(nombreCampoActual, resTrans);
+                            throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.TRANSFORMACION_FALLIDA.getMensaje(nombreCampoActual, getEvento().getNombreEvento(), (String)valorParametroActual, grupo.getString("validacion")));
+                        getEvento().setParametros(nombreCampoActual, resTrans);
                     //}
                 //}
             }

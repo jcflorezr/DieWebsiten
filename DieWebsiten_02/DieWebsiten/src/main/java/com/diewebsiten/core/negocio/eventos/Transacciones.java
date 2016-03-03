@@ -47,7 +47,7 @@ class Transacciones implements Callable<Void> {
       
         // Validar que la sentencia CQL sea de tipo válido.
         if (!contienePalabra(tipoTransaccion, "SELECT,UPDATE,INSERT,DELETE"))
-            throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(nombreTransaccion, getNombreEvento(), getPagina(), getSitioWeb(), tipoTransaccion));
+            throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(nombreTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb(), tipoTransaccion));
     
             
         //Thread.sleep(1000);        
@@ -67,7 +67,7 @@ class Transacciones implements Callable<Void> {
         
         for (String filtro : filtrosSentenciaCQL) {
         	boolean existe = false;
-            for (Row campo : getCamposFormularioEvento()) {
+            for (Row campo : getEvento().getCamposFormularioEvento()) {
             	
             	if (filtro.equals(campo.getString("column_name"))) {
                 // Solo se extraen los valores para las cláusulas SET de los UPDATES, WHERE, y VALUES de los INSERTS.
@@ -77,7 +77,7 @@ class Transacciones implements Callable<Void> {
                     if (!esVacio(campo.getString("valorpordefecto"))) {
                         valoresSentencia.add(campo.getString("valorpordefecto"));
                     } else {
-                        valoresSentencia.add(getParametros().get(campo.getString("column_name")));
+                        valoresSentencia.add(getEvento().getParametros().get(campo.getString("column_name")));
                     }
                     existe = true;
                     break;
@@ -87,7 +87,7 @@ class Transacciones implements Callable<Void> {
             
             // Validar que los filtros necesarios para la sentencia CQL que ejecuta la transacción existen.
             if (!existe)
-                throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.FILTRO_NO_EXISTE.getMensaje(filtro, nombreTransaccion, tipoTransaccion, getNombreEvento(), getPagina(), getSitioWeb()));
+                throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.FILTRO_NO_EXISTE.getMensaje(filtro, nombreTransaccion, tipoTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb()));
         }
         
         // preparar las sentencias de cada transaccion
@@ -162,8 +162,7 @@ class Transacciones implements Callable<Void> {
 			}
 			
 			i++;
-			
-			
+
 		}
 		
 		
@@ -217,6 +216,10 @@ class Transacciones implements Callable<Void> {
         }
         
     }
+    
+    // =============================
+    // ==== Getters and Setters ====
+    // =============================
 
 	private Evento getEvento() {
 		return evento;
@@ -225,11 +228,5 @@ class Transacciones implements Callable<Void> {
 	private void setEvento(Evento evento) {
 		this.evento = evento;
 	}
-    
-    
-    
-    
-    
-    
     
 }
