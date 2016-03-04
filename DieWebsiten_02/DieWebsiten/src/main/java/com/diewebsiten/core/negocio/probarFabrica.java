@@ -126,13 +126,13 @@ public class probarFabrica {
             
             
             
-            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
-            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
+//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
+//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
             grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
-            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", parametros1)));
-            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
-            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
-            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
+//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", parametros1)));
+//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
+//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
+//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
             
             
             for (Future<String> evento : grupoEventos) {

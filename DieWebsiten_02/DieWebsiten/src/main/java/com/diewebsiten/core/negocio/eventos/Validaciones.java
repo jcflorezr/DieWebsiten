@@ -15,17 +15,19 @@ class Validaciones implements Callable<Boolean> {
     private final Row campo;
     private Evento evento;
     
+    private static final String COLUMN_NAME = "column_name";
+    private static final String GRUPOVALIDACION = "grupovalidacion";
+    private static final String TIPO = "tipo";
+    private static final String VALIDACION = "validacion";
+    
     public Validaciones(Row campo, Evento evento) {            
         this.campo = campo;
         this.evento = evento;
-    }
-    
+    } 
     
     @Override
-    public Boolean call() throws Exception {  
-    	
+    public Boolean call() throws Exception {
         return ejecutarValidacion();
-        
     }
     
     /**
@@ -41,43 +43,50 @@ class Validaciones implements Callable<Boolean> {
      */
     private Boolean ejecutarValidacion() throws Exception {
     	
-    	String nombreCampoActual = campo.getString("column_name");
-        String grupoValidacionesCampoActual = campo.getString("grupovalidacion");
+    	String nombreCampoActual = campo.getString(COLUMN_NAME);
+        String grupoValidacionesCampoActual = campo.getString(GRUPOVALIDACION);
         StringBuilder sentencia = new StringBuilder("SELECT grupo, tipo, validacion FROM diewebsiten.grupos_validaciones WHERE grupo = '").append(grupoValidacionesCampoActual).append("'");
-        
-        arreglar esto
-        
-        
         
         List<Row> grupoValidacion = getEvento().getProveedorCassandra().consultar(sentencia.toString());
 
-        // Validar que existen las validaciones del grupo.
-        if (grupoValidacion.isEmpty())
-            throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.VALIDACIONES_NO_EXISTEN.getMensaje(getEvento().getSitioWeb(), getEvento().getPagina(), getEvento().getNombreEvento()));            
+        // Validar que sí existan las validaciones del grupo.
+        if (grupoValidacion.isEmpty()) {
+			throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.VALIDACIONES_NO_EXISTEN.getMensaje(getEvento().getSitioWeb(), getEvento().getPagina(), getEvento().getNombreEvento()));
+		}            
         
-        UtilidadValidaciones utilVal = new UtilidadValidaciones();
+        Boolean validacionExitosa = true;
+        
+        UtilidadValidaciones utilVal = new UtilidadValidaciones(validacionExitosa);
         UtilidadTransformaciones utilTrans = new UtilidadTransformaciones();
+        
         
         List<String> resultadoValidacion = new ArrayList<>();
         
         for (Row grupo : grupoValidacion) {
             Object valorParametroActual = getEvento().getParametros().get(nombreCampoActual);
-            if (grupo.getString("tipo").equals(Constantes.VALIDACION.getString())) {                
-                resultadoValidacion.add(utilVal.validarParametro(grupo.getString("validacion"), valorParametroActual));
-            } else {                
-                Object resTrans = utilTrans.transformarParametro(grupo.getString("transformacion"), valorParametroActual);
-                if (null == resTrans)
+            String tipoGrupoValidacion = grupo.getString(TIPO);
+            if (tipoGrupoValidacion.equals(Constantes.VALIDACION.getString())) {
+            	
+            	if (validacionExitosa) {
+            		
+            		como pasar objetos por referencia?
+            		resultadoValidacion.add(utilVal.validarParametro(validacionExitosa, grupo.getString(VALIDACION), valorParametroActual));
+            	} else {
+            		resultadoValidacion.add(utilVal.validarParametro(grupo.getString(VALIDACION), valorParametroActual));
+            	}
+            	
+                
+            } else if (validacionExitosa && tipoGrupoValidacion.equals(Constantes.TRANSFORMACION.getString())) {
+            	
+                Object resTrans = utilTrans.transformarParametro(grupo.getString(VALIDACION), valorParametroActual);
+                if (null == resTrans) {
                     throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.TRANSFORMACION_FALLIDA.getMensaje(nombreCampoActual, getEvento().getNombreEvento(), (String)valorParametroActual, grupo.getString("validacion")));
+                }
                 getEvento().setParametros(nombreCampoActual, resTrans);
             }
         }
         
-        if (!resultadoValidacion.isEmpty()) {
-        	getEvento().setParametros(nombreCampoActual, resultadoValidacion);
-            return false;
-        } else {
-        	return true;        	
-        }
+        return validacionExitosa;
     	
     }
     

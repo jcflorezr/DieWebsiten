@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.ServletSecurityElement;
-
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.PreparedStatement;
@@ -30,7 +28,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
     private ProveedorCassandra() {
     	conectar();
-    	prepararSentencias();
+    	prepararSentenciasIniciales();
     }
     
     /*
@@ -66,7 +64,11 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
         cluster.close();
     }
     
-    private void prepararSentencias() {
+    
+    /**
+     * Preparar las sentencias CQL que se ejecutan en todos los eventos con el fin de prepararlas una sola vez por cada evento.
+     */
+    private void prepararSentenciasIniciales() {
     	synchronized (ProveedorCassandra.class) {
     		if (null == sentenciasPreparadas) {
     			sentenciasPreparadas = new HashMap<String, PreparedStatement>();
@@ -77,9 +79,33 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     }
     
     /**
-     * 
      * Método generico para ejecutar una sentencia CQL (Cassandra Query Language)
-     * de tipo consulta.
+     * de tipo consulta sin filtros.
+     * 
+     * @param sentencia sentencia CQL a ejecutar
+     * @return Conjunto de datos (DataSet).
+     */
+    @Override
+    public List<Row> consultar(String sentencia) {
+    	return retornarResultSet(null, sentencia);
+    }
+    
+    /**
+     * Método generico para ejecutar una sentencia CQL (Cassandra Query Language)
+     * de tipo consulta sin filtros. Aparte de eso llena el parámetro @metadata
+     * con los nombres de las columnas que componen la consulta.
+     * 
+     * @param metadata lista a poblar con los nombres de las columnas de la consulta
+     * @param sentencia sentencia CQL a ejecutar
+     * @return Conjunto de datos (DataSet) y Metadata de la consulta (como parñametro de salida).
+     */
+    public List<Row> consultar(List<ColumnDefinitions.Definition> metadata, String sentencia) {
+    	return retornarResultSet(metadata, sentencia);
+    }
+    
+    /**
+     * Método generico para ejecutar una sentencia CQL (Cassandra Query Language)
+     * de tipo consulta con filtros.
      * 
      * @param nombreSentencia nombre de la sentencia que se va a extraer para su ejecución
      * @param parametros filtros de búsqueda con que se ejecutará la sentencia
@@ -93,24 +119,48 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     }
     
     /**
+     * Método generico para ejecutar una sentencia CQL (Cassandra Query Language)
+     * de tipo consulta con filtros. Aparte de eso llena el parámetro @metadata
+     * con los nombres de las columnas que componen la consulta.
      * 
+     * @param metadata lista a poblar con los nombres de las columnas de la consulta
+     * @param nombreSentencia nombre de la sentencia que se va a extraer para su ejecución
+     * @param parametros filtros de búsqueda con que se ejecutará la sentencia
+     * @return Conjunto de datos (DataSet) y Metadata de la consulta (como parñametro de salida).
+     * @throws ExcepcionGenerica en caso de que el nombre de la sentencia no coincida con 
+     * 							 ninguna de las sentencias existentes
+     */
+    public List<Row> consultar(List<ColumnDefinitions.Definition> metadata, String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
+    	return retornarResultSet(metadata, nombreSentencia, parametros);
+    }
+    
+    /**
+     * Las sentencias sin filtros no serán preparadas para su ejecución, serán ejecutadas directamente.
+     * @param metadata
+     * @param nombreSentencia
+     * @return
+     */
+    private List<Row> retornarResultSet (List<ColumnDefinitions.Definition> metadata, String nombreSentencia) {
+    	ResultSet resultSet = getSesion().execute(nombreSentencia);
+    	if (metadata != null) {
+    		metadata = resultSet.getColumnDefinitions().asList();
+    	}
+    	return resultSet.all();
+    }   
+    
+    /**
+     * Las sentencias con filtros edben ser preparadas antes de su ejecución, no serán ejecutadas directamente.
      * @param metadata
      * @param nombreSentencia
      * @param parametros
      * @return
      * @throws ExcepcionGenerica
      */
-    public List<Row> consultar(List<ColumnDefinitions.Definition> metadata, String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
-    	return retornarResultSet(metadata, nombreSentencia, parametros);
-    }
-    
     private List<Row> retornarResultSet (List<ColumnDefinitions.Definition> metadata, String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
     	PreparedStatement sentenciaPreparada = getSentenciasPreparadas().get(nombreSentencia);
     	ResultSet resultSet;
     	if (sentenciaPreparada == null) {
     		throw new ExcepcionGenerica("No se puede ejecutar la sentencia '" + nombreSentencia + "' porque no existe.");
-    	} else if (parametros.length == 0) {
-    		resultSet = getSesion().execute(sentenciaPreparada.getQueryString());
     	} else {
     		resultSet = getSesion().execute(sentenciaPreparada.bind(parametros));
     	}

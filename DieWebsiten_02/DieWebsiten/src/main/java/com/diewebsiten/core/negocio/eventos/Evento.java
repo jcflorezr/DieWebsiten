@@ -1,10 +1,6 @@
 
 package com.diewebsiten.core.negocio.eventos;
 
-
-import static com.diewebsiten.core.util.UtilidadValidaciones.contienePalabra;
-import static com.diewebsiten.core.util.UtilidadValidaciones.esVacio;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,7 +17,9 @@ import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
-import com.diewebsiten.core.util.UtilidadValidaciones;
+
+import static com.diewebsiten.core.util.UtilidadValidaciones.*;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
@@ -59,8 +57,6 @@ public class Evento implements Callable<String> {
      * @throws java.lang.Exception
      */
     public Evento(String url, String nombreEvento, String parametros) throws Exception {
-
-        //util = new Utilidades();
         
         // Validar que el nombre del evento no llegue vacío.
         if (esVacio(nombreEvento)) {
@@ -231,7 +227,7 @@ public class Evento implements Callable<String> {
             }
 
             // Que la sentencia CQL sea de tipo válido.
-            if (!UtilidadValidaciones.contienePalabra(tipoSentencia, "SELECT,UPDATE,INSERT,DELETE")) {
+            if (!contienePalabra(tipoSentencia, "SELECT,UPDATE,INSERT,DELETE")) {
                 sentenciaCQL = new StringBuilder("La transacción '" + transaccion + "' de la página '" + pagina + "' del sitio web '" + sitioWeb + "' " 
                              + "tiene un tipo de transacción no válido: '" + tipoSentencia + "'. "
                              + "Los tipos de transacción válidos son: SELECT, UPDATE, INSERT o DELETE.");
@@ -328,9 +324,9 @@ public class Evento implements Callable<String> {
         return parametros;
     }
 
-    private void setParametros(Map<String, Object> parametros) {
-        this.parametros = parametros;
-    }
+//    private void setParametros(Map<String, Object> parametros) {
+//        this.parametros = parametros;
+//    }
     
     void setParametros(String nombreParametro, Object valorParametro) {
         this.parametros.put(nombreParametro, valorParametro);

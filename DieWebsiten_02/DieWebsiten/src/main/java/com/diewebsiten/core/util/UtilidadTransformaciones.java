@@ -126,7 +126,7 @@ public class UtilidadTransformaciones {
     public Object transformarParametro (String nombreTransformacion, Object valor) throws Exception {
         //Thread.sleep(1000);
         if (UtilidadValidaciones.esVacio(valor) || UtilidadValidaciones.esVacio(nombreTransformacion)) {
-            throw new Exception("No se puede hacer una validacion con valores nulos. Nombre Validación: " + nombreTransformacion + ". Parámetro : " + valor);
+            throw new Exception("No se puede hacer la ransformación de un valor nulo. Nombre Validación: " + nombreTransformacion + ". Parámetro : " + valor);
         }
                 
         switch(Constantes.valueOf(nombreTransformacion)) {
