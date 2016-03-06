@@ -138,8 +138,9 @@ public class Evento implements Callable<String> {
 				}
             }
 
-            if (!isValidacionExitosa())
+            if (!isValidacionExitosa()) {
                 return isValidacionExitosa();
+            } 
             
             // Guardar los campos del formulario del evento en una variable global
             setCamposFormularioEvento(camposFormularioEvento);

@@ -82,7 +82,7 @@ public class probarFabrica {
                                  " \"sitioweb\": \"miradorhumadea.com\"," +
                                  "\"tipo\": \"SW\"," +
                                  "\"basededatos\": \"diewebsiten\"," +
-                                 "\"tipotransaccion\": \"SELECT\"" +
+                                 "\"tipotransaccion\": \"seLECT\"" +
                                  "}";
             
             String parametros2 = "{" +
@@ -126,13 +126,13 @@ public class probarFabrica {
             
             
             
-//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
-//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
             grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
-//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", parametros1)));
-//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
-//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
-//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
             
             
             for (Future<String> evento : grupoEventos) {
@@ -155,7 +155,7 @@ public class probarFabrica {
         } catch (Exception e) {
             Log.getInstance().imprimirErrorEnLog(e);
         } finally {
-            //ProveedorCassandra.getInstance().cerrarConexion();
+        	ProveedorCassandra.getInstance().desconectar();
         }
         
     }

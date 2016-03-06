@@ -8,7 +8,10 @@ import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.Row;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.diewebsiten.core.util.Constantes;
+
 import static com.diewebsiten.core.util.UtilidadValidaciones.*;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -17,6 +20,11 @@ class Transacciones implements Callable<Void> {
     private final Row transaccion;
     private JsonObject resultadoEvento;
     private Evento evento;
+    
+    private static final String FILTROS_SENTENCIA_CQL = "filtrossentenciacql";
+    private static final String SENTENCIA_CQL = "sentenciacql";
+    private static final String TIPO_TRANSACCION = "tipotransaccion";
+    private static final String TRANSACCION = "transaccion";
     
     Transacciones (Row transaccion, JsonObject resultadoEvento, Evento evento) {
         this.transaccion = transaccion;
@@ -40,19 +48,19 @@ class Transacciones implements Callable<Void> {
      */
     private Void ejecutarTransaccion() throws Exception {
     	// Nombre de la transacción.
-    	String nombreTransaccion = transaccion.getString("transaccion");
+    	String nombreTransaccion = transaccion.getString(TRANSACCION);
         
         // Tipo de transacción (SELECT, UPDATE, DELETE, INSERT).
-        String tipoTransaccion = transaccion.getString("tipotransaccion");
+        String tipoTransaccion = transaccion.getString(TIPO_TRANSACCION);
         
         // Sentencia CQL de la transacción.
-        String sentenciaCQL = transaccion.getString("sentenciacql");
+        String sentenciaCQL = transaccion.getString(SENTENCIA_CQL);
         
         // Filtros que se necesitan para ejecutar la transacción.
-        List<String> filtrosSentenciaCQL = new ArrayList<String>(transaccion.getList("filtrossentenciacql", String.class));
+        List<String> filtrosSentenciaCQL = new ArrayList<String>(transaccion.getList(FILTROS_SENTENCIA_CQL, String.class));
       
         // Validar que la sentencia CQL sea de tipo válido.
-        if (!contienePalabra(tipoTransaccion, "SELECT,UPDATE,INSERT,DELETE")) {
+        if (!contienePalabra(tipoTransaccion, Constantes.TRANSACCIONES_SOPORTADAS.getString())) {
 			throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(nombreTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb(), tipoTransaccion));
 		}
     
@@ -98,20 +106,22 @@ class Transacciones implements Callable<Void> {
 			}
         }
         
-        // preparar las sentencias de cada transaccion
+        // Preparar la sentenciade la transacción actual (si la sentencia no tiene filtros no se agrega a la lista de sentencias preparadas)
         synchronized (Transacciones.class) {
-        	getEvento().getProveedorCassandra().agregarSentenciaPreparada(nombreTransaccion, sentenciaCQL);
+        	if (!valoresSentencia.isEmpty()) {
+				getEvento().getProveedorCassandra().agregarSentenciaPreparada(nombreTransaccion, sentenciaCQL);
+			} else {
+				nombreTransaccion = sentenciaCQL;
+			}
         }
         
-        List<ColumnDefinitions.Definition> columnas = new ArrayList<>();
-        
         // Obtener los resultados de la transacción.
-        List<Row> resultadoTransaccionActual = getEvento().getProveedorCassandra().consultar(columnas, nombreTransaccion, valoresSentencia.toArray());
+        List<Row> resultadoTransaccionActual = getEvento().getProveedorCassandra().consultar(nombreTransaccion, valoresSentencia.toArray());
+        
+        // Obtener las nombres de las columnas
+        List<ColumnDefinitions.Definition> columnas = resultadoTransaccionActual.get(0).getColumnDefinitions().asList();
         
         if (tipoTransaccion.equals("SELECT")) {
-        	
-        	// Columnas de consulta que contiene la transacción.
-            //List<String> columnasConsultaSentenciaCQL = transaccion.getList("columnasconsultasentenciacql", String.class);
             
             // Filtros que se necesitan para ejecutar la transacción.
             List<String> columnasIntermediasSentenciaCQL = new ArrayList<String> (transaccion.getList("columnasintermediassentenciacql", String.class));

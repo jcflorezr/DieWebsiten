@@ -1,8 +1,11 @@
 package com.diewebsiten.core.negocio.eventos;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.apache.commons.lang3.StringUtils.*;
 
 import com.datastax.driver.core.Row;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
@@ -19,6 +22,7 @@ class Validaciones implements Callable<Boolean> {
     private static final String GRUPOVALIDACION = "grupovalidacion";
     private static final String TIPO = "tipo";
     private static final String VALIDACION = "validacion";
+    private static final String SEPARADOR_TRANS = "||";
     
     public Validaciones(Row campo, Evento evento) {            
         this.campo = campo;
@@ -31,9 +35,8 @@ class Validaciones implements Callable<Boolean> {
     }
     
     /**
-     * Recibir los valores de los campos de un formulario, luego consultar la información
-     * de dichos campos en la base de datos para después validarlos con respecto a dicha
-     * información consultada.
+     * Recibir los valores de los parámetros de un formulario, luego obtener de
+     * la base de datos la validación de cada parámetro y por último validar cada parámetro.
      *
      * @param camposFormulario
      * @param validacionesCampos
@@ -54,40 +57,59 @@ class Validaciones implements Callable<Boolean> {
 			throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.VALIDACIONES_NO_EXISTEN.getMensaje(getEvento().getSitioWeb(), getEvento().getPagina(), getEvento().getNombreEvento()));
 		}            
         
-        Boolean validacionExitosa = true;
+        AtomicBoolean validacionExitosa = new AtomicBoolean(true);
         
         UtilidadValidaciones utilVal = new UtilidadValidaciones(validacionExitosa);
         UtilidadTransformaciones utilTrans = new UtilidadTransformaciones();
         
-        
-        List<String> resultadoValidacion = new ArrayList<>();
-        
         for (Row grupo : grupoValidacion) {
             Object valorParametroActual = getEvento().getParametros().get(nombreCampoActual);
             String tipoGrupoValidacion = grupo.getString(TIPO);
-            if (tipoGrupoValidacion.equals(Constantes.VALIDACION.getString())) {
-            	
-            	if (validacionExitosa) {
-            		
-            		como pasar objetos por referencia?
-            		resultadoValidacion.add(utilVal.validarParametro(validacionExitosa, grupo.getString(VALIDACION), valorParametroActual));
-            	} else {
-            		resultadoValidacion.add(utilVal.validarParametro(grupo.getString(VALIDACION), valorParametroActual));
+            if (Constantes.VALIDACION.getString().equals(tipoGrupoValidacion)) {
+            	String resultadoValidacion = utilVal.validarParametro(grupo.getString(VALIDACION), valorParametroActual);
+            	if (!validacionExitosa.get()) { 
+            		getEvento().setParametros(nombreCampoActual, resultadoValidacion);
+            		descartarParametrosTransformados();
             	}
-            	
-                
-            } else if (validacionExitosa && tipoGrupoValidacion.equals(Constantes.TRANSFORMACION.getString())) {
-            	
+            } else if (validacionExitosa.get() && Constantes.TRANSFORMACION.getString().equals(tipoGrupoValidacion)) {
                 Object resTrans = utilTrans.transformarParametro(grupo.getString(VALIDACION), valorParametroActual);
                 if (null == resTrans) {
                     throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.TRANSFORMACION_FALLIDA.getMensaje(nombreCampoActual, getEvento().getNombreEvento(), (String)valorParametroActual, grupo.getString("validacion")));
                 }
-                getEvento().setParametros(nombreCampoActual, resTrans);
+                getEvento().setParametros(nombreCampoActual, ((String) getEvento().getParametros().get(nombreCampoActual)) + SEPARADOR_TRANS + resTrans);
             }
         }
         
-        return validacionExitosa;
+        if (validacionExitosa.get()) {
+        	separarParametrosTransformados();
+        }
+        
+        return validacionExitosa.get();
     	
+    }
+    
+    /**
+     * Retirar los parametros del campo "Evento.parametros"
+     * que fueron transformados cuando la validación aun era
+     * exitosa
+     */
+    private void descartarParametrosTransformados() {
+    	Map<String, Object> parametros = getEvento().getParametros();
+    	for (Map.Entry<String, Object> parametro : parametros.entrySet()) {
+			parametros.put(parametro.getKey(), substringBefore((String) parametro.getValue(), SEPARADOR_TRANS));
+    	}
+    }
+    
+    /**
+     * Separar los valores transformados del campo "Evento.parametros".
+     * Este método solo se ejecuta si la validación fue exitosa.
+     */
+    private void separarParametrosTransformados() {
+    	Map<String, Object> parametros = getEvento().getParametros();
+    	for (Map.Entry<String, Object> parametro : parametros.entrySet()) {
+    		String valorFinalParametro = substringAfter((String) parametro.getValue(), SEPARADOR_TRANS);
+			parametros.put(parametro.getKey(), !isBlank(valorFinalParametro) ? valorFinalParametro : (String) parametro.getValue());
+    	}
     }
     
     
