@@ -10,16 +10,18 @@ public enum Constantes {
     EXCEPCION_GENERICA("com.diewebsiten.modelo.Excepciones.ExcepcionGenerica"),
     NOMBRE_EVENTO_VACIO("No se ha especificado un evento."),    
     
-    SENTENCIA_TRANSACCIONES("SELECT tipotransaccion, transaccion, columnfamily_name, sentenciacql, filtrossentenciacql, columnasconsultasentenciacql, columnasintermediassentenciacql FROM diewebsiten.eventos WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
-    //SENTENCIA_FORMULARIOS("SELECT campo, alias FROM diewebsiten.formularios WHERE sitioweb = ? AND pagina = ? AND tipotransaccion = ? AND transaccion = ?"),
-    SENTENCIA_VALIDACIONES_EVENTO("SELECT column_name, grupovalidacion, formaingreso, valorpordefecto FROM diewebsiten.formularios WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
-    //SENTENCIA_SENTENCIAS_CQL("SELECT clausula, campo, valorpordefecto FROM diewebsiten.sentencias_cql WHERE sitioweb = ? AND pagina = ? AND tipotransaccion = ? AND transaccion = ?"),
+    NMBR_SNT_TRANSACCIONES("SentenciaTransacciones"),
+    SNT_TRANSACCIONES("SELECT tipotransaccion, transaccion, columnfamily_name, sentenciacql, filtrossentenciacql, columnasconsultasentenciacql, columnasintermediassentenciacql FROM diewebsiten.eventos WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
+    SNT_VALIDACIONES_EVENTO("SELECT column_name, grupovalidacion, formaingreso, valorpordefecto FROM diewebsiten.formularios WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
+    NMBR_SNT_VALIDACIONES_EVENTO("SentenciaValidacionesEvento"),
     
     COLLECTIONS_CASSANDRA("SetType,ListType,MapType"),
     TIPOS_LISTAS_SENTENCIAS_SELECT("simple,compuesta,parValoresSimple,parValoresCompuesta,parAgrupadaSimple,parAgrupadaCompuesta"),
     
     VALIDACION("Validación"),
     TRANSFORMACION("Transformación"),
+    
+    TRANSACCIONES_SOPORTADAS("SELECT,UPDATE,INSERT,DELETE"),
     
     V_ALFANUMERICO_SIN_ESPACIOS,
     V_ALFANUMERICO_CON_ESPACIOS,
@@ -83,7 +85,7 @@ public enum Constantes {
                 return "No hay parámetros para la ejecución de los formularios del evento '" + valores[0] + "'.";
             }
         },
-        VALIDACIONES_NO_EXISTEN {
+		VALIDACIONES_NO_EXISTEN {
             @Override
             public String getMensaje(String... valores) {            
                 return "No se encontraron las validaciones o las transformaciones "

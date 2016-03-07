@@ -5,7 +5,7 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
 import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
-import com.diewebsiten.core.util.Utilidades;
+import com.diewebsiten.core.util.UtilidadTransformaciones;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
