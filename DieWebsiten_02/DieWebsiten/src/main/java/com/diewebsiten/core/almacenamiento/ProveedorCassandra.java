@@ -79,7 +79,8 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     
     /**
      * Método generico para ejecutar una sentencia CQL (Cassandra Query Language)
-     * de tipo consulta con filtros.
+     * de tipo consulta. Las sentencias con filtros deben ser preparadas 
+     * antes de su ejecución, no serán ejecutadas directamente.
      * 
      * @param nombreSentencia nombre de la sentencia que se va a extraer para su ejecución
      * @param parametros filtros de búsqueda con que se ejecutará la sentencia
@@ -89,18 +90,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      */
     @Override
     public List<Row> consultar(String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
-    	return retornarResultSet(nombreSentencia, parametros);
-    } 
-    
-    /**
-     * Las sentencias con filtros edben ser preparadas antes de su ejecución, no serán ejecutadas directamente.
-     * @param metadata
-     * @param nombreSentencia
-     * @param parametros
-     * @return
-     * @throws ExcepcionGenerica
-     */
-    private List<Row> retornarResultSet (String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
     	if (parametros.length == 0) {
     		return getSesion().execute(nombreSentencia).all();
     	}
