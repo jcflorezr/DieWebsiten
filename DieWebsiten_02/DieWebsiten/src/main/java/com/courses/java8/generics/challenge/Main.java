@@ -5,12 +5,18 @@ public class Main {
 	
 	
 	public static void main(String[] args) {
-		SoccerTeam barcelona = new SoccerTeam("FC Barcelona");
-		SoccerTeam realMadrid = new SoccerTeam("Real Madrid CF");
+		Team<LigaBBVA> realMadrid = new Team<>("Real Madrid CF");
+		Team<LigaBBVA> barcelona = new Team<>("FC Barcelona");
+		Team<PremierLeague> leicester = new Team<>("Leicester");
+		barcelona.addMatchResult(4, 0, realMadrid);
+		barcelona.printMatchResults();
+		realMadrid.addMatchResult(0, 4, barcelona);
+		realMadrid.printMatchResults();
+		LigaBBVA liga = new LigaBBVA();
+		liga.addRanking(barcelona);
+		liga.addRanking(realMadrid);
+		liga.printRanking();
 		
-		League<SoccerTeam> ligaBBVA = new League<>("Liga BBVA");
-		ligaBBVA.getName();
-		ligaBBVA.addTeam(barcelona);
 	}
 
 }
