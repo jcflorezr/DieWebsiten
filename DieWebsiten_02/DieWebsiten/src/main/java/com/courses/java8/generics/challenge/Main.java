@@ -15,7 +15,6 @@ public class Main {
 		LigaBBVA liga = new LigaBBVA();
 		liga.addRanking(barcelona);
 		liga.addRanking(realMadrid);
-		liga.printRanking();
 		
 	}
 

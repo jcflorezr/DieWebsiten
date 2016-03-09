@@ -5,17 +5,10 @@ import java.util.List;
 
 public class LigaBBVA extends League {
 
-	List<String> ranking = new ArrayList<>();	
-	
+	List<String> ranking = new ArrayList<>();
 	
 	public void addRanking (Team<LigaBBVA> team) {
 		ranking.add(team.getName() + " --> " + team.getPoints());
-	}
-	
-	public void printRanking() {
-		for (String rank : ranking) {
-			System.out.println(rank);
-		}
 	}
 
 }
