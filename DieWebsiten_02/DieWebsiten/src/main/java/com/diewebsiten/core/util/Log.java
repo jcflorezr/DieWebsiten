@@ -1,12 +1,10 @@
 
 package com.diewebsiten.core.util;
 
-import com.diewebsiten.core.negocio.Eventos;
+import com.diewebsiten.core.negocio.eventos.Evento;
 
 import java.io.File;
-
 import java.text.SimpleDateFormat;
-
 import java.util.Date;
 
 import org.apache.log4j.ConsoleAppender;
@@ -20,7 +18,7 @@ public class Log {
     
     private Logger logger;
     private static Log log;
-    private Eventos evento;
+    private Evento evento;
 
     /**
      * Devuelve una instancia única de la clase que implementa el Log de la aplicación
@@ -32,7 +30,7 @@ public class Log {
         return log;
     } //getInstance
     
-    public static synchronized Log getInstance(Eventos t) {
+    public static synchronized Log getInstance(Evento t) {
         if (log == null) 
             log = new Log();            
         log.evento = t;
@@ -45,15 +43,15 @@ public class Log {
     private Log() {
         try {
 //          File carpetaLog = new File("/opt/apache-tomcat-8.0.23/logs/logsdw");
-            File carpetaLog = new File("/Users/juaflore/logsdw");
-//        	File carpetaLog = new File("/Users/juancamiloroman/logsdw");
+//            File carpetaLog = new File("/Users/juaflore/logsdw");
+        	File carpetaLog = new File("/Users/juancamiloroman/logsdw");
 //          File carpetaLog = new File(Constantes.RUTA_LOG);
             if (!carpetaLog.exists())
                 carpetaLog.mkdirs();
             
             //String rutaYNombreLog = "/opt/apache-tomcat-8.0.23/logs/logsdw" + "/promociones";
-            String rutaYNombreLog = "/Users/juaflore/logsdw/log";
-//            String rutaYNombreLog = "/Users/juancamiloroman/logsdw/log";
+//            String rutaYNombreLog = "/Users/juaflore/logsdw/log";
+            String rutaYNombreLog = "/Users/juancamiloroman/logsdw/log";
             //String rutaYNombreLog = Constantes.RUTA_LOG + Constantes.NOMBRE_LOG;
             logger = Logger.getLogger(rutaYNombreLog);        
                 
@@ -126,13 +124,13 @@ public class Log {
                 return;
             }
             
-            log.error("----------------------------------- ERROR -----------------------------------------");
-            
-            if (null != log.evento) {
-                log.error("SITIO WEB: " + log.evento.getSitioWeb());
-                log.error("PÁGINA: " + log.evento.getPagina());
-                log.error("EVENTO: " + log.evento.getNombreEvento());
-            }
+//            log.error("----------------------------------- ERROR -----------------------------------------");
+//            
+//            if (null != log.evento) {
+//                log.error("SITIO WEB: " + log.evento.getSitioWeb());
+//                log.error("PÁGINA: " + log.evento.getPagina());
+//                log.error("EVENTO: " + log.evento.getNombreEvento());
+//            }
             log.error("EXCEPCIÓN --> " + tipoExcepcion);
             log.error("MENSAJE   --> " + t.getMessage());
 
