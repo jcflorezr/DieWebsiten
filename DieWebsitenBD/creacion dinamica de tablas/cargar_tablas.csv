@@ -1,0 +1,7 @@
+diewebsiten,tablas,system.schema_keyspaces,"['SELECT', 'INSERT', 'UPDATE', 'DELETE']"
+diewebsiten,columnas,diewebsiten.tablas,"['SELECT', 'INSERT', 'UPDATE', 'DELETE']"
+diewebsiten,tipos_de_transacciones,,"['SELECT', 'INSERT', 'UPDATE', 'DELETE']"
+diewebsiten,tipos_de_datos,,"['SELECT', 'INSERT', 'UPDATE', 'DELETE']"
+diewebsiten,tipos_de_columnas,,"['SELECT', 'INSERT', 'UPDATE', 'DELETE']"
+diewebsiten,validaciones,,"['SELECT', 'INSERT', 'UPDATE', 'DELETE']"
+diewebsiten,grupos_de_validaciones,,"['SELECT', 'INSERT', 'UPDATE', 'DELETE']"

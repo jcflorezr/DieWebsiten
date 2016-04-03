@@ -35,6 +35,7 @@ public enum Constantes {
     V_DOMINIO,
     V_PUNTO,
     V_OPCIONAL,
+    V_TIPO_DATO_CASSANDRA,
     
     T_EMAIL,
     T_CIFRADO,

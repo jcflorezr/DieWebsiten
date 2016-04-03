@@ -37,9 +37,16 @@ class Transacciones implements Callable<Void> {
      */
     @Override
     public Void call() throws Exception {
-        
-    	return ejecutarTransaccion();
-        
+    	try {
+    		return ejecutarTransaccion();			
+		} catch (Exception e) {
+			Throwable excepcionReal = e.getCause();
+			if (excepcionReal != null) {
+				throw (Exception) excepcionReal;
+			} else {
+				throw e;
+			}
+		}
     }
     
     /**
@@ -47,6 +54,7 @@ class Transacciones implements Callable<Void> {
      * @return
      */
     private Void ejecutarTransaccion() throws Exception {
+    	
     	// Nombre de la transacción.
     	String nombreTransaccion = transaccion.getString(TRANSACCION);
         
@@ -61,7 +69,7 @@ class Transacciones implements Callable<Void> {
       
         // Validar que la sentencia CQL sea de tipo válido.
         if (!contienePalabra(tipoTransaccion, Constantes.TRANSACCIONES_SOPORTADAS.getString())) {
-			throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(nombreTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb(), tipoTransaccion));
+			throw new ExcepcionGenerica(Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(nombreTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb(), tipoTransaccion));
 		}
     
             
@@ -81,7 +89,7 @@ class Transacciones implements Callable<Void> {
         List<Object> valoresSentencia = new ArrayList<Object>();
         
         for (String filtro : filtrosSentenciaCQL) {
-        	boolean existe = false;
+        	boolean existenFiltros = false;
             for (Row campo : getEvento().getCamposFormularioEvento()) {
             	
             	if (filtro.equals(campo.getString("column_name"))) {
@@ -94,15 +102,15 @@ class Transacciones implements Callable<Void> {
                     } else {
                         valoresSentencia.add(getEvento().getParametros().get(campo.getString("column_name")));
                     }
-                    existe = true;
+                    existenFiltros = true;
                     break;
                     
             	}
             }
             
             // Validar que los filtros necesarios para la sentencia CQL que ejecuta la transacción existen.
-            if (!existe) {
-				throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.FILTRO_NO_EXISTE.getMensaje(filtro, nombreTransaccion, tipoTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb()));
+            if (!existenFiltros) {
+				throw new ExcepcionGenerica(Constantes.Mensajes.FILTRO_NO_EXISTE.getMensaje(filtro, nombreTransaccion, tipoTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb()));
 			}
         }
         
@@ -116,13 +124,13 @@ class Transacciones implements Callable<Void> {
         }
         
         // Obtener los resultados de la transacción.
-        List<Row> resultadoTransaccionActual = getEvento().getProveedorCassandra().consultar(nombreTransaccion, valoresSentencia.toArray());
+        List<Row> resultadoTransaccionActual = getEvento().getProveedorCassandra().consultar(nombreTransaccion, valoresSentencia.toArray());        
         
-        // Obtener las nombres de las columnas
-        List<ColumnDefinitions.Definition> columnas = resultadoTransaccionActual.get(0).getColumnDefinitions().asList();
-        
-        if (tipoTransaccion.equals("SELECT")) {
+        if (!resultadoTransaccionActual.isEmpty() && tipoTransaccion.equals("SELECT")) {
             
+        	// Obtener las nombres de las columnas
+        	List<ColumnDefinitions.Definition> columnas = resultadoTransaccionActual.get(0).getColumnDefinitions().asList();
+        	
             // Filtros que se necesitan para ejecutar la transacción.
             List<String> columnasIntermediasSentenciaCQL = new ArrayList<String> (transaccion.getList("columnasintermediassentenciacql", String.class));
 

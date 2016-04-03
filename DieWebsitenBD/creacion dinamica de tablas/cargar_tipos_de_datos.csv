@@ -1,0 +1,23 @@
+ascii,AI,java.lang.String,US-ASCII character string
+bigint,BI,java.lang.Long,64-bit signed long
+blob,BL,java.nio.ByteBuffer,"Arbitrary bytes (no validation), expressed as hexadecimal"
+boolean,BO,java.lang.Boolean,true or false
+counter,CO,java.lang.Long,Distributed counter value (64-bit long)
+date,DT,com.datastax.driver.core.LocalDate,64-bit IEEE-754 floating point
+decimal,DE,java.math.BigDecimal,Variable-precision decimal
+double,DB,java.lang.Double,64-bit IEEE-754 floating point
+float,FL,java.lang.Float,32-bit IEEE-754 floating point
+inet,IN,java.net.InetAddress,IP address string in IPv4 or IPv6 format
+int,IT,ava.lang.Integer,32-bit signed integer
+list,LS,java.util.List,A collection of one or more ordered elements
+map,MP,java.util.Map,"A JSON-style array of literals: { literal : literal, literal : literal ... }"
+set,ST,java.util.Set,A collection of one or more elements
+smallint,SI,java.lang.Short,16-bit signed integer
+text,TX,java.lang.String,UTF-8 encoded string
+tinyint,TI,java.lang.Byte,8-bit signed integer
+timestamp,TM,java.util.Date,"Date plus time, encoded as 8 bytes since epoch"
+tuple,TP,com.datastax.driver.core.TupleType,"https://docs.datastax.com/en/developer/java-driver/3.0/java-driver/reference/javaClass2Cql3Datatypes.html"
+uuid,UU,java.util.UUID,A UUID in standard UUID format
+timeuuid,TU,java.util.UUID,Type 1 UUID only (CQL 3)
+varchar,VR,java.lang.String,UTF-8 encoded string
+varint,VI,java.math.BigInteger,Arbitrary-precision integer

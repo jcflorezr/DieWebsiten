@@ -1,0 +1,4 @@
+PRIMARY_KEY,-@,Columna de tipo Partition Key o de tipo Clustering Key
+COLUMNA_RECUPERADA,-$,Antes de insertar valores en esta clase de columnas se debe validar que el valor ya exista en la columna de referencia
+COLUMNA_POBLADA,-&,Columna poblada desde el sistema
+COLUMNA_REGULAR,-*,Columna regular

@@ -1,0 +1,28 @@
+diewebsiten,tablas,keyspace_name,CampoTipoCaracterConEspaciosMayusculasGuionBajo,varchar,"['PRIMARY_KEY','COLUMNA_RECUPERADA']",system.schema_keyspaces.keyspace_name,"SELECT keyspace_name FROM system.schema_keyspaces WHERE keyspace_name = ?"
+diewebsiten,tablas,columnfamily_name,CampoTipoCaracterConEspaciosMayusculasGuionBajo,varchar,"['PRIMARY_KEY','COLUMNA_RECUPERADA']",system.schema_columnfamilies.columnfamily_name,"SELECT columnfamily_name FROM system.schema_columnfamilies WHERE keyspace_name = ? AND columnfamily_name = ?"
+diewebsiten,tablas,parent_columnfamily_name,CampoTipoCaracterConEspaciosMayusculasGuionBajo,varchar,"['PRIMARY_KEY','COLUMNA_RECUPERADA']",system.schema_columnfamilies.columnfamily_name,"SELECT columnfamily_name FROM system.schema_columnfamilies WHERE keyspace_name = ? AND columnfamily_name = ?"
+diewebsiten,tablas,transacciones_por_tabla,CampoTipoCaracterSinEspaciosMayusculas,"{'list':['varchar']}","['COLUMNA_RECUPERADA']",diewebsiten.tipos_transacciones.tipo_transaccion,"SELECT tipo_transaccion FROM tipos_transacciones WHERE tipo_transaccion = ?"
+diewebsiten,tipos_de_transacciones,tipo_transaccion,CampoTipoCaracterConEspaciosMayusculas,varchar,"['PRIMARY_KEY']",,
+diewebsiten,tipos_de_transacciones,descripcion,CampoOpcionalSinValidacion,varchar,"['COLUMNA_REGULAR']",,
+diewebsiten,tipos_de_datos,cql_type,CampoTipoCaracterSinEspaciosMinusculas,varchar,"['PRIMARY_KEY']",,
+diewebsiten,tipos_de_datos,inicial,CampoTipoCaracterSinEspaciosMayusculas,varchar,"['PRIMARY_KEY']",,
+diewebsiten,tipos_de_datos,validador,CampoTipoValidadorColumnasCassandra,varchar,"['PRIMARY_KEY']",,
+diewebsiten,tipos_de_datos,descripcion,CampoOpcionalSinValidacion,varchar,"['COLUMNA_REGULAR']",,
+diewebsiten,tipos_de_columnas,tipo_columna,CampoTipoCaracterConEspaciosMayusculasGuionBajo,varchar,"['PRIMARY_KEY']",,
+diewebsiten,tipos_de_columnas,identificador,PENDIENTE DE VALIDACION ESPECIAL,varchar,"['PRIMARY_KEY']",,
+diewebsiten,tipos_de_columnas,descripcion,CampoOpcionalSinValidacion,varchar,"['COLUMNA_REGULAR']",,
+diewebsiten,columnas,keyspace_name,CampoTipoCaracterConEspaciosMayusculasGuionBajo,varchar,"['PRIMARY_KEY','COLUMNA_RECUPERADA']",diewebsiten.tablas.keyspace_name,"SELECT keyspace_name FROM diewebsiten.tablas WHERE keyspace_name = ?"
+diewebsiten,columnas,columnfamily_name,CampoTipoCaracterConEspaciosMayusculasGuionBajo,varchar,"['PRIMARY_KEY','COLUMNA_RECUPERADA']",diewebsiten.tablas.columnfamily_name,"SELECT column_family_name FROM diewebsiten.tablas WHERE keyspace_name = ? AND columnfamily_name = ?"
+diewebsiten,columnas,column_name,CampoTipoCaracterConEspaciosMayusculasGuionBajo,varchar,"['PRIMARY_KEY','COLUMNA_RECUPERADA']",system.schema_columns.column_name,"SELECT column_name FROM system.schema_columns WHERE keyspace_name = ? AND columnfamily_name = ? AND column_name = ?"
+diewebsiten,columnas,grupo_validacion,CampoTipoCamelCaseClase,varchar,"['PRIMARY_KEY','COLUMNA_RECUPERADA']",diewebsiten.grupos_validaciones.grupo_validacion,"SELECT grupo_validacion FROM diewebsiten.grupos_validaciones WHERE grupo_validacion = ?"
+diewebsiten,columnas,cql_type,CampoTipoCaracterSinEspaciosMinusculas,varchar,"['PRIMARY_KEY','COLUMNA_RECUPERADA']",diewebsiten.tipos_de_datos.cql_type,"SELECT cql_type FROM diewebsiten.tipos_de_datos WHERE cql_type = ?"
+diewebsiten,columnas,tipo_columna,CampoTipoCaracterConEspaciosMayusculasGuionBajo,PENDIENTE!!!!!,"['COLUMNA_RECUPERADA']",diewebsiten.tipos_de_columnas.tipo_columna,"SELECT identificador FROM diewebsiten.tipos_de_columnas WHERE tipo_columna = ?"
+diewebsiten,columnas,columna_referencia,PENDIENTE!!!!!,PENDIENTE!!!CamelcaseClaseCompleta,"['COLUMNA_RECUPERADA']",system.schema_columns.column_name,"SELECT column_name FROM system.schema_columns WHERE keyspace_name = ? AND columnfamily_name = ? AND column_name = ?"
+diewebsiten,columnas,query_columna_referencia,PENDIENTE!!!ValidacionQueNoAcepteValoresParaColumnasPobladas,PENDIENTE!!!!!,"['COLUMNA_POBLADA']",,
+diewebsiten,validaciones,tipo,CampoTipoCamelCaseClase,varchar,"['PRIMARY_KEY']",,
+diewebsiten,validaciones,validacion,CampoTipoCaracterConEspaciosMayusculasGuionBajo,varchar,"['PRIMARY_KEY']",,
+diewebsiten,validaciones,descripcion,CampoObligatorioSinValidacion,varchar,"['COLUMNA_REGULAR']",,
+diewebsiten,validaciones,mensaje_respuesta,CampoObligatorioSinValidacion,varchar,"['COLUMNA_REGULAR']",,
+diewebsiten,grupos_de_validaciones,grupo_validacion,CampoTipoCamelCaseClase,varchar,"['PRIMARY_KEY']",,
+diewebsiten,grupos_de_validaciones,tipo,CampoTipoCamelCaseClase,varchar,"['PRIMARY_KEY']",diewebsiten.validaciones.tipo,
+diewebsiten,grupos_de_validaciones,validacion,CampoTipoCaracterConEspaciosMayusculasGuionBajo,varchar,"['PRIMARY_KEY']",diewebsiten.validaciones.validacion,

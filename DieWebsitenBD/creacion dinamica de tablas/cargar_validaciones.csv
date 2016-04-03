@@ -24,3 +24,4 @@ Validación,JsonSet,"String formato Json sin claves, sólo valores únicos"
 Validación,V_URL,Dirección URL
 Validación,V_DOMINIO,Nombre de un dominio de un sitio web 
 Validación,NoValidar,No se hace ninguna validación a este campo
+Validación,V_TIPO_DATO_CASSANDRA,Validar que exista la clase java que se quiere aplicar al tipo de dato de una columna en bases de datos Cassandra

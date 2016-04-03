@@ -2,6 +2,7 @@
 package com.diewebsiten.core.negocio.eventos;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,7 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.apache.commons.lang3.StringUtils;
+import static org.apache.commons.lang3.StringUtils.*;
 
 import com.datastax.driver.core.Row;
 import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
@@ -67,7 +68,7 @@ public class Evento implements Callable<String> {
         }
         
         // Obtener la dirección URL del sitio web que está realizando la petición.
-        this.sitioWeb = StringUtils.substringBefore(url, ":@:")/*.equals("localhost") ? "127.0.0.1" : sitioWeb*/;
+        this.sitioWeb = substringBefore(url, ":@:")/*.equals("localhost") ? "127.0.0.1" : sitioWeb*/;
         
         // Si el parámetro "parametros" viene vacío se convierte a formato JSONObject vacío.
         parametros = esVacio(parametros) ? "{}" : parametros;
@@ -76,11 +77,11 @@ public class Evento implements Callable<String> {
         this.parametros = new Gson().fromJson(parametros, new TypeToken<Map<String, Object>>(){}.getType());
         
         // Obtener el nombre de la página del sitio web que está realizando la petición.
-        this.pagina = !esVacio(StringUtils.substringAfter(url, ":@:")) ? StringUtils.substringAfter(url, ":@:") : "";
+        this.pagina = !esVacio(substringAfter(url, ":@:")) ? substringAfter(url, ":@:") : "";
         
         // Obtener el código del idioma en el que se desplegará la página, si no existe el código
         // se desplegará por defecto en idioma español (ES).        
-        this.idioma = getParametros().containsKey("lang") ? getParametros().get("lang").toString() : "ES";
+        this.idioma = getParametros().get("lang") != null ? getParametros().get("lang").toString() : "ES";
         
         this.validacionExitosa = true;
         
@@ -92,15 +93,16 @@ public class Evento implements Callable<String> {
     
     @Override
     public String call() {
-        try {
-           if (validarFormularioEvento())
-                return ejecutarEvento().toString();
-           else
-                return "{\"VAL_" + getNombreEvento() + "\" : " + new Gson().toJson(getParametros()) + "}";
-       } catch (Exception e) {
-            Log.getInstance(this).imprimirErrorEnLog(e);
-            return Constantes.ERROR.getString();
-        }
+		try {
+			if (validarFormularioEvento())
+				return ejecutarEvento().toString();
+			else
+				return "{\"VAL_" + getNombreEvento() + "\" : "
+						+ new Gson().toJson(getParametros()) + "}";
+		} catch (Exception e) {
+			Log.getInstance(this).imprimirErrorEnLog(e.getCause());
+			return Constantes.ERROR.getString();
+		}
         
     }
     
@@ -123,8 +125,9 @@ public class Evento implements Callable<String> {
             }
 
             // Validar si el evento posee campos y validar que existan los parámetros que necesitan dichos campos para su ejecución.
-            if (!camposFormularioEvento.isEmpty() && getParametros().isEmpty())
+            if (!camposFormularioEvento.isEmpty() && getParametros().isEmpty()) {
                 throw new ExcepcionGenerica(Constantes.Mensajes.CAMPOS_FORMULARIO_NO_EXISTEN.getMensaje(getNombreEvento()));
+            }
 
             List<Future<Boolean>> grupoEjecucionValidaciones = new ArrayList<Future<Boolean>>();
 
@@ -132,10 +135,10 @@ public class Evento implements Callable<String> {
                 grupoEjecucionValidaciones.add(ejecucionParalelaValidaciones.submit(new Validaciones(campoFormularioEvento, this)));
             }
 
-            for (Future<Boolean> ejecucionValidacionActual : grupoEjecucionValidaciones) {
-                if (!ejecucionValidacionActual.get()) {
-					setValidacionExitosa(false);
-				}
+            for (Future<Boolean> ejecucionValidacionActual : grupoEjecucionValidaciones) {					
+        		if (!ejecucionValidacionActual.get()) {
+        			setValidacionExitosa(false);
+        		}
             }
 
             if (!isValidacionExitosa()) {
@@ -145,7 +148,7 @@ public class Evento implements Callable<String> {
             // Guardar los campos del formulario del evento en una variable global
             setCamposFormularioEvento(camposFormularioEvento);
 
-            return isValidacionExitosa();
+            return true;
 
         } finally {
             ejecucionParalelaValidaciones.shutdown();

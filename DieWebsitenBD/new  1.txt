@@ -1,17 +1,29 @@
 mvn clean package compile
 mvn exec:java -Dexec.mainClass="com.diewebsiten.core.negocio.probarFabrica"
 
+¡ --> separador de inicio (tabla o columna)
+! --> separador de fin (tabla o columna)
+¿ --> separador de inicio (tipo de columna)
+? --> separador de fin (tipo de columna)
 
+Elementos de la base de datos
+_ --> tabla
+- --> columna
 
+__ --> tabla
+_# --> tabla del sistema
+-@ --> partition key / clustering key
+-$ --> columna recuperada (antes de insertar valores en esta clase de columnas se debe validar que el valor ya exista en la columna de referencia)
+-& --> columna poblada desde el sistema
+-* --> columna regular (este literal solo se usa cuando para la desambiguación de tablas, ver el ejemplo de "¡__!validaciones¡-*!descripcion")
 
-
-¡__! --> tabla
-¡_#! --> tabla del sistema
-¡-@! --> primary key / columna intermedia
-¡-$! --> columna recuperada (antes de insertar valores en esta clase de columnas se debe validar que el valor ya exista en la columna de referencia)
-¡-&! --> columna poblada desde el sistema
-¡-*! --> columna regular (este literal solo se usa cuando se usa desambiguación de tablas, ver el ejemplo de "¡__!validaciones¡-*!descripcion")
-
+Tipos de columnas (solo aplica para el tipo -)
+V --> VARCHAR
+I --> INT
+T --> TIMESTAMP
+L --> LIST
+M --> MAP
+S --> SET
 
 
 
@@ -40,35 +52,36 @@ sitiosweb@usuarios@sesiones*/
 
 
 {	
-	"¡__!sitiosweb¡-@!sitioweb": {
-		"descripcion": "",      
-		"¡-$!keyspaces": ["system.schema_keyspaces.keyspace_name"],
-		"¡__!paginas¡-@!pagina": {
-			"descripcion": "",          
-			"¡__!eventos¡-@!evento": {				
-				"¡-@!transaccion": {
-					"descripcion": "",
-					"tipo": "",
-					"¡-$!keyspace_name": "diewebsiten.sitiosweb.keyspaces",
-					"¡-$!column_family": "columnas.columnfamily_name",
-					"¡-&!orden": 1,
-					"¡-&!sentencia_cql" : "",
-					"¡-&!filtrossentenciacql": [],
-					"¡-&!columnasintermediassentenciacql": []  
+	"¡__!sitiosweb¡-@!¿V?sitioweb": {
+		"¡-*!¿V?nombre": "",
+		"¡-*!¿V?descripcion": "",      
+		"¡-$!¿L<V>?keyspaces": ["system.schema_keyspaces.keyspace_name"],
+		"¡__!paginas¡-@!¿V?pagina": {
+			"¡-*!¿V?nombre": "",
+			"¡-*!¿V?descripcion": "",          
+			"¡__!eventos¡-@!¿V?evento": {				
+				"¡-@!¿V?transaccion": {
+					"¡-*!¿V?descripcion": "",
+					"¡-*!¿V?tipo": "",
+					"¡-$!¿V?keyspace_name": "diewebsiten.sitiosweb.keyspaces",
+					"¡-$!¿V?column_family": "columnas.columnfamily_name",
+					"¡-&!¿V?orden": 1,
+					"¡-&!¿V?sentencia_cql" : "",
+					"¡-&!¿V?filtrossentenciacql": [],
+					"¡-&!¿V?columnasintermediassentenciacql": []  
                 },
-				"¡__!formularios¡-@!column_name": {
-					"¡_#!grupovalidacion": "diewebsiten.columnas.column_name.grupovalidacion",
-					//"formaingreso": "",
-					"valorpordefecto" : ""							
+				"¡__!formularios¡-@!¿V?column_name": {
+					"¡-$!¿V?grupovalidacion": "diewebsiten.columnas.column_name.grupovalidacion",
+					"¡-*!¿V?valorpordefecto" : ""							
 				}					               
             }          
         },
-		"¡__!usuarios¡-@!dominio" : {
-			"¡-@!usuario" : {
-				"email" : "",
-				"contrasena" : "",
-				"¡__!sesiones¡@#!sessionid" : {
-					"¡-&!fechaultimoacceso" : ""
+		"¡__!usuarios¡-@!¿V?dominio" : {
+			"¡-@!¿V?usuario" : {
+				"¡-*!¿V?email" : "",
+				"¡-*!¿V?contrasena" : "",
+				"¡__!sesiones¡-@!¿V?sessionid" : {
+					"¡-&!¿T?fechaultimoacceso" : ""
 				}
 			}
 		}
@@ -77,12 +90,10 @@ sitiosweb@usuarios@sesiones*/
 
 
 	//grupos_validaciones@validaciones
-
-		
-	"¡__!grupos_validaciones¡-@!grupovalidacion" : {
-		"¡__!validaciones¡__!grupos_validaciones¡-@!tipo" : {
-			"¡__!grupos_validaciones¡__!validaciones¡-@!validacion" : {
-				"¡__!validaciones¡-*!descripcion" : ""
+	"¡__!grupos_validaciones¡-@!¿V?grupo" : {
+		"¡__!validaciones¡__!grupos_validaciones¡-@!¿V?tipo" : {
+			"¡__!grupos_validaciones¡__!validaciones¡-@!¿V?validacion" : {
+				"¡__!validaciones¡-*!¿V?descripcion" : ""
 			}
 		}	
 	},
@@ -93,13 +104,13 @@ sitiosweb@usuarios@sesiones*/
 
 	"¡_#!schema_keyspaces¡-@!keyspace_name" : {
 		"¡_#!schema_column_families¡__!transacciones_por_tabla¡-@!columnfamily_name" : {
-			"¡_#!schema_column_families¡-*!column_aliases" : "",
-			"¡_#!schema_column_families¡-*!key_aliases" : "",
-			"¡__!transacciones_por_tabla¡-*!tipotransaccion" : "",
-			"¡_#!schema_columns¡__!columnas¡-@!column_name" : {	
-				"¡_#!schema_columns¡-*!component_index" : "",
-				"¡_#!schema_columns¡-*!type" : "",
-				"¡__!columnas¡-*!grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
+			"¡_#!schema_column_families¡-*!¿V?column_aliases" : "",
+			"¡_#!schema_column_families¡-*!¿V?key_aliases" : "",
+			"¡__!transacciones_por_tabla¡-*!¿V?tipotransaccion" : "",
+			"¡_#!schema_columns¡__!columnas¡-@!¿V?column_name" : {	
+				"¡_#!schema_columns¡-*!¿V?component_index" : "",
+				"¡_#!schema_columns¡-*!¿V?type" : "",
+				"¡__!columnas¡-*!¿V?grupovalidacion" : "diewebsiten.grupos_validaciones.grupovalidacion"
 			},
 		}			
 	}
