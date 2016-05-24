@@ -75,14 +75,6 @@ class Transacciones implements Callable<Void> {
             
         //Thread.sleep(1000);        
         
-        // Agregar las supercolumnas al Map de parámetros del formulario, debido a que
-        // están presentes en casi todas las transacciones que componen un evento
-        // NOTA: solo se agregan estas supercolumnas en caso de que el Map de parámetros
-        //       no las contenga.
-//        if (null == getParametros().get("sitioweb")) setParametros("sitioweb", getSitioWeb());
-//        if (null == getParametros().get("pagina")) setParametros("pagina", getPagina());
-//        if (null == getParametros().get("idioma")) setParametros("idioma", getIdioma());
-        
         
         // Extraer los valores recibidos desde el cliente (navegador web, dispositivo móvil)
         // y guardarlos en una lista para enviarlos a la sentencia preparada
@@ -93,14 +85,10 @@ class Transacciones implements Callable<Void> {
             for (Row campo : getEvento().getCamposFormularioEvento()) {
             	
             	if (filtro.equals(campo.getString("column_name"))) {
-                // Solo se extraen los valores para las cláusulas SET de los UPDATES, WHERE, y VALUES de los INSERTS.
-                //if (getUtil().contienePalabra(campo.getString("clausula"), "SET,WHERE,VALUES")) {
-                    // Si el campo de la sentencia tiene un valor por defecto se guardará este valor
-                    // en vez de guardar el valor que viene en el Map de parámetros.
                     if (!esVacio(campo.getString("valorpordefecto"))) {
                         valoresSentencia.add(campo.getString("valorpordefecto"));
                     } else {
-                        valoresSentencia.add(getEvento().getParametros().get(campo.getString("column_name")));
+                        valoresSentencia.add(getEvento().getParametro(campo.getString("column_name")));
                     }
                     existenFiltros = true;
                     break;
@@ -114,18 +102,14 @@ class Transacciones implements Callable<Void> {
 			}
         }
         
-        // Preparar la sentenciade la transacción actual (si la sentencia no tiene filtros no se agrega a la lista de sentencias preparadas)
-        synchronized (Transacciones.class) {
-        	if (!valoresSentencia.isEmpty()) {
-				getEvento().getProveedorCassandra().agregarSentenciaPreparada(nombreTransaccion, sentenciaCQL);
-			} else {
-				nombreTransaccion = sentenciaCQL;
-			}
-        }
-        
         // Obtener los resultados de la transacción.
-        List<Row> resultadoTransaccionActual = getEvento().getProveedorCassandra().consultar(nombreTransaccion, valoresSentencia.toArray());        
-        
+        List<Row> resultadoTransaccionActual = null;
+        if (!valoresSentencia.isEmpty()) {
+			resultadoTransaccionActual = getEvento().getProveedorCassandra().consultar(sentenciaCQL, nombreTransaccion, valoresSentencia.toArray()); 
+		} else {
+			resultadoTransaccionActual = getEvento().getProveedorCassandra().consultar(sentenciaCQL); 
+		}
+      
         if (!resultadoTransaccionActual.isEmpty() && tipoTransaccion.equals("SELECT")) {
             
         	// Obtener las nombres de las columnas

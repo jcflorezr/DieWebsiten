@@ -1,35 +1,23 @@
-package com.diewebsiten.core.negocio;
-
-import com.datastax.driver.core.PreparedStatement;
-import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
-import com.diewebsiten.core.negocio.eventos.Evento;
-import com.diewebsiten.core.util.Constantes;
-import com.diewebsiten.core.util.Log;
-import com.diewebsiten.core.util.UtilidadTransformaciones;
+package com.diewebsiten.core.negocio.eventos;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.gson.JsonArray;
+import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
+import com.diewebsiten.core.util.Constantes;
+import com.diewebsiten.core.util.Log;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-public class probarFabrica {
+public class FachadaEventos {
 
-    
-//    public static long timeDiff(long old) {
-//        return System.nanoTime() - old;
-//    }
-    
-    
     public static void main(String[] args) {
-        
         
         /*try {
             
@@ -49,8 +37,8 @@ public class probarFabrica {
             System.out.println("Excepción: " + e);
         }*/
         
-        
-        
+    	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("Eventos-%d").setDaemon(true).build();
+        ExecutorService ejecucionEventos = Executors.newFixedThreadPool(10, threadFactoryBuilder);
         try {
             long timestamp = System.currentTimeMillis();
             
@@ -118,7 +106,7 @@ public class probarFabrica {
             //Evento.setSesionBD();
             //Evento.setSentenciasPreparadas();
             
-            ExecutorService ejecucionEventos = Executors.newFixedThreadPool(10);
+            
             
             List<Future<String>> grupoEventos = new ArrayList<Future<String>>();
             
@@ -126,12 +114,12 @@ public class probarFabrica {
             
             
             
-//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
-//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
-//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
-//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", parametros1)));
-//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
-//            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
+            //grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
             grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
             
             
@@ -140,12 +128,7 @@ public class probarFabrica {
             }
             
             System.out.println(((System.currentTimeMillis() - timestamp) / 1000) + " seg.");
-            ejecucionEventos.shutdown();
-            /*System.out.println(new TransaccionesCassandra().ejecutarEvento("localhost", "eventos", "ES", "ConsultarInfoSitioWeb", parametros));
-            System.out.println(new TransaccionesCassandra().ejecutarEvento("localhost", "eventos", "ES", "ConsultarInfoBaseDeDatos", parametros));
-            System.out.println(new TransaccionesCassandra().ejecutarEvento("localhost", "eventos", "ES", "CargaInicialPaginaEventos", parametros1));
-            System.out.println(new TransaccionesCassandra().ejecutarEvento("localhost", "eventos", "ES", "ConsultarInfoSitioWeb", parametros1));
-            System.out.println(new TransaccionesCassandra().ejecutarEvento("localhost", "eventos", "ES", "ConsultarInfoBaseDeDatos", parametros1));*/
+            
             
            
             
@@ -154,19 +137,14 @@ public class probarFabrica {
             
         } catch (Exception e) {
             Log.getInstance().imprimirErrorEnLog(e);
+            System.out.println(Constantes.ERROR.getString());
         } finally {
-        	ProveedorCassandra.getInstance().desconectar();
+        	ejecucionEventos.shutdown();
+        	// Finalizar la conexión con la base de datos cassandra
+        	ProveedorCassandra.getInstance(false);
         }
         
+        
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
 }

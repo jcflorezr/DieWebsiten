@@ -1,31 +1,44 @@
 package com.diewebsiten.core.negocio.eventos;
 
+import static com.diewebsiten.core.almacenamiento.util.UtilidadCassandra.validarTipoColumna;
+import static com.diewebsiten.core.util.UtilidadTransformaciones.encriptarCadena;
+import static com.diewebsiten.core.util.UtilidadTransformaciones.maximizar;
+import static com.diewebsiten.core.util.UtilidadTransformaciones.minimizar;
+import static com.diewebsiten.core.util.UtilidadTransformaciones.transformarCamelCaseTipoClase;
+import static com.diewebsiten.core.util.UtilidadTransformaciones.transformarCamelCaseTipoMetodo;
+import static com.diewebsiten.core.util.UtilidadTransformaciones.transformarEmailCassandra;
+import static com.diewebsiten.core.util.UtilidadTransformaciones.trasformarFechaHora;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esAlfanumerico;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esAlfanumericoConEspacios;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esCaracter;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esCaracterConEspacios;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esDireccionUrl;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esDominioSitioWeb;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esEmailValido;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esFechaHora;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esNumerico;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esNumericoConEspacios;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esNumericoConPuntos;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esVacio;
+
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.apache.commons.lang3.StringUtils.*;
-
 import com.datastax.driver.core.Row;
-import static com.diewebsiten.core.almacenamiento.util.UtilidadCassandra.*;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Constantes;
-
-import static com.diewebsiten.core.util.UtilidadTransformaciones.*;
-import static com.diewebsiten.core.util.UtilidadValidaciones.*;
 
 class Validaciones implements Callable<Boolean> {
     
     private final Row campo;
-    private Evento evento;
+    private final Evento evento;
     private AtomicBoolean validacionExitosa;
     
     private static final String COLUMN_NAME = "column_name";
-    private static final String GRUPOVALIDACION = "grupovalidacion";
+    private static final String GRUPO_VALIDACION = "grupovalidacion";
     private static final String TIPO = "tipo";
     private static final String VALIDACION = "validacion";
-    private static final String SEPARADOR_TRANS = "||";
     
     public Validaciones(Row campo, Evento evento) {            
         this.campo = campo;
@@ -59,64 +72,35 @@ class Validaciones implements Callable<Boolean> {
     private Boolean ejecutarValidacion() throws Exception {
     	
     	String nombreCampoActual = campo.getString(COLUMN_NAME);
-        String grupoValidacionesCampoActual = campo.getString(GRUPOVALIDACION);
+        String grupoValidacionesCampoActual = campo.getString(GRUPO_VALIDACION);
         StringBuilder sentencia = new StringBuilder("SELECT grupo_validacion, tipo, validacion FROM diewebsiten.grupos_de_validaciones WHERE grupo_validacion = '").append(grupoValidacionesCampoActual).append("'");
         
-        List<Row> grupoValidacion = getEvento().getProveedorCassandra().consultar(sentencia.toString());
+        List<Row> grupoValidacion = evento.getProveedorCassandra().consultar(sentencia.toString());
 
         // Validar que sí existan las validaciones del grupo.
         if (grupoValidacion.isEmpty()) {
-			throw new ExcepcionGenerica(Constantes.Mensajes.VALIDACIONES_NO_EXISTEN.getMensaje(getEvento().getSitioWeb(), getEvento().getPagina(), getEvento().getNombreEvento()));
+			throw new ExcepcionGenerica(Constantes.Mensajes.VALIDACIONES_NO_EXISTEN.getMensaje(evento.getNombreEvento(), evento.getPagina(), evento.getSitioWeb()));
 		}
         
         for (Row grupo : grupoValidacion) {
-            Object valorParametroActual = getEvento().getParametros().get(nombreCampoActual);
+            Object valorParametroActual = evento.getParametro(nombreCampoActual);
             String tipoGrupoValidacion = grupo.getString(TIPO);
             if (Constantes.VALIDACION.getString().equals(tipoGrupoValidacion)) {
             	String resultadoValidacion = validarParametro(grupo.getString(VALIDACION), valorParametroActual);
             	if (!validacionExitosa.get()) { 
-            		getEvento().setParametros(nombreCampoActual, resultadoValidacion);
-            		descartarParametrosTransformados();
+            		evento.setParametros(nombreCampoActual, resultadoValidacion);
             	}
             } else if (validacionExitosa.get() && Constantes.TRANSFORMACION.getString().equals(tipoGrupoValidacion)) {
                 Object resTrans = transformarParametro(grupo.getString(VALIDACION), valorParametroActual);
                 if (null == resTrans) {
-                    throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.TRANSFORMACION_FALLIDA.getMensaje(nombreCampoActual, getEvento().getNombreEvento(), (String)valorParametroActual, grupo.getString("validacion")));
+                    throw new ExcepcionGenerica(com.diewebsiten.core.util.Constantes.Mensajes.TRANSFORMACION_FALLIDA.getMensaje(nombreCampoActual, evento.getNombreEvento(), (String)valorParametroActual, grupo.getString("validacion")));
                 }
-                getEvento().setParametros(nombreCampoActual, ((String) getEvento().getParametros().get(nombreCampoActual)) + SEPARADOR_TRANS + resTrans);
+                evento.setParametrosTransformados(nombreCampoActual, resTrans);
             }
-        }
-        
-        if (validacionExitosa.get()) {
-        	separarParametrosTransformados();
         }
         
         return validacionExitosa.get();
     	
-    }
-    
-    /**
-     * Retirar los parametros del campo "Evento.parametros"
-     * que fueron transformados cuando la validación aun era
-     * exitosa
-     */
-    private void descartarParametrosTransformados() {
-    	Map<String, Object> parametros = getEvento().getParametros();
-    	for (Map.Entry<String, Object> parametro : parametros.entrySet()) {
-			parametros.put(parametro.getKey(), substringBefore((String) parametro.getValue(), SEPARADOR_TRANS));
-    	}
-    }
-    
-    /**
-     * Separar los valores transformados del campo "Evento.parametros".
-     * Este método solo se ejecuta si la validación fue exitosa.
-     */
-    private void separarParametrosTransformados() {
-    	Map<String, Object> parametros = getEvento().getParametros();
-    	for (Map.Entry<String, Object> parametro : parametros.entrySet()) {
-    		String valorFinalParametro = substringAfter((String) parametro.getValue(), SEPARADOR_TRANS);
-			parametros.put(parametro.getKey(), !isBlank(valorFinalParametro) ? valorFinalParametro : (String) parametro.getValue());
-    	}
     }
     
     
@@ -132,7 +116,7 @@ class Validaciones implements Callable<Boolean> {
      * fue exitosa se retorna el mismo valor recibido en el parámetro @valor 
      * @throws Exception
      */
-    public String validarParametro(String nombreValidacion, Object valor) throws Exception {
+    private String validarParametro(String nombreValidacion, Object valor) throws Exception {
     	
        	if (esVacio(nombreValidacion)) {
        		throw new Exception("El nombre de la validación ha llegado nulo.");
@@ -265,7 +249,7 @@ class Validaciones implements Callable<Boolean> {
      * fue exitosa se retorna el mismo valor recibido en el parámetro @valor 
      * @throws Exception
      */
-    public Object transformarParametro (String nombreTransformacion, Object valor) throws Exception {
+    private Object transformarParametro (String nombreTransformacion, Object valor) throws Exception {
         //Thread.sleep(1000);
         if (esVacio(valor) || esVacio(nombreTransformacion)) {
             throw new Exception("No se puede hacer la ransformación de un valor nulo. Nombre Validación: " + nombreTransformacion + ". Parámetro : " + valor);
@@ -278,7 +262,7 @@ class Validaciones implements Callable<Boolean> {
             case T_CIFRADO:
                 return encriptarCadena((String) valor);       
             case T_FECHAHORA:                
-            	trasformarFechaHora((String) valor);
+            	return trasformarFechaHora((String) valor);
             case T_MINUSCULAS:
                 return minimizar((String) valor);                
             case T_MAYUSCULAS :
@@ -308,10 +292,6 @@ class Validaciones implements Callable<Boolean> {
     // =============================
     // ==== Getters and Setters ====
     // =============================
-    
-    private Evento getEvento() {
-		return this.evento;
-	}
     
     private AtomicBoolean getValidacionExitosa() {
 		return this.validacionExitosa;

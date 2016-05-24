@@ -77,7 +77,7 @@ public enum Constantes {
         EVENTO_NO_EXISTE {
             @Override
             public String getMensaje(String... valores) {
-                return "El evento '" + valores[2] + "' de la página '" + valores[1] + "' del sitio web '" + valores[0] + "' no existe.";
+                return "El evento '" + valores[0] + "' de la página '" + valores[1] + "' del sitio web '" + valores[2] + "' no existe.";
             }
         },
         CAMPOS_FORMULARIO_NO_EXISTEN {
@@ -90,8 +90,8 @@ public enum Constantes {
             @Override
             public String getMensaje(String... valores) {            
                 return "No se encontraron las validaciones o las transformaciones "
-                     + "necesarias para los campos del formulario del evento '" + valores[2] + "'"
-                     + " de la página '" + valores[1] + "' del sitio web '" + valores[0] + "'.";
+                     + "necesarias para los campos del formulario del evento '" + valores[0] + "'"
+                     + " de la página '" + valores[1] + "' del sitio web '" + valores[2] + "'.";
             }
         },
         FILTRO_NO_EXISTE {

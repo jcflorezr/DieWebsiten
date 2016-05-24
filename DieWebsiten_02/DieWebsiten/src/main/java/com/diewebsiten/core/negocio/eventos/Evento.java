@@ -1,8 +1,12 @@
 
 package com.diewebsiten.core.negocio.eventos;
 
+import static com.diewebsiten.core.util.UtilidadValidaciones.contienePalabra;
+import static com.diewebsiten.core.util.UtilidadValidaciones.esVacio;
+import static org.apache.commons.lang3.StringUtils.substringAfter;
+import static org.apache.commons.lang3.StringUtils.substringBefore;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,18 +14,16 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import static org.apache.commons.lang3.StringUtils.*;
+import java.util.concurrent.ThreadFactory;
 
 import com.datastax.driver.core.Row;
 import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
-
-import static com.diewebsiten.core.util.UtilidadValidaciones.*;
-
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
@@ -34,15 +36,18 @@ import com.google.gson.reflect.TypeToken;
  */
 public class Evento implements Callable<String> {
     
-    private String sitioWeb;
-    private String pagina;
-    private String idioma;
-    private String nombreEvento;
-    private Map<String, Object> parametros;
+    private final String sitioWeb;
+    private final String pagina;
+    private final String idioma;
+    private final String nombreEvento;
+    private JsonObject parametros;
+    private JsonObject parametrosTransformados;
     private List<Row> camposFormularioEvento;
 	
     private ProveedorCassandra proveedorCassandra;
     private boolean validacionExitosa;
+    
+    private final String[] infoEvento;
     
     /**
      * Este constructor se encarga de recibir un evento, este evento contiene transacciones de consulta,
@@ -57,7 +62,7 @@ public class Evento implements Callable<String> {
      * @return String de tipo JSON con la respuesta de cada transacción que contiene el evento.
      * @throws java.lang.Exception
      */
-    public Evento(String url, String nombreEvento, String parametros) throws Exception {
+    Evento(String url, String nombreEvento, String parametros) throws Exception {
         
         // Validar que el nombre del evento no llegue vacío.
         if (esVacio(nombreEvento)) {
@@ -74,7 +79,7 @@ public class Evento implements Callable<String> {
         parametros = esVacio(parametros) ? "{}" : parametros;
             
         // Guardar los parámetros con los que se ejcutará el evento.
-        this.parametros = new Gson().fromJson(parametros, new TypeToken<Map<String, Object>>(){}.getType());
+        this.parametros = new Gson().fromJson(parametros, new TypeToken<JsonObject>(){}.getType());
         
         // Obtener el nombre de la página del sitio web que está realizando la petición.
         this.pagina = !esVacio(substringAfter(url, ":@:")) ? substringAfter(url, ":@:") : "";
@@ -85,7 +90,10 @@ public class Evento implements Callable<String> {
         
         this.validacionExitosa = true;
         
-        this.proveedorCassandra = ProveedorCassandra.getInstance();
+        // Iniciar una nueva conexión con la base de datos Cassandra
+        this.proveedorCassandra = ProveedorCassandra.getInstance(true);
+        
+        this.infoEvento = new String[] {this.sitioWeb, this.pagina, this.nombreEvento};
         
     }
     
@@ -97,10 +105,14 @@ public class Evento implements Callable<String> {
 			if (validarFormularioEvento())
 				return ejecutarEvento().toString();
 			else
-				return "{\"VAL_" + getNombreEvento() + "\" : "
-						+ new Gson().toJson(getParametros()) + "}";
+				return "{\"VAL_" + nombreEvento + "\" : " + new Gson().toJson(getParametros()) + "}";
 		} catch (Exception e) {
-			Log.getInstance(this).imprimirErrorEnLog(e.getCause());
+			Throwable excepcionReal = e.getCause();
+			if (excepcionReal != null) {
+				Log.getInstance(this).imprimirErrorEnLog(excepcionReal);
+			} else {
+				Log.getInstance(this).imprimirErrorEnLog(e);
+			}
 			return Constantes.ERROR.getString();
 		}
         
@@ -113,11 +125,12 @@ public class Evento implements Callable<String> {
      */
     private boolean validarFormularioEvento() throws Exception {
         
-        ExecutorService ejecucionParalelaValidaciones = Executors.newFixedThreadPool(10);
+    	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat(nombreEvento + "-%d").setDaemon(true).build();
+        ExecutorService ejecucionParalelaValidaciones = Executors.newFixedThreadPool(10, threadFactoryBuilder);
 
         try {
             
-            List<Row> camposFormularioEvento = getProveedorCassandra().consultar(Constantes.NMBR_SNT_VALIDACIONES_EVENTO.getString(), getSitioWeb(), getPagina(), getNombreEvento());
+            List<Row> camposFormularioEvento = getProveedorCassandra().consultar(Constantes.NMBR_SNT_VALIDACIONES_EVENTO.getString(), infoEvento);
 
             // Si no se encontraron campos para la ejecución de este evento significa que no los necesita.
             if (camposFormularioEvento.isEmpty()) {
@@ -125,8 +138,8 @@ public class Evento implements Callable<String> {
             }
 
             // Validar si el evento posee campos y validar que existan los parámetros que necesitan dichos campos para su ejecución.
-            if (!camposFormularioEvento.isEmpty() && getParametros().isEmpty()) {
-                throw new ExcepcionGenerica(Constantes.Mensajes.CAMPOS_FORMULARIO_NO_EXISTEN.getMensaje(getNombreEvento()));
+            if (!camposFormularioEvento.isEmpty() && getParametros().isJsonNull()) {
+                throw new ExcepcionGenerica(Constantes.Mensajes.CAMPOS_FORMULARIO_NO_EXISTEN.getMensaje(nombreEvento));
             }
 
             List<Future<Boolean>> grupoEjecucionValidaciones = new ArrayList<Future<Boolean>>();
@@ -144,6 +157,9 @@ public class Evento implements Callable<String> {
             if (!isValidacionExitosa()) {
                 return isValidacionExitosa();
             } 
+            
+            // Cambiar los parámetros originales por los que ya fueron transformados.
+            setParametros(parametrosTransformados);
             
             // Guardar los campos del formulario del evento en una variable global
             setCamposFormularioEvento(camposFormularioEvento);
@@ -163,17 +179,18 @@ public class Evento implements Callable<String> {
     private String ejecutarEvento() throws Exception {
         
     	JsonObject resultadoEvento = new JsonObject();
-        ExecutorService ejecucionParalelaTransacciones = Executors.newFixedThreadPool(10);
-        List<Row> transacciones;
+    	
+    	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat(nombreEvento + "-%d").setDaemon(true).build();
+        ExecutorService ejecucionParalelaTransacciones = Executors.newFixedThreadPool(10, threadFactoryBuilder);
         
         try {
 
             // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-            transacciones = getProveedorCassandra().consultar(Constantes.NMBR_SNT_TRANSACCIONES.getString(), getSitioWeb(), getPagina(), getNombreEvento());
+        	List<Row> transacciones = getProveedorCassandra().consultar(Constantes.NMBR_SNT_TRANSACCIONES.getString(), infoEvento);
 
             // Validar que el evento existe.
             if (transacciones.isEmpty()) 
-                throw new ExcepcionGenerica (Constantes.Mensajes.EVENTO_NO_EXISTE.getMensaje(getSitioWeb(), getPagina(), getNombreEvento()));
+                throw new ExcepcionGenerica (Constantes.Mensajes.EVENTO_NO_EXISTE.getMensaje(infoEvento));
             
             List<Future<Void>> grupoEjecucionTransacciones = new ArrayList<Future<Void>>();
             
@@ -220,7 +237,7 @@ public class Evento implements Callable<String> {
             
             // Obtener los campos que contiene la sentencia CQL.
             StringBuilder sentenciaCQL = new StringBuilder("SELECT clausula, campo FROM diewebsiten.sentencias_cql WHERE sitioweb = ? AND pagina = ? AND tipotransaccion = ? AND transaccion = ?");
-            List<Row> camposSentencia = getProveedorCassandra().consultar(sentenciaCQL.toString(), sitioWeb, pagina, tipoSentencia, transaccion);
+            List<Row> camposSentencia = getProveedorCassandra().consultar(sentenciaCQL.toString(), new Object[] {sitioWeb, pagina, tipoSentencia, transaccion});
 
             // Validar que los campos del formulario existen.
             if (camposSentencia.isEmpty()) {
@@ -324,17 +341,53 @@ public class Evento implements Callable<String> {
         return nombreEvento;
     }
 
-    Map<String, Object> getParametros() {
-        return parametros;
+    JsonObject getParametros() {
+    	/*
+    	 * Copia defensiva del campo 'new Evento().parametros'
+    	 */
+    	JsonObject copiaDeParametros = new JsonObject();
+    	for (Map.Entry<String, JsonElement> copiaDeParametro : parametros.entrySet()) {
+    		copiaDeParametros.addProperty(copiaDeParametro.getKey(), copiaDeParametro.getValue().getAsString());
+    	}
+    	return copiaDeParametros;
+    }
+    
+    String getParametro(String nombreParametro) throws ExcepcionGenerica {
+    	JsonElement valorParametro = this.parametros.get(nombreParametro);
+    	return valorParametro == null ? "" : valorParametro.getAsString();
     }
 
-//    private void setParametros(Map<String, Object> parametros) {
-//        this.parametros = parametros;
-//    }
+    void setParametros(JsonObject parametros) {
+    	if (parametros != null) {
+	    	for (Map.Entry<String, JsonElement> parametro : parametros.entrySet()) {
+	    		this.parametros.addProperty(parametro.getKey(), parametro.getValue().getAsString());
+	    	}
+    	}
+    }
     
     void setParametros(String nombreParametro, Object valorParametro) {
-        this.parametros.put(nombreParametro, valorParametro);
+    	String valorParametroString = valorParametro instanceof JsonElement ? ((JsonElement) valorParametro).getAsString() : (String) valorParametro;
+    	this.parametros.addProperty(nombreParametro, valorParametroString);
     }
+
+	JsonObject getParametrosTransformados() {
+		/*
+    	 * Copia defensiva del campo 'new Evento().parametrosTransformados'
+    	 */
+    	JsonObject copiaDeParametrosTransformados = new JsonObject();
+    	for (Map.Entry<String, JsonElement> copiaDeParametro : parametrosTransformados.entrySet()) {
+    		copiaDeParametrosTransformados.addProperty(copiaDeParametro.getKey(), copiaDeParametro.getValue().getAsString());
+    	}
+    	return copiaDeParametrosTransformados;
+    }
+	
+	void setParametrosTransformados(String nombreParametro, Object valorParametro) {
+		if (this.parametrosTransformados == null) {
+			this.parametrosTransformados = new JsonObject();
+		}
+		String valorParametroString = valorParametro instanceof JsonElement ? ((JsonElement) valorParametro).getAsString() : (String) valorParametro;
+    	this.parametrosTransformados.addProperty(nombreParametro, valorParametroString);
+	}
     
     private void setValidacionExitosa(boolean validacionExitosa) {
         this.validacionExitosa = validacionExitosa;

@@ -1,5 +1,6 @@
 package com.diewebsiten.core.almacenamiento;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,24 +21,27 @@ import com.diewebsiten.core.util.Constantes;
 public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
     private static ProveedorCassandra proveedorCassandra;
-	private Cluster cluster;
-    private Session sesion;
+	private static Cluster cluster;
+    private static Session sesion;
     private Map<String, PreparedStatement> sentenciasPreparadas;
-    
-
-    private ProveedorCassandra() {
-    	conectar();
-    	prepararSentenciasIniciales();
-    }
     
     /*
      * Unica instancia de la clase ProveedorCassandra.
      */
-    public static synchronized ProveedorCassandra getInstance() {
-    	if (proveedorCassandra == null) {
-    		proveedorCassandra = new ProveedorCassandra();
+    public static synchronized ProveedorCassandra getInstance(boolean iniciar) {
+    	if (iniciar) {
+	    	if (proveedorCassandra == null) {
+	    		proveedorCassandra = new ProveedorCassandra();
+	    	}
+    	} else {
+    		proveedorCassandra.desconectar();
     	}
     	return proveedorCassandra;	
+    }
+
+    private ProveedorCassandra() {
+    	conectar();
+    	prepararSentenciasIniciales();
     }
 
     /**
@@ -45,36 +49,44 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * 
      * 1. Establecer los parámetros de conexión al motor de base de datos.
      * 2. Crear una sesión de conexión a la base de datos.
-     * 
-     * @return 
-     * @throws java.lang.Exception
      */
     @Override
     void conectar() {
         cluster = Cluster.builder().addContactPoint(Constantes.CASSANDRA_URL.getString()).withPort(Constantes.CASSANDRA_PORT.getInt()).build();
-        this.sesion = cluster.connect();
+        sesion = cluster.connect();
     }
     
     /**
      * Cerrar la conexión con el motor de base de datos.
      */
     @Override
-    public void desconectar() {
+    void desconectar() {
         cluster.close();
     }
     
+    /**
+     * HAY QUE ENCONTRAR LA FORMA DE QUE ESTE METODO EJECUTE TODO TIPO DE SENTENCIA.. NO SOLO LAS DE CONSULTA
+     * @return
+     */
+    private List<Row> ejecutarSentenciaTipoConsulta(Object sentencia, Object[] parametros) throws ExcepcionGenerica {
+    	try {
+    		if (null == parametros) {
+    			return sesion.execute((String)sentencia).all();
+    		} else {
+    			return sesion.execute(((PreparedStatement) sentencia).bind(parametros)).all();
+    		}
+		} catch (Exception e) {
+			String sentenciaError = sentencia instanceof String ? sentencia.toString() : ((PreparedStatement)sentencia).getQueryString();
+			throw new ExcepcionGenerica("Error al ejecutar la sentencia CQL --> " + sentenciaError + "'. Parámetros: " + Arrays.asList(parametros).toString() + ". Mensaje original --> " + e.getMessage());
+		}
+    }
     
     /**
-     * Preparar las sentencias CQL que se ejecutan en todos los eventos con el fin de prepararlas una sola vez por cada evento.
+     * 
      */
-    private void prepararSentenciasIniciales() {
-    	synchronized (ProveedorCassandra.class) {
-    		if (null == sentenciasPreparadas) {
-    			sentenciasPreparadas = new HashMap<String, PreparedStatement>();
-    			sentenciasPreparadas.put(Constantes.NMBR_SNT_TRANSACCIONES.getString(), getSesion().prepare(Constantes.SNT_TRANSACCIONES.getString()));
-    			sentenciasPreparadas.put(Constantes.NMBR_SNT_VALIDACIONES_EVENTO.getString(), getSesion().prepare(Constantes.SNT_VALIDACIONES_EVENTO.getString()));
-    		}
-    	}
+    @Override
+    public List<Row> consultar(String sentenciaCQL) throws ExcepcionGenerica {
+    	return ejecutarSentenciaTipoConsulta(sentenciaCQL, null);
     }
     
     /**
@@ -89,36 +101,60 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * 							 ninguna de las sentencias existentes
      */
     @Override
-    public List<Row> consultar(String nombreSentencia, Object... parametros) throws ExcepcionGenerica {
-    	if (parametros.length == 0) {
-    		return getSesion().execute(nombreSentencia).all();
-    	}
-    	PreparedStatement sentenciaPreparada = getSentenciasPreparadas().get(nombreSentencia);
+    public List<Row> consultar(String nombreSentencia, Object[] parametros) throws ExcepcionGenerica {
+    	PreparedStatement sentenciaPreparada = sentenciasPreparadas.get(nombreSentencia);
     	if (sentenciaPreparada == null) {
     		throw new ExcepcionGenerica("No se puede ejecutar la sentencia '" + nombreSentencia + "' porque no existe.");
     	} else {
-    		return getSesion().execute(sentenciaPreparada.bind(parametros)).all();
+    		return ejecutarSentenciaTipoConsulta(sentenciaPreparada, parametros);
     	}
     }
+    
+    /**
+     * 
+     */
+    @Override
+    public List<Row> consultar(String sentenciaCQL, String nombreSentencia, Object[] parametros) throws ExcepcionGenerica {
+    	if (null == parametros) {
+    		return ejecutarSentenciaTipoConsulta(sentenciaCQL, null);
+    	}
+    	PreparedStatement sentenciaPreparada = sentenciasPreparadas.get(nombreSentencia);
+    	if (null == sentenciaPreparada) {
+    		sentenciaPreparada = agregarSentenciaPreparada(sentenciaCQL, nombreSentencia);
+    	}
+    	return ejecutarSentenciaTipoConsulta(sentenciaPreparada, parametros);
+    }
+    
+    /**
+     * Preparar las sentencias CQL que se ejecutan en todos los eventos con el fin de prepararlas una sola vez por cada evento.
+     */
+    private void prepararSentenciasIniciales() {
+		if (null == sentenciasPreparadas) {
+			sentenciasPreparadas = new HashMap<String, PreparedStatement>();
+			sentenciasPreparadas.put(Constantes.NMBR_SNT_TRANSACCIONES.getString(), sesion.prepare(Constantes.SNT_TRANSACCIONES.getString()));
+			sentenciasPreparadas.put(Constantes.NMBR_SNT_VALIDACIONES_EVENTO.getString(), sesion.prepare(Constantes.SNT_VALIDACIONES_EVENTO.getString()));
+		}
+    }
+    
     
     // =============================
     // ==== Getters and Setters ====
     // =============================
-    
 
-    public Map<String, PreparedStatement> getSentenciasPreparadas() {
-        return sentenciasPreparadas;
-    }
-    
-    public void agregarSentenciaPreparada(String nombreSentencia, String sentencia) {
-    	PreparedStatement sentenciasPreparadas = getSentenciasPreparadas().get(nombreSentencia);
-        if (null == sentenciasPreparadas) {
-            getSentenciasPreparadas().put(nombreSentencia, getSesion().prepare(sentencia));
-        }
-    }
-    
-    private Session getSesion() {
-    	return this.sesion;
+    /**
+     * Tener sentencias preparadas con el fin de reusarlas
+     * @param sentenciaCQL
+     * @param nombreSentencia
+     * @return
+     */
+    private synchronized PreparedStatement agregarSentenciaPreparada(String sentenciaCQL, String nombreSentencia) throws ExcepcionGenerica {
+    	try {			
+    		PreparedStatement sentenciaPreparada = sesion.prepare(sentenciaCQL);
+    		sentenciasPreparadas.put(nombreSentencia, sentenciaPreparada);
+        	return sentenciaPreparada;
+		} catch (Exception e) {
+			throw new ExcepcionGenerica("Error al preparar la nueva sentencia CQL. Nombre: '" + nombreSentencia + "'. Sentencia: " + sentenciaCQL + ". Mensaje original --> " + e.getMessage());
+		}
     }
 
 }
