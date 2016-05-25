@@ -1,11 +1,16 @@
 
 package com.diewebsiten.core.util;
 
+import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.negocio.eventos.Evento;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.DailyRollingFileAppender;
@@ -39,44 +44,68 @@ public class Log {
 
     /**
      * Constructor privado siguiendo el patrón de diseño 'Singleton'
+     * @throws ExcepcionGenerica 
      */
-    private Log() {
-        try {
-//          File carpetaLog = new File("/opt/apache-tomcat-8.0.23/logs/logsdw");
-//            File carpetaLog = new File("/Users/juaflore/logsdw");
-        	File carpetaLog = new File("/Users/juancamiloroman/logsdw");
+    private Log() throws ExcepcionGenerica {
+        	
+    	String rutaYNombreLog = "";
+    	File carpetaLog;
+    	
+    	Set<String> posiblesRutas = new HashSet<>();
+    	posiblesRutas.add("/Users/juaflore/");
+    	posiblesRutas.add("/Users/juancamiloroman/");
+    	
+    	boolean esDirectorio = false;
+    	for (String ruta : posiblesRutas) {
+    		carpetaLog = new File(ruta);
+    		if (carpetaLog.isDirectory()) {
+    			esDirectorio = true;
+    			rutaYNombreLog = ruta + "logsdw";
+    			break;
+    		}
+    	}
+    	
+    	if (!esDirectorio) {
+    		throw new ExcepcionGenerica("No se pudo encontrar ninguna de las posibles rutas que hay por defecto.");
+    	}
+
+    	
+    	
+    	
+    	HAY QUE SEGUIR MIRANDO COMO CAPTURAR LAS EXCEPCIONES LANZADAS DESDE ESTA CLASE DE LOG
+    	
+    	
+    	
+    	
 //          File carpetaLog = new File(Constantes.RUTA_LOG);
-            if (!carpetaLog.exists())
-                carpetaLog.mkdirs();
-            
-            //String rutaYNombreLog = "/opt/apache-tomcat-8.0.23/logs/logsdw" + "/promociones";
+        
+        
+        //String rutaYNombreLog = "/opt/apache-tomcat-8.0.23/logs/logsdw" + "/promociones";
 //            String rutaYNombreLog = "/Users/juaflore/logsdw/log";
-            String rutaYNombreLog = "/Users/juancamiloroman/logsdw/log";
-            //String rutaYNombreLog = Constantes.RUTA_LOG + Constantes.NOMBRE_LOG;
-            logger = Logger.getLogger(rutaYNombreLog);        
-                
-            PatternLayout layout = new PatternLayout();
-            layout.setConversionPattern("[%p] [%d{MM-dd-yyyy HH:mm:ss}] [%t%r%x%X] %m%n");
+        
+        //String rutaYNombreLog = Constantes.RUTA_LOG + Constantes.NOMBRE_LOG;
+        rutaYNombreLog += "/log";
+        logger = Logger.getLogger(rutaYNombreLog);        
             
-            rutaYNombreLog += "_" + new SimpleDateFormat("yyyyMMdd").format(new Date()) + ".log";     
+        PatternLayout layout = new PatternLayout();
+        layout.setConversionPattern("[%p] [%d{MM-dd-yyyy HH:mm:ss}] [%t%r%x%X] %m%n");
+        
+        rutaYNombreLog += "_" + new SimpleDateFormat("yyyyMMdd").format(new Date()) + ".log";     
+        
+        DailyRollingFileAppender rollingAppender = new DailyRollingFileAppender();
+        rollingAppender.setFile(rutaYNombreLog);
+        rollingAppender.setLayout(layout);
+        rollingAppender.activateOptions();
+        
+        //ConsoleAppender consoleAppender = new ConsoleAppender();
+        //consoleAppender.setLayout(layout);
+        //consoleAppender.activateOptions();
+ 
+        Logger rootLogger = Logger.getRootLogger();
+        rootLogger.setLevel(Level.DEBUG);
+        rootLogger.addAppender(rollingAppender);
+        //rootLogger.addAppender(consoleAppender);
             
-            DailyRollingFileAppender rollingAppender = new DailyRollingFileAppender();
-            rollingAppender.setFile(rutaYNombreLog);
-            rollingAppender.setLayout(layout);
-            rollingAppender.activateOptions();
-            
-            //ConsoleAppender consoleAppender = new ConsoleAppender();
-            //consoleAppender.setLayout(layout);
-            //consoleAppender.activateOptions();
-     
-            Logger rootLogger = Logger.getRootLogger();
-            rootLogger.setLevel(Level.DEBUG);
-            rootLogger.addAppender(rollingAppender);
-            //rootLogger.addAppender(consoleAppender);
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     } //Logs
 
     //--------------------------------------------------------------------------

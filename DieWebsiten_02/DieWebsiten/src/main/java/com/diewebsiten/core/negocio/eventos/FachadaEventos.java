@@ -136,12 +136,18 @@ public class FachadaEventos {
             
             
         } catch (Exception e) {
-            Log.getInstance().imprimirErrorEnLog(e);
-            System.out.println(Constantes.ERROR.getString());
+        	
+            try {
+				Log.getInstance().imprimirErrorEnLog(e);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+            
         } finally {
         	ejecucionEventos.shutdown();
         	// Finalizar la conexión con la base de datos cassandra
         	ProveedorCassandra.getInstance(false);
+        	System.out.println(Constantes.ERROR.getString());
         }
         
         

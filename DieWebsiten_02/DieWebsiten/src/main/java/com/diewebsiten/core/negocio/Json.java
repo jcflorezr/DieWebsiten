@@ -210,7 +210,7 @@ public class Json {
 				CQLs.addProperty(tablaActual, cql.toString());
 				primaryKeys.addProperty(tablaActual, nombreColumna);
 				
-				IR GUARDANDO LAS PARTITION KEY DE LAS TABLAS PADRES
+//				IR GUARDANDO LAS PARTITION KEY DE LAS TABLAS PADRES
 			}
 		
 		}
