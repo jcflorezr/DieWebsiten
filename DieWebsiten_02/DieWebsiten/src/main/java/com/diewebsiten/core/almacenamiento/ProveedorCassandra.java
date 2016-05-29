@@ -1,16 +1,26 @@
 package com.diewebsiten.core.almacenamiento;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ProtocolVersion;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Constantes;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * Administrar las conexiones y transacciones que se realizan al
@@ -32,17 +42,18 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     	if (iniciar) {
 	    	if (proveedorCassandra == null) {
 	    		proveedorCassandra = new ProveedorCassandra();
+	    		proveedorCassandra.conectar();
 	    	}
     	} else {
     		proveedorCassandra.desconectar();
     	}
-    	return proveedorCassandra;	
+    	return proveedorCassandra;
     }
 
     private ProveedorCassandra() {
-    	conectar();
-    	prepararSentenciasIniciales();
+    	sentenciasPreparadas = new HashMap<>();
     }
+    
 
     /**
      * Establecer una conexión con el motor de base de datos.
@@ -61,80 +72,118 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      */
     @Override
     void desconectar() {
-        cluster.close();
+    	if (cluster != null) {
+    		cluster.close();
+    	}
     }
     
     /**
      * HAY QUE ENCONTRAR LA FORMA DE QUE ESTE METODO EJECUTE TODO TIPO DE SENTENCIA.. NO SOLO LAS DE CONSULTA
      * @return
      */
-    private List<Row> ejecutarSentenciaTipoConsulta(Object sentencia, Object[] parametros) throws ExcepcionGenerica {
+    private List<JsonObject> ejecutarSentenciaTipoConsulta(Object sentencia, Object[] parametros) throws ExcepcionGenerica {
     	try {
+    		
+    		ResultSet rs;
+    		
     		if (null == parametros) {
-    			return sesion.execute((String)sentencia).all();
+    			rs = sesion.execute((String)sentencia);
     		} else {
-    			return sesion.execute(((PreparedStatement) sentencia).bind(parametros)).all();
+    			rs = sesion.execute(((PreparedStatement) sentencia).bind(parametros));    			
     		}
+    		
+    		
+    		Iterator<Row> it = rs.iterator();
+			List<ColumnDefinitions.Definition> cols = rs.getColumnDefinitions().asList();
+			List<JsonObject> ljobj = new ArrayList<>();
+			JsonObject jobj = new JsonObject();
+			Map<String, Object> map = new HashMap<>();
+			
+			
+			
+			
+			
+			
+			
+			// SACAR ESTE WHILE EN UN METODO APARTE
+			
+			while (it.hasNext()) {
+				Row fila = it.next();
+				for (ColumnDefinitions.Definition columnaActual : cols) { 
+					ByteBuffer bf = fila.getBytesUnsafe(columnaActual.getName());
+					Object valorColumnaActual;
+					if (bf != null) {
+						valorColumnaActual = columnaActual.getType().deserialize((bf), ProtocolVersion.NEWEST_SUPPORTED);
+					} else {
+						String tipoColumna = columnaActual.getType().asJavaClass().getSimpleName();
+						if (columnaActual.getType().isCollection()) {
+							valorColumnaActual = "List".equals(tipoColumna) ? new JsonArray() : new JsonObject();
+						} else {    							
+							if ("String".equals(tipoColumna)) {
+								valorColumnaActual = "";
+							} else if ("Integer,Long,Float,Double,BigDecimal,BigInteger".indexOf(tipoColumna) > -1) {
+								valorColumnaActual = 0;
+							} else {
+								valorColumnaActual = null;
+							}
+						}
+					}
+					
+					map.put(columnaActual.getName(), valorColumnaActual);
+					
+				}
+				jobj = new JsonParser().parse(new Gson().toJson(map)).getAsJsonObject();
+				ljobj.add(jobj);
+			}
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			return ljobj;
+    		
+    		
 		} catch (Exception e) {
 			String sentenciaError = sentencia instanceof String ? sentencia.toString() : ((PreparedStatement)sentencia).getQueryString();
-			throw new ExcepcionGenerica("Error al ejecutar la sentencia CQL --> " + sentenciaError + "'. Parámetros: " + Arrays.asList(parametros).toString() + ". Mensaje original --> " + e.getMessage());
+			throw new ExcepcionGenerica("Error al ejecutar la sentencia CQL --> " + sentenciaError + "'. Parámetros: " + Arrays.asList(parametros).toString() + ". Mensaje original --> " + e);
 		}
     }
     
-    /**
-     * 
-     */
-    @Override
-    public List<Row> consultar(String sentenciaCQL) throws ExcepcionGenerica {
-    	return ejecutarSentenciaTipoConsulta(sentenciaCQL, null);
-    }
     
-    /**
-     * Método generico para ejecutar una sentencia CQL (Cassandra Query Language)
-     * de tipo consulta. Las sentencias con filtros deben ser preparadas 
-     * antes de su ejecución, no serán ejecutadas directamente.
-     * 
-     * @param nombreSentencia nombre de la sentencia que se va a extraer para su ejecución
-     * @param parametros filtros de búsqueda con que se ejecutará la sentencia
-     * @return Conjunto de datos (DataSet)
-     * @throws ExcepcionGenerica en caso de que el nombre de la sentencia no coincida con 
-     * 							 ninguna de las sentencias existentes
-     */
-    @Override
-    public List<Row> consultar(String nombreSentencia, Object[] parametros) throws ExcepcionGenerica {
-    	PreparedStatement sentenciaPreparada = sentenciasPreparadas.get(nombreSentencia);
-    	if (sentenciaPreparada == null) {
-    		throw new ExcepcionGenerica("No se puede ejecutar la sentencia '" + nombreSentencia + "' porque no existe.");
-    	} else {
-    		return ejecutarSentenciaTipoConsulta(sentenciaPreparada, parametros);
-    	}
-    }
     
     /**
      * 
      */
     @Override
-    public List<Row> consultar(String sentenciaCQL, String nombreSentencia, Object[] parametros) throws ExcepcionGenerica {
+    public List<JsonObject> consultar(DetallesSentencias detallesSentencia) throws ExcepcionGenerica {
+    	
+    	String sentenciaCQL = detallesSentencia.getSentencia(); 
+    	String nombreSentencia = detallesSentencia.getNombreSentencia();
+    	Object[] parametros = detallesSentencia.getParametrosSentencia();
+    	
     	if (null == parametros) {
     		return ejecutarSentenciaTipoConsulta(sentenciaCQL, null);
     	}
-    	PreparedStatement sentenciaPreparada = sentenciasPreparadas.get(nombreSentencia);
-    	if (null == sentenciaPreparada) {
-    		sentenciaPreparada = agregarSentenciaPreparada(sentenciaCQL, nombreSentencia);
-    	}
-    	return ejecutarSentenciaTipoConsulta(sentenciaPreparada, parametros);
+    	
+    	PreparedStatement sentenciaPreparada;
+    	synchronized (this) {
+			sentenciaPreparada = sentenciasPreparadas.get(nombreSentencia);
+			if (null == sentenciaPreparada) {
+				sentenciaPreparada = agregarSentenciaPreparada(sentenciaCQL, nombreSentencia);
+			}
+		}
+		return ejecutarSentenciaTipoConsulta(sentenciaPreparada, parametros);
+    	
     }
     
-    /**
-     * Preparar las sentencias CQL que se ejecutan en todos los eventos con el fin de prepararlas una sola vez por cada evento.
-     */
-    private void prepararSentenciasIniciales() {
-		if (null == sentenciasPreparadas) {
-			sentenciasPreparadas = new HashMap<String, PreparedStatement>();
-			sentenciasPreparadas.put(Constantes.NMBR_SNT_TRANSACCIONES.getString(), sesion.prepare(Constantes.SNT_TRANSACCIONES.getString()));
-			sentenciasPreparadas.put(Constantes.NMBR_SNT_VALIDACIONES_EVENTO.getString(), sesion.prepare(Constantes.SNT_VALIDACIONES_EVENTO.getString()));
-		}
-    }
+    
     
     
     // =============================
@@ -147,7 +196,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * @param nombreSentencia
      * @return
      */
-    private synchronized PreparedStatement agregarSentenciaPreparada(String sentenciaCQL, String nombreSentencia) throws ExcepcionGenerica {
+    private PreparedStatement agregarSentenciaPreparada(String sentenciaCQL, String nombreSentencia) throws ExcepcionGenerica {
     	try {			
     		PreparedStatement sentenciaPreparada = sesion.prepare(sentenciaCQL);
     		sentenciasPreparadas.put(nombreSentencia, sentenciaPreparada);

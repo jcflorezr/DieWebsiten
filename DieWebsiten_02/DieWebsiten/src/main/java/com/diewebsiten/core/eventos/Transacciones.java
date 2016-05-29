@@ -1,34 +1,30 @@
-package com.diewebsiten.core.negocio.eventos;
+package com.diewebsiten.core.eventos;
+
+import static com.diewebsiten.core.eventos.util.UtilidadValidaciones.contienePalabra;
+import static com.diewebsiten.core.eventos.util.UtilidadValidaciones.esVacio;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
-import com.datastax.driver.core.ColumnDefinitions;
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.Row;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.diewebsiten.core.eventos.dto.Campo;
+import com.diewebsiten.core.eventos.dto.Evento;
+import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.util.Constantes;
-
-import static com.diewebsiten.core.util.UtilidadValidaciones.*;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 class Transacciones implements Callable<Void> {
     
-    private final Row transaccion;
-    private JsonObject resultadoEvento;
-    private Evento evento;
+    private final Transaccion transaccion;
+    private final Evento evento;
     
-    private static final String FILTROS_SENTENCIA_CQL = "filtrossentenciacql";
-    private static final String SENTENCIA_CQL = "sentenciacql";
-    private static final String TIPO_TRANSACCION = "tipotransaccion";
-    private static final String TRANSACCION = "transaccion";
-    
-    Transacciones (Row transaccion, JsonObject resultadoEvento, Evento evento) {
+    Transacciones (Transaccion transaccion, Evento evento) {
         this.transaccion = transaccion;
-        this.resultadoEvento = resultadoEvento;
         this.evento = evento;
     }
 
@@ -54,22 +50,10 @@ class Transacciones implements Callable<Void> {
      * @return
      */
     private Void ejecutarTransaccion() throws Exception {
-    	
-    	// Nombre de la transacción.
-    	String nombreTransaccion = transaccion.getString(TRANSACCION);
-        
-        // Tipo de transacción (SELECT, UPDATE, DELETE, INSERT).
-        String tipoTransaccion = transaccion.getString(TIPO_TRANSACCION);
-        
-        // Sentencia CQL de la transacción.
-        String sentenciaCQL = transaccion.getString(SENTENCIA_CQL);
-        
-        // Filtros que se necesitan para ejecutar la transacción.
-        List<String> filtrosSentenciaCQL = new ArrayList<String>(transaccion.getList(FILTROS_SENTENCIA_CQL, String.class));
       
         // Validar que la sentencia CQL sea de tipo válido.
-        if (!contienePalabra(tipoTransaccion, Constantes.TRANSACCIONES_SOPORTADAS.getString())) {
-			throw new ExcepcionGenerica(Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(nombreTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb(), tipoTransaccion));
+        if (!contienePalabra(transaccion.getTipo(), Constantes.TRANSACCIONES_SOPORTADAS.getString())) {
+			throw new ExcepcionGenerica(Constantes.Mensajes.SENTENCIACQL_NO_SOPORTADA.getMensaje(transaccion.getNombreTransaccion(), evento.getNombreEvento(), evento.getPagina(), evento.getSitioWeb(), transaccion.getTipo()));
 		}
     
             
@@ -80,15 +64,15 @@ class Transacciones implements Callable<Void> {
         // y guardarlos en una lista para enviarlos a la sentencia preparada
         List<Object> valoresSentencia = new ArrayList<Object>();
         
-        for (String filtro : filtrosSentenciaCQL) {
+        for (String columnaFiltro : transaccion.getColumnasFiltroSentenciaCql()) {
         	boolean existenFiltros = false;
-            for (Row campo : getEvento().getCamposFormularioEvento()) {
+            for (Campo campo : evento.getFormulario().getCampos()) {
             	
-            	if (filtro.equals(campo.getString("column_name"))) {
-                    if (!esVacio(campo.getString("valorpordefecto"))) {
-                        valoresSentencia.add(campo.getString("valorpordefecto"));
+            	if (columnaFiltro.equals(campo.getColumnName())) {
+                    if (!esVacio(campo.getValorPorDefecto())) {
+                        valoresSentencia.add(campo.getValorPorDefecto());
                     } else {
-                        valoresSentencia.add(getEvento().getParametro(campo.getString("column_name")));
+                        valoresSentencia.add(evento.getFormulario().getParametro(campo.getColumnName()));
                     }
                     existenFiltros = true;
                     break;
@@ -98,27 +82,24 @@ class Transacciones implements Callable<Void> {
             
             // Validar que los filtros necesarios para la sentencia CQL que ejecuta la transacción existen.
             if (!existenFiltros) {
-				throw new ExcepcionGenerica(Constantes.Mensajes.FILTRO_NO_EXISTE.getMensaje(filtro, nombreTransaccion, tipoTransaccion, getEvento().getNombreEvento(), getEvento().getPagina(), getEvento().getSitioWeb()));
+				throw new ExcepcionGenerica(Constantes.Mensajes.FILTRO_NO_EXISTE.getMensaje(columnaFiltro, transaccion.getNombreTransaccion(), transaccion.getTipo(), evento.getNombreEvento(), evento.getPagina(), evento.getSitioWeb()));
 			}
         }
         
         // Obtener los resultados de la transacción.
-        List<Row> resultadoTransaccionActual = null;
+        List<JsonObject> resultadoTransaccionActual;
         if (!valoresSentencia.isEmpty()) {
-			resultadoTransaccionActual = getEvento().getProveedorCassandra().consultar(sentenciaCQL, nombreTransaccion, valoresSentencia.toArray()); 
+			resultadoTransaccionActual = Eventos.consultar(transaccion.getSentenciaCql(), transaccion.getNombreTransaccion(), valoresSentencia.toArray()); 
 		} else {
-			resultadoTransaccionActual = getEvento().getProveedorCassandra().consultar(sentenciaCQL); 
+			resultadoTransaccionActual = Eventos.consultar(transaccion.getSentenciaCql()); 
 		}
       
-        if (!resultadoTransaccionActual.isEmpty() && tipoTransaccion.equals("SELECT")) {
+        if (!resultadoTransaccionActual.isEmpty() && "SELECT".equals(transaccion.getTipo())) {
             
         	// Obtener las nombres de las columnas
-        	List<ColumnDefinitions.Definition> columnas = resultadoTransaccionActual.get(0).getColumnDefinitions().asList();
-        	
-            // Filtros que se necesitan para ejecutar la transacción.
-            List<String> columnasIntermediasSentenciaCQL = new ArrayList<String> (transaccion.getList("columnasintermediassentenciacql", String.class));
+        	Set<Entry<String, JsonElement>> columnas = resultadoTransaccionActual.get(0).entrySet();
 
-            transformarResultSet(this.resultadoEvento, resultadoTransaccionActual, columnas, filtrosSentenciaCQL, columnasIntermediasSentenciaCQL);
+            transformarResultSet(evento.getResultadoFinal(), resultadoTransaccionActual, columnas, transaccion.getColumnasFiltroSentenciaCql(), transaccion.getColumnasIntermediasSentenciaCql());
             
         }                    
              
@@ -131,14 +112,15 @@ class Transacciones implements Callable<Void> {
      * 
      * @param resultSet
      * @param columnas
-     * @param filtros
+     * @param columnasFiltros
      * @param columnasIntermedias
      * @throws Exception
      */
-    private void transformarResultSet (JsonObject resultadoEvento, List<Row> resultSet, List<ColumnDefinitions.Definition> columnas, List<String> filtros, List<String> columnasIntermedias) throws Exception {
+    private void transformarResultSet (JsonObject resultadoEvento, List<JsonObject> resultSet, Set<Entry<String, JsonElement>> columnas, List<String> columnasFiltros, List<String>columnasIntermedias) throws Exception {
 		
-		if (null == resultadoEvento)
+		if (null == resultadoEvento) {
 			throw new Exception("La colección donde se va a crear la estructura del resultado del evento debe estar inicializada");
+		}
 
 		
 		// EL ORDEN DE LOS FILTROS YA VIENE ESTABLECIDO DESDE 
@@ -147,10 +129,10 @@ class Transacciones implements Callable<Void> {
 		JsonObject coleccionFiltros = resultadoEvento;
 		int i = 0;
 		
-		filtros.addAll(columnasIntermedias);
+		columnasFiltros.addAll(columnasIntermedias);
 		
-		for (String filtro : filtros) {
-
+		for (String filtro : columnasFiltros) {
+			
 			JsonObject coleccionFiltroActual = coleccionFiltros.getAsJsonObject(filtro);			
 			
 			if (null == coleccionFiltroActual) {
@@ -159,9 +141,9 @@ class Transacciones implements Callable<Void> {
 					coleccionFiltros = resultadoEvento;
 				
 				// Agregar por primera vez los filtros o columnas intermedias faltantes
-				for (;i<filtros.size();i++) {
-					coleccionFiltros.add(filtros.get(i), new JsonObject());
-					coleccionFiltros = coleccionFiltros.getAsJsonObject(filtros.get(i));
+				for (;i<columnasFiltros.size();i++) {
+					coleccionFiltros.add(columnasFiltros.get(i), new JsonObject());
+					coleccionFiltros = coleccionFiltros.getAsJsonObject(columnasFiltros.get(i));
 				}
 				
 				break;
@@ -179,23 +161,31 @@ class Transacciones implements Callable<Void> {
 		// YA VIENE ESTABLECIDO DESDE LA BASE DE DATOS (TABLA EVENTOS) SEGÚN EL ORDEN EN QUE
 		// SE CREARON EN LA TABLA
 		
-		for (Row fila : resultSet) {
+		for (JsonObject fila : resultSet) {
 			
 			JsonObject coleccionColumnaActual = null;
 			JsonObject posicion = null;
 			
 			i = 0;
 			
-            for (ColumnDefinitions.Definition columnaActual : columnas) {
+            for (Map.Entry<String, JsonElement> columnaActual : columnas) {
             	
-            	String nombreColumnaActual = columnaActual.getName();
+            	String nombreColumnaActual = columnaActual.getKey();
+            	Object valorColumnaActual = fila.get(nombreColumnaActual).getAsString();
             	
-            	Object valorColumnaActual = columnaActual.getType().deserialize(fila.getBytesUnsafe(columnaActual.getName()), ProtocolVersion.NEWEST_SUPPORTED);
             	
-            	if (!columnasIntermedias.isEmpty() && i < columnasIntermedias.size()) {
+            	
+            	if (columnasIntermedias != null && i < columnasIntermedias.size()) {
             		
-            		if (!columnasIntermedias.get(i).equals(columnaActual.getName()))
-            			throw new Exception("El orden de las columnas de consulta en la cláusula SELECT no coincide con el orden de las columnas como están creadas en la tabla '" + columnaActual.getKeyspace() + "." + columnaActual.getTable() +"'");
+            		
+            		
+            		/**
+            		 * ESTE INCONVENIENTE DE OBTENER EL NOMBRE DE LA TABLA Y DE LA BASE DE DATOS SE PUEDE SOLUCIONAR CONSULTANDO LA INFO DE LA TABLA DENTRO DE SYSTEM.SCHEMA_COLUMNFAMILIES
+            		 */
+            		if (!columnasIntermedias.get(i).equals(nombreColumnaActual)) {
+            			//throw new Exception("El orden de las columnas de consulta en la cláusula SELECT no coincide con el orden de las columnas como están creadas en la tabla '" + columnaActual.getKeyspace() + "." + columnaActual.getTable() +"'");
+            			throw new Exception("El orden de las columnas de consulta en la cláusula SELECT no coincide con el orden de las columnas como están creadas en la tabla.");
+            		}
             		
             		coleccionColumnaActual = coleccionFiltros.getAsJsonObject(valorColumnaActual.toString()); 
             		if (null == coleccionColumnaActual) {
@@ -225,14 +215,5 @@ class Transacciones implements Callable<Void> {
         }
         
     }
-    
-    
-    // =============================
-    // ==== Getters and Setters ====
-    // =============================
-
-	private Evento getEvento() {
-		return evento;
-	}
     
 }

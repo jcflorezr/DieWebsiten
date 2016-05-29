@@ -10,10 +10,6 @@ public abstract class ProveedorAlmacenamiento {
 	
 	abstract void desconectar();
 	
-	abstract List<?> consultar(String sentencia) throws ExcepcionGenerica;
-	
-	abstract List<?> consultar(String sentencia, Object[] parametros) throws ExcepcionGenerica;
-	
-	abstract List<?> consultar(String sentencia, String nombreSentencia, Object[] parametros) throws ExcepcionGenerica;
+	abstract List<?> consultar(DetallesSentencias detallesSentencia) throws ExcepcionGenerica;
 
 }

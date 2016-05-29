@@ -1,4 +1,4 @@
-package com.diewebsiten.core.negocio;
+package com.diewebsiten.core.eventos;
 
 import static org.apache.commons.lang3.StringUtils.*;
 

@@ -1,23 +1,31 @@
-package com.diewebsiten.core.negocio.eventos;
+package com.diewebsiten.core.eventos;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
+import com.diewebsiten.core.almacenamiento.DetallesSentencias;
 import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
+import com.diewebsiten.core.excepciones.ExcepcionDeLog;
+import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class FachadaEventos {
-
-    public static void main(String[] args) {
+	
+	private static Log logger;
+    private static ProveedorCassandra proveedorCassandra;
+	
+    public static void main(String[] args) throws ExcepcionGenerica {
+    	new FachadaEventos().iniciarModuloEventos();
+    }
+    
+    public void iniciarModuloEventos() {
         
         /*try {
             
@@ -39,7 +47,12 @@ public class FachadaEventos {
         
     	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("Eventos-%d").setDaemon(true).build();
         ExecutorService ejecucionEventos = Executors.newFixedThreadPool(10, threadFactoryBuilder);
+        
         try {
+        	
+        	iniciarLog();
+        	conectarBaseDeDatos();
+
             long timestamp = System.currentTimeMillis();
             
             /*String s = "miradorhumadea_mmcom";
@@ -108,22 +121,22 @@ public class FachadaEventos {
             
             
             
-            List<Future<String>> grupoEventos = new ArrayList<Future<String>>();
+            List<Future<JsonObject>> grupoEventos = new ArrayList<>();
             
             
             
             
             
-            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
-            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
-            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
-            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "CargaInicialPaginaEventos", parametros1)));
-            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
+            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
+            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
+            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
+            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
             //grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
-            grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
+            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
             
             
-            for (Future<String> evento : grupoEventos) {
+            for (Future<JsonObject> evento : grupoEventos) {
                 System.out.println(evento.get());
             }
             
@@ -135,22 +148,53 @@ public class FachadaEventos {
             
             
             
+        } catch (ExcepcionDeLog elog) {
+        	elog.printStackTrace();
         } catch (Exception e) {
         	
             try {
-				Log.getInstance().imprimirErrorEnLog(e);
+            	imprimirErrorEnLog(e);
 			} catch (Exception ex) {
 				ex.printStackTrace();
 			}
             
+            System.out.println(Constantes.ERROR.getString());
+            
         } finally {
         	ejecucionEventos.shutdown();
+        	
         	// Finalizar la conexión con la base de datos cassandra
-        	ProveedorCassandra.getInstance(false);
-        	System.out.println(Constantes.ERROR.getString());
+        	desconectarBaseDeDatos();
+        	
         }
         
         
     }
-
+    
+    static void iniciarLog() throws ExcepcionDeLog {
+    	logger = Log.getInstance();
+    }
+    
+    static void imprimirErrorEnLog(Throwable e) throws ExcepcionDeLog {
+    	logger.imprimirErrorEnLog(e);
+    }
+    
+    static ProveedorCassandra conectarBaseDeDatos() {
+    	proveedorCassandra = ProveedorCassandra.getInstance(true);
+		return proveedorCassandra;
+	}
+    
+    static ProveedorCassandra desconectarBaseDeDatos() {
+    	proveedorCassandra = ProveedorCassandra.getInstance(false);
+		return proveedorCassandra;
+	}
+    
+    static synchronized List<JsonObject> consultar(String sentencia, String nombreSentencia, Object[] parametros) throws ExcepcionGenerica {
+    	DetallesSentencias detallesSentencia = new DetallesSentencias();
+    	detallesSentencia.setSentencia(sentencia);
+    	detallesSentencia.setNombreSentencia(nombreSentencia);
+    	detallesSentencia.setParametrosSentencia(parametros);
+    	return proveedorCassandra.consultar(detallesSentencia);
+    }
+    
 }

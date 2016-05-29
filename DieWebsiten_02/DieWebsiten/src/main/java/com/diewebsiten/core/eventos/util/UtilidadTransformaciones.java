@@ -1,5 +1,5 @@
 
-package com.diewebsiten.core.util;
+package com.diewebsiten.core.eventos.util;
 
 import static org.apache.commons.lang3.StringUtils.*;
 

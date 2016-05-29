@@ -11,9 +11,9 @@ public enum Constantes {
     NOMBRE_EVENTO_VACIO("No se ha especificado un evento."),    
     
     NMBR_SNT_TRANSACCIONES("SentenciaTransacciones"),
-    SNT_TRANSACCIONES("SELECT tipotransaccion, transaccion, columnfamily_name, sentenciacql, filtrossentenciacql, columnasconsultasentenciacql, columnasintermediassentenciacql FROM diewebsiten.eventos WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
-    SNT_VALIDACIONES_EVENTO("SELECT column_name, grupovalidacion, formaingreso, valorpordefecto FROM diewebsiten.formulario WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
+    SNT_TRANSACCIONES("SELECT transaccion, tipotransaccion, columnfamily_name, sentenciacql, filtrossentenciacql, columnasconsultasentenciacql, columnasintermediassentenciacql FROM diewebsiten.eventos WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
     NMBR_SNT_VALIDACIONES_EVENTO("SentenciaValidacionesEvento"),
+    SNT_VALIDACIONES_EVENTO("SELECT column_name, grupovalidacion, formaingreso, valorpordefecto FROM diewebsiten.formularios WHERE sitioweb = ? AND pagina = ? AND evento = ?"),
     
     COLLECTIONS_CASSANDRA("SetType,ListType,MapType"),
     TIPOS_LISTAS_SENTENCIAS_SELECT("simple,compuesta,parValoresSimple,parValoresCompuesta,parAgrupadaSimple,parAgrupadaCompuesta"),
@@ -80,18 +80,24 @@ public enum Constantes {
                 return "El evento '" + valores[0] + "' de la página '" + valores[1] + "' del sitio web '" + valores[2] + "' no existe.";
             }
         },
+        PARAMETROS_FORMULARIO_NO_EXISTEN {
+            @Override
+            public String getMensaje(String... valores) {            
+                return "No hay parámetros para la ejecución del formulario del evento '" + valores[0] + "'.";
+            }
+        },
         CAMPOS_FORMULARIO_NO_EXISTEN {
             @Override
             public String getMensaje(String... valores) {            
-                return "No hay parámetros para la ejecución de los formularios del evento '" + valores[0] + "'.";
+                return "No hay campos para la ejecución del formulario del evento '" + valores[0] + "'.";
             }
         },
 		VALIDACIONES_NO_EXISTEN {
             @Override
             public String getMensaje(String... valores) {            
                 return "No se encontraron las validaciones o las transformaciones "
-                     + "necesarias para los campos del formulario del evento '" + valores[0] + "'"
-                     + " de la página '" + valores[1] + "' del sitio web '" + valores[2] + "'.";
+                     + "necesarias para los campos del formulario del evento '" + valores[2] + "'"
+                     + " de la página '" + valores[1] + "' del sitio web '" + valores[1] + "'.";
             }
         },
         FILTRO_NO_EXISTE {
