@@ -79,6 +79,7 @@ public class Transaccion {
 	}
 
 	public void setDetallesSentencia(String sentencia, String nombreSentencia, Object[] parametros) {
+		this.detallesSentencia = new DetallesSentencia();
 		this.detallesSentencia.setSentencia(sentencia);
 		this.detallesSentencia.setNombreSentencia(nombreSentencia);
     	this.detallesSentencia.setParametrosSentencia(parametros);

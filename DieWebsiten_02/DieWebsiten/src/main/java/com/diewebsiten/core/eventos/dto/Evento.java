@@ -122,15 +122,19 @@ public class Evento {
 	public void setTransacciones(List<JsonObject> transacciones) {
 		this.transacciones = new ArrayList<>();
 		Type listStringType = new TypeToken<List<String>>(){}.getType();
+		Gson gson = new Gson();
 		for (JsonObject transaccionObject : transacciones) {
 			Transaccion transaccion = new Transaccion();
 			transaccion.setNombreTransaccion(transaccionObject.get(NOMBRE_TRANSACCION).getAsString());
 			transaccion.setTipo(transaccionObject.get(TIPO_TRANSACCION).getAsString());
 			transaccion.setColumnfamilyName(transaccionObject.get(COLUMNFAMILY_NAME).getAsString());
 			transaccion.setSentenciaCql(transaccionObject.get(SENTENCIA_CQL).getAsString());
-			transaccion.setColumnasFiltroSentenciaCql(new Gson().fromJson(transaccionObject.get(COLUMNAS_FILTRO_SENTENCIA_CQL).getAsJsonArray(), listStringType));
-			transaccion.setColumnasConsultaSentenciaCql(new Gson().fromJson(transaccionObject.get(COLUMNAS_CONSULTA_SENTENCIA_CQL).getAsJsonArray(), listStringType));
-			transaccion.setColumnasIntermediasSentenciaCql(new Gson().fromJson(transaccionObject.get(COLUMNAS_INTERMEDIAS_SENTENCIA_CQL).getAsJsonArray(), listStringType));
+			List<String> lista = gson.fromJson(transaccionObject.get(COLUMNAS_FILTRO_SENTENCIA_CQL).getAsJsonArray(), listStringType);
+			transaccion.setColumnasFiltroSentenciaCql(lista);
+			lista = gson.fromJson(transaccionObject.get(COLUMNAS_CONSULTA_SENTENCIA_CQL).getAsJsonArray(), listStringType);
+			transaccion.setColumnasConsultaSentenciaCql(lista);
+			lista = gson.fromJson(transaccionObject.get(COLUMNAS_INTERMEDIAS_SENTENCIA_CQL).getAsJsonArray(), listStringType);
+			transaccion.setColumnasIntermediasSentenciaCql(lista);
 			this.transacciones.add(transaccion);
 		}
 		if (!this.transacciones.isEmpty()) {

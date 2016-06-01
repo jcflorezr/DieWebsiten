@@ -96,7 +96,8 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     		PreparedStatement sentenciaPreparada = sentenciasPreparadas.get(nombreSentencia);
     		if (sentenciaPreparada == null) {
     			synchronized (obj) {
-    				if (sentenciasPreparadas.get(nombreSentencia) == null) {
+    				sentenciaPreparada = sentenciasPreparadas.get(nombreSentencia);
+    				if (sentenciaPreparada == null) {
     					sentenciaPreparada = sesion.prepare(sentenciaCQL);
     					sentenciasPreparadas.put(nombreSentencia, sentenciaPreparada);
     				}
@@ -141,10 +142,11 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 	    		obtenerResultadoConJerarquia(sesion.execute(sentenciaCQL), columnasJerarquia, resultadoFinal);
 	    	} else if (isBlank(nombreSentencia)) {
 	    		throw new ExcepcionGenerica("Si la sentencia sí tiene parámetros, el nombre de la sentencia no puede venir vacío.");
+	    	} else {
+	    		PreparedStatement sentenciaPreparada = obtenerSentenciaPreparada(sentenciaCQL, nombreSentencia);
+	    		ResultSet resultadoEjecucion = sesion.execute(sentenciaPreparada.bind(parametros)); 
+	    		obtenerResultadoConJerarquia(resultadoEjecucion, columnasJerarquia, resultadoFinal);
 	    	}
-	    	PreparedStatement sentenciaPreparada = obtenerSentenciaPreparada(sentenciaCQL, nombreSentencia);
-	    	ResultSet resultadoEjecucion = sesion.execute(sentenciaPreparada.bind(parametros)); 
-			obtenerResultadoConJerarquia(resultadoEjecucion, columnasJerarquia, resultadoFinal);
 		} catch (Exception e) {
 			// ES NECESARIO IMPRIMIR LOS PARAMETROS??? PUESTO QUE YA SE IMPRIMIRÁN DESDE LOS EVENTOS
 			throw new ExcepcionGenerica("Error al ejecutar la sentencia CQL --> " + sentenciaCQL + "'. Parámetros: " + (parametros != null ? Arrays.asList(parametros).toString() : "{}") + ". Mensaje original --> " + Throwables.getStackTraceAsString(e));
