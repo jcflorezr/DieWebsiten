@@ -9,12 +9,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
-import com.diewebsiten.core.excepciones.ExcepcionDeLog;
-import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.eventos.dto.Campo;
 import com.diewebsiten.core.eventos.dto.Evento;
 import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.eventos.util.LogEventos;
+import com.diewebsiten.core.excepciones.ExcepcionDeLog;
+import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Constantes;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.JsonObject;
@@ -41,7 +41,7 @@ public class Eventos implements Callable<JsonObject> {
     public JsonObject call() throws ExcepcionDeLog {
     	
 		try {
-			if (validarFormularioEvento()) {
+			if (validarFormulario()) {
 				ejecutarEvento();
 				return evento.getResultadoFinal();
 			} else {
@@ -66,9 +66,9 @@ public class Eventos implements Callable<JsonObject> {
      * @return
      * @throws Exception
      */
-    private boolean validarFormularioEvento() throws Exception {
+    private boolean validarFormulario() throws Exception {
         	
-        evento.getFormulario().setCampos(consultar(Constantes.SNT_VALIDACIONES_EVENTO.getString(), Constantes.NMBR_SNT_VALIDACIONES_EVENTO.getString(), evento.getInformacionEvento()));
+        evento.getFormulario().setCampos(ejecutarTransaccion(Constantes.SNT_VALIDACIONES_EVENTO.getString(), Constantes.NMBR_SNT_VALIDACIONES_EVENTO.getString(), evento.getInformacionEvento()));
 
         if (!evento.getFormulario().poseeCampos() && evento.getFormulario().poseeParametros()) {
             throw new ExcepcionGenerica(Constantes.Mensajes.CAMPOS_FORMULARIO_NO_EXISTEN.getMensaje(evento.getNombreEvento()));
@@ -98,7 +98,7 @@ public class Eventos implements Callable<JsonObject> {
     private void ejecutarEvento() throws Exception {
 
         // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-    	evento.setTransacciones(consultar(Constantes.SNT_TRANSACCIONES.getString(), Constantes.NMBR_SNT_TRANSACCIONES.getString(), evento.getInformacionEvento()));
+    	evento.setTransacciones(ejecutarTransaccion(Constantes.SNT_TRANSACCIONES.getString(), Constantes.NMBR_SNT_TRANSACCIONES.getString(), evento.getInformacionEvento()));
 
         // Validar que el evento existe.
         if (!evento.poseeTransacciones()) { 
@@ -125,7 +125,7 @@ public class Eventos implements Callable<JsonObject> {
             
             if (VALIDACIONES.equals(moduloAEjecutar)) {
             	for (Campo campoFormularioEvento : evento.getFormulario().getCampos()) {
-            		hilosEjecucion.add(ejecucionParalela.submit(new Validaciones(campoFormularioEvento, evento)));
+            		hilosEjecucion.add(ejecucionParalela.submit(new Formularios(campoFormularioEvento, evento)));
             	}
             } else if (TRANSACCIONES.equals(moduloAEjecutar)) {
             	for (Transaccion transaccion : evento.getTransacciones()) {
@@ -143,12 +143,21 @@ public class Eventos implements Callable<JsonObject> {
         
     }
     
-    static List<JsonObject> consultar(String sentencia) throws ExcepcionGenerica { 
-    	return FachadaEventos.consultar(sentencia, null, null); 
+    /*
+     * Para consultas con resultado plano
+     */
+    static List<JsonObject> ejecutarTransaccion(String sentencia) throws Exception { 
+    	return FachadaEventos.ejecutarTransaccion(sentencia, null, null); 
+    }
+    static List<JsonObject> ejecutarTransaccion(String sentencia, String nombreSentencia, Object[] parametros) throws Exception { 
+    	return FachadaEventos.ejecutarTransaccion(sentencia, nombreSentencia, parametros); 
     }
     
-    static List<JsonObject> consultar(String sentencia, String nombreSentencia, Object[] parametros) throws ExcepcionGenerica { 
-    	return FachadaEventos.consultar(sentencia, nombreSentencia, parametros); 
+    /*
+     * Para consultas con resultado en jerarquía
+     */
+    static void ejecutarTransaccion(Transaccion transaccion, JsonObject resultadoConsulta) throws Exception {
+    	FachadaEventos.ejecutarTransaccionConJerarquia(transaccion, resultadoConsulta); 
     }
     
 

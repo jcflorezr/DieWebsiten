@@ -1,6 +1,6 @@
 package com.diewebsiten.core.eventos;
 
-import static com.diewebsiten.core.almacenamiento.util.UtilidadCassandra.validarTipoColumna;
+import static com.diewebsiten.core.almacenamiento.cassandra.util.UtilidadCassandra.validarTipoColumna;
 import static com.diewebsiten.core.eventos.util.UtilidadTransformaciones.encriptarCadena;
 import static com.diewebsiten.core.eventos.util.UtilidadTransformaciones.maximizar;
 import static com.diewebsiten.core.eventos.util.UtilidadTransformaciones.minimizar;
@@ -29,13 +29,13 @@ import com.diewebsiten.core.eventos.dto.Evento;
 import com.diewebsiten.core.eventos.dto.Validacion;
 import com.diewebsiten.core.util.Constantes;
 
-class Validaciones implements Callable<Void> {
+class Formularios implements Callable<Void> {
     
     private final Campo campo;
     private final Evento evento;
     
     
-    public Validaciones(Campo campo, Evento evento) {            
+    public Formularios(Campo campo, Evento evento) {            
         this.campo = campo;
         this.evento = evento;
     } 
@@ -43,7 +43,7 @@ class Validaciones implements Callable<Void> {
     @Override
     public Void call() throws Exception {
     	try {			
-    		return ejecutarValidacion();
+    		return procesarFormulario();
 		} catch (Exception e) {
 			Throwable excepcionReal = e.getCause();
 			if (excepcionReal != null) {
@@ -63,13 +63,13 @@ class Validaciones implements Callable<Void> {
      * @param parametros
      * @throws com.diewebsiten.core.excepciones.ExcepcionGenerica
      */
-    private Void ejecutarValidacion() throws Exception {
+    private Void procesarFormulario() throws Exception {
     	
     	String nombreCampo = campo.getColumnName();
         String grupoValidacionCampo = campo.getGrupoValidacion();
         
         StringBuilder sentencia = new StringBuilder("SELECT grupo_validacion, tipo, validacion FROM diewebsiten.grupos_de_validaciones WHERE grupo_validacion = '").append(grupoValidacionCampo).append("'");
-        campo.setValidaciones(Eventos.consultar(sentencia.toString()));
+        campo.setValidaciones(Eventos.ejecutarTransaccion(sentencia.toString()));
 
         // Validar que sí existan las validaciones del grupo.
         if (!campo.poseeValidaciones()) {

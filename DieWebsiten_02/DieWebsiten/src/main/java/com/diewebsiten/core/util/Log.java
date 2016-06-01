@@ -21,14 +21,20 @@ public class Log {
     
     private Logger logger;
     private static Log log;
+    private static Object obj = new Object();
 
     /**
      * Devuelve una instancia única de la clase que implementa el Log de la aplicación
      * @return instancia única del Log de la aplicación
      */
-    public static synchronized Log getInstance() throws ExcepcionDeLog {
-        if (log == null)
-            log = new Log();
+    public static Log getInstance() throws ExcepcionDeLog {
+        if (log == null) {
+        	synchronized (obj) {
+				if (log == null) {					
+					log = new Log();
+				}
+			}
+        }
         return log;
     }
 

@@ -7,8 +7,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
-import com.diewebsiten.core.almacenamiento.DetallesSentencias;
-import com.diewebsiten.core.almacenamiento.ProveedorCassandra;
+import com.diewebsiten.core.almacenamiento.cassandra.ProveedorCassandra;
+import com.diewebsiten.core.eventos.dto.DetallesSentencia;
+import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Constantes;
@@ -86,20 +87,20 @@ public class FachadaEventos {
                                  "\"tipotransaccion\": \"seLECT\"" +
                                  "}";
             
-            String parametros2 = "{" +
-                                 "\"pagina\": \"eventos1\"," +
-                                 "\"evento\": \"nuevo Evento\"," +
-                                 " \"sitioweb\": \"localhost\"," +
-                                 "\"transaccion\": \"nueva transaccion\"," +
-                                 "\"basededatos\": \"diewebsiten\"," +
-                                 "\"tipotransaccion\": \"SELECT\"," +
-                                 "\"descripcion\": \"SELECT\"," +
-                                 "\"orden\": \"SELECT\"," + 
-                                 "\"sentenciacql\": \"SELECT\"," + 
-                                 "\"tabla\": \"SELECT\"," +
-                                 "\"clausula\": \"SELECT\"," +
-                                 "\"sentenciacql\": \"SELECT\"" +
-                                 "}";
+//            String parametros2 = "{" +
+//                                 "\"pagina\": \"eventos1\"," +
+//                                 "\"evento\": \"nuevo Evento\"," +
+//                                 " \"sitioweb\": \"localhost\"," +
+//                                 "\"transaccion\": \"nueva transaccion\"," +
+//                                 "\"basededatos\": \"diewebsiten\"," +
+//                                 "\"tipotransaccion\": \"SELECT\"," +
+//                                 "\"descripcion\": \"SELECT\"," +
+//                                 "\"orden\": \"SELECT\"," + 
+//                                 "\"sentenciacql\": \"SELECT\"," + 
+//                                 "\"tabla\": \"SELECT\"," +
+//                                 "\"clausula\": \"SELECT\"," +
+//                                 "\"sentenciacql\": \"SELECT\"" +
+//                                 "}";
             
             /*Map<String, Object> parametros00 = new HashMap<String, Object>();
             //parametros.put("coleccion", "tiposTransacciones");
@@ -189,12 +190,31 @@ public class FachadaEventos {
 		return proveedorCassandra;
 	}
     
-    static synchronized List<JsonObject> consultar(String sentencia, String nombreSentencia, Object[] parametros) throws ExcepcionGenerica {
-    	DetallesSentencias detallesSentencia = new DetallesSentencias();
-    	detallesSentencia.setSentencia(sentencia);
-    	detallesSentencia.setNombreSentencia(nombreSentencia);
-    	detallesSentencia.setParametrosSentencia(parametros);
-    	return proveedorCassandra.consultar(detallesSentencia);
+    /**
+     * 
+     * @param sentencia
+     * @param nombreSentencia
+     * @param parametros
+     * @return
+     * @throws ExcepcionGenerica
+     */
+    static List<JsonObject> ejecutarTransaccion(String sentencia, String nombreSentencia, Object[] parametros) throws Exception {
+		return proveedorCassandra.ejecutarTransaccion(sentencia, nombreSentencia, parametros);
+    }
+
+    /**
+     * 
+     * @param transaccion
+     * @param resultadoConsulta
+     * @throws ExcepcionGenerica
+     */
+    static void ejecutarTransaccionConJerarquia(Transaccion transaccion, JsonObject resultadoConsulta) throws Exception { 
+    	DetallesSentencia detallesSentencia = transaccion.getDetallesSentencia();
+    	proveedorCassandra.ejecutarTransaccion(detallesSentencia.getSentencia(),
+    									   	   detallesSentencia.getNombreSentencia(), 
+								   			   detallesSentencia.getParametrosSentencia(),
+								   			   transaccion.getColumnasIntermediasSentenciaCql(),
+								   			   resultadoConsulta); 
     }
     
 }

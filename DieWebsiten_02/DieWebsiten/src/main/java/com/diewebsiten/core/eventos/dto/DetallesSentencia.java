@@ -1,11 +1,19 @@
-package com.diewebsiten.core.almacenamiento;
+package com.diewebsiten.core.eventos.dto;
 
-public class DetallesSentencias {
+public class DetallesSentencia {
 	
 	private String sentencia;
 	private String nombreSentencia;
 	private Object[] parametrosSentencia;
 	
+	public DetallesSentencia() {
+	}
+	
+	public DetallesSentencia(DetallesSentencia detallesSentencia) {
+		this.sentencia = detallesSentencia.getSentencia();
+		this.nombreSentencia = detallesSentencia.getNombreSentencia();
+		this.parametrosSentencia = detallesSentencia.getParametrosSentencia();
+	}
 	
 	public String getSentencia() {
 		return sentencia;

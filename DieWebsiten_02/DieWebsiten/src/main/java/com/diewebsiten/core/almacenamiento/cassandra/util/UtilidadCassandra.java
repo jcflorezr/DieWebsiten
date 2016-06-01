@@ -1,4 +1,4 @@
-package com.diewebsiten.core.almacenamiento.util;
+package com.diewebsiten.core.almacenamiento.cassandra.util;
 
 public class UtilidadCassandra {
 	

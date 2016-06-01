@@ -11,6 +11,7 @@ public class Transaccion {
 	private List<String> columnasFiltroSentenciaCql;
 	private List<String> columnasConsultaSentenciaCql;
 	private List<String> columnasIntermediasSentenciaCql;
+	private DetallesSentencia detallesSentencia;
 	
 	
 	public String getNombreTransaccion() {
@@ -57,18 +58,30 @@ public class Transaccion {
 		return columnasConsultaSentenciaCql;
 	}
 	
-	public void setColumnasConsultaSentenciaCql(
-			List<String> columnasconsultasentenciacql) {
-		this.columnasConsultaSentenciaCql = columnasconsultasentenciacql;
+	public void setColumnasConsultaSentenciaCql(List<String> columnasConsultaSentenciaCql) {
+		this.columnasConsultaSentenciaCql = columnasConsultaSentenciaCql;
 	}
 	
 	public List<String> getColumnasIntermediasSentenciaCql() {
 		return columnasIntermediasSentenciaCql;
 	}
 	
-	public void setColumnasIntermediasSentenciaCql(
-			List<String> columnasintermediassentenciacql) {
-		this.columnasIntermediasSentenciaCql = columnasintermediassentenciacql;
+	public void setColumnasIntermediasSentenciaCql(List<String> columnasIntermediasSentenciaCql) {
+		this.columnasIntermediasSentenciaCql = columnasIntermediasSentenciaCql;
+	}
+
+	public DetallesSentencia getDetallesSentencia() {
+		if (detallesSentencia != null) {
+			return new DetallesSentencia(detallesSentencia);
+		} else {
+			return new DetallesSentencia();
+		}
+	}
+
+	public void setDetallesSentencia(String sentencia, String nombreSentencia, Object[] parametros) {
+		this.detallesSentencia.setSentencia(sentencia);
+		this.detallesSentencia.setNombreSentencia(nombreSentencia);
+    	this.detallesSentencia.setParametrosSentencia(parametros);
 	}
 	
 }
