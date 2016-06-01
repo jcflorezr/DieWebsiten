@@ -96,7 +96,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     		PreparedStatement sentenciaPreparada = sentenciasPreparadas.get(nombreSentencia);
     		if (sentenciaPreparada == null) {
     			synchronized (obj) {
-    				if (sentenciaPreparada == null) {
+    				if (sentenciasPreparadas.get(nombreSentencia) == null) {
     					sentenciaPreparada = sesion.prepare(sentenciaCQL);
     					sentenciasPreparadas.put(nombreSentencia, sentenciaPreparada);
     				}
