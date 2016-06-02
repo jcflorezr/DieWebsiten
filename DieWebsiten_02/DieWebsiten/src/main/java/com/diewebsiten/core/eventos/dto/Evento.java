@@ -129,12 +129,9 @@ public class Evento {
 			transaccion.setTipo(transaccionObject.get(TIPO_TRANSACCION).getAsString());
 			transaccion.setColumnfamilyName(transaccionObject.get(COLUMNFAMILY_NAME).getAsString());
 			transaccion.setSentenciaCql(transaccionObject.get(SENTENCIA_CQL).getAsString());
-			List<String> lista = gson.fromJson(transaccionObject.get(COLUMNAS_FILTRO_SENTENCIA_CQL).getAsJsonArray(), listStringType);
-			transaccion.setColumnasFiltroSentenciaCql(lista);
-			lista = gson.fromJson(transaccionObject.get(COLUMNAS_CONSULTA_SENTENCIA_CQL).getAsJsonArray(), listStringType);
-			transaccion.setColumnasConsultaSentenciaCql(lista);
-			lista = gson.fromJson(transaccionObject.get(COLUMNAS_INTERMEDIAS_SENTENCIA_CQL).getAsJsonArray(), listStringType);
-			transaccion.setColumnasIntermediasSentenciaCql(lista);
+			transaccion.setColumnasFiltroSentenciaCql(gson.fromJson(transaccionObject.get(COLUMNAS_FILTRO_SENTENCIA_CQL).getAsJsonArray(), listStringType));
+			transaccion.setColumnasConsultaSentenciaCql(gson.fromJson(transaccionObject.get(COLUMNAS_CONSULTA_SENTENCIA_CQL).getAsJsonArray(), listStringType));
+			transaccion.setColumnasIntermediasSentenciaCql(gson.fromJson(transaccionObject.get(COLUMNAS_INTERMEDIAS_SENTENCIA_CQL).getAsJsonArray(), listStringType));
 			this.transacciones.add(transaccion);
 		}
 		if (!this.transacciones.isEmpty()) {
