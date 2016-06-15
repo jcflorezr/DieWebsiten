@@ -19,7 +19,6 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.diewebsiten.core.almacenamiento.ProveedorAlmacenamiento;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.diewebsiten.core.util.Constantes;
 import com.google.common.base.Throwables;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -41,6 +40,8 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     private static Session sesion;
     private Map<String, PreparedStatement> sentenciasPreparadas;
     private static Object obj = new Object();
+    private static final String CASSANDRA_URL = "localhost";
+    private static final int CASSANDRA_PORT = 9042;
     
     private ProveedorCassandra() {
     	sentenciasPreparadas = new HashMap<>();
@@ -72,7 +73,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * 2. Crear una sesión de conexión a la base de datos.
      */
     private void conectar() {
-        cluster = Cluster.builder().addContactPoint(Constantes.CASSANDRA_URL.getString()).withPort(Constantes.CASSANDRA_PORT.getInt()).build();
+        cluster = Cluster.builder().addContactPoint(CASSANDRA_URL).withPort(CASSANDRA_PORT).build();
         sesion = cluster.connect();
     }
     
@@ -134,7 +135,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * @param nombreSentencia
      * @param parametros
      * @param resultadoFinal
-     * @throws ExceptionGenerica
+     * @throws Exception
      */
     public void ejecutarTransaccion(String sentenciaCQL, String nombreSentencia, Object[] parametros, List<String> columnasJerarquia, JsonObject resultadoFinal) throws Exception {
     	try {    		
@@ -170,19 +171,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 			Row fila = iterador.next();
 			
 			for (ColumnDefinitions.Definition columnaActual : columnasResultadoEjecucion) {
-				
-				String nombreColumnaActual = columnaActual.getName();
-				ByteBuffer bf = fila.getBytesUnsafe(nombreColumnaActual);
-				
-				Object valorColumnaActual;
-				if (bf != null) {
-        			valorColumnaActual = columnaActual.getType().deserialize((bf), ProtocolVersion.NEWEST_SUPPORTED);
-        		} else {
-        			valorColumnaActual = obtenerValorVacio(bf, columnaActual);
-        		}
-				
-				filaMap.put(nombreColumnaActual, valorColumnaActual);
-				
+				filaMap.put(columnaActual.getName(), obtenerValorColumnaActual(fila, columnaActual));
 			}
 			
 			resultado.add(new JsonParser().parse(new Gson().toJson(filaMap)).getAsJsonObject());
@@ -197,8 +186,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     /**
      * 
      * @param resultadoEjecucion
-     * @param parametrosTransaccion
-     * @param nombresParametrosTransaccion
      * @param columnasJerarquia
      * @param resultadoFinal
      * @throws Exception
@@ -225,40 +212,22 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
             for (ColumnDefinitions.Definition columnaActual : columnasResultadoEjecucion) {
             	
             	String nombreColumnaActual = columnaActual.getName();
-            	ByteBuffer bf = fila.getBytesUnsafe(nombreColumnaActual);
-            	
-            	Object valorColumnaActual;
-            	if (bf != null) {
-        			valorColumnaActual = columnaActual.getType().deserialize((bf), ProtocolVersion.NEWEST_SUPPORTED);
-        		} else {
-        			valorColumnaActual = obtenerValorVacio(bf, columnaActual);
-        		}
+				Object valorColumnaActual = obtenerValorColumnaActual(fila, columnaActual);
             	
             	if (columnaActualEsDeJerarquia(nombreColumnaActual, columnasJerarquia, i)) {
             		coleccionColumnaActual = coleccionColumnasJerarquia.getAsJsonObject(nombreColumnaActual);
             		if (coleccionColumnaActual != null) {
-            			coleccionColumnaActual = coleccionColumnaActual.getAsJsonObject((String) valorColumnaActual);
+            			coleccionColumnaActual = coleccionColumnaActual.getAsJsonObject(valorColumnaActual.toString());
             			if (coleccionColumnaActual == null) {
-            				coleccionColumnaActual = coleccionColumnasJerarquia.getAsJsonObject(nombreColumnaActual);
-            				coleccionColumnaActual.add((String) valorColumnaActual, new JsonObject());
-            				coleccionColumnaActual = coleccionColumnaActual.getAsJsonObject((String) valorColumnaActual);
+							coleccionColumnaActual = obtenerColeccionColumnaActual(coleccionColumnasJerarquia, nombreColumnaActual, valorColumnaActual.toString());
                 		}
             		} else {
             			coleccionColumnasJerarquia.add(nombreColumnaActual, new JsonObject());
-            			coleccionColumnaActual = coleccionColumnasJerarquia.getAsJsonObject(nombreColumnaActual);
-            			coleccionColumnaActual.add((String) valorColumnaActual, new JsonObject());
-            			coleccionColumnaActual = coleccionColumnaActual.getAsJsonObject((String) valorColumnaActual);
+            			coleccionColumnaActual = obtenerColeccionColumnaActual(coleccionColumnasJerarquia, nombreColumnaActual, valorColumnaActual.toString());
             		}
             		i++;
             	} else {
-            		JsonObject coleccionNivelActual = null;
-            		
-        			if (null != coleccionColumnaActual) { // La columna regular es hija de la última columna de la lista de jerarquía
-        				coleccionNivelActual = coleccionColumnaActual;
-        			} else if (null != coleccionColumnasJerarquia) { // La columna regular es hermana de una columna de la lista de jerarquía
-        				coleccionNivelActual = coleccionColumnasJerarquia;
-        			}
-            			
+            		JsonObject coleccionNivelActual = null != coleccionColumnaActual ? coleccionColumnaActual : coleccionColumnasJerarquia;
             		JsonElement valorColumnaRegular = coleccionNivelActual.get(nombreColumnaActual);
             			
             		// Verificar si esta columna ya tiene un valor.
@@ -275,7 +244,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
             				valoresColumnaRegular.add(new JsonPrimitive(valorColumnaActual.toString()));
             			}
             		}
-            		
             	}
             	
             }
@@ -295,6 +263,21 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     		throw new ExcepcionGenerica("La columna actual '" + nombreColumnaActual + "'  (que es de jerarquia) no concuerda con la posición actual (" + columnaJerarquia + ") de la lista de columnas de jerarquía. " + columnasJerarquia.toString());
     	}
     }
+
+	private JsonObject obtenerColeccionColumnaActual(JsonObject coleccionColumnasJerarquia, String nombreColumnaActual, String valorColumnaActual) {
+		JsonObject coleccionColumnaActual = coleccionColumnasJerarquia.getAsJsonObject(nombreColumnaActual);
+		coleccionColumnaActual.add(valorColumnaActual.toString(), new JsonObject());
+		return coleccionColumnaActual.getAsJsonObject(valorColumnaActual.toString());
+	}
+
+	private Object obtenerValorColumnaActual(Row fila, ColumnDefinitions.Definition columnaActual) {
+		ByteBuffer bf = fila.getBytesUnsafe(columnaActual.getName());
+		if (bf != null) {
+			return columnaActual.getType().deserialize((bf), ProtocolVersion.NEWEST_SUPPORTED);
+		} else {
+			return obtenerValorVacio(bf, columnaActual);
+		}
+	}
     
     /**
      * Si el valor de la columna actual es nulo se guardará como valor un "valor vacío"

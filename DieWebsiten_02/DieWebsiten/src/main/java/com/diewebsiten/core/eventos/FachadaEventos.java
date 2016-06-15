@@ -10,9 +10,9 @@ import java.util.concurrent.ThreadFactory;
 import com.diewebsiten.core.almacenamiento.cassandra.ProveedorCassandra;
 import com.diewebsiten.core.eventos.dto.DetallesSentencia;
 import com.diewebsiten.core.eventos.dto.Transaccion;
+import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.JsonObject;
@@ -27,24 +27,6 @@ public class FachadaEventos {
     }
     
     public void iniciarModuloEventos() {
-        
-        /*try {
-            
-            //String s = "miradorhumadea_mmcom";
-            //System.out.println(StringUtils.isAlphanumeric(s));
-            //System.out.println(s.matches("[a-z0-9._-]+"));
-            
-            String h = "[\"[\"sitioweb\"]\",\"[\"pagina\",\"idioma\",\"nivel\",\"etiqueta\",\"ruta\"]\"]";
-            if (new Utilidades().esJSON(h) instanceof String)
-                System.out.println("String");
-            if (new Utilidades().esJSON(h) instanceof JSONObject)
-                System.out.println("JSONObject");
-            if (new Utilidades().esJSON(h) instanceof JSONArray)
-                System.out.println(new Utilidades().esJSON(h));
-            
-        } catch (Exception e) {
-            System.out.println("Excepción: " + e);
-        }*/
         
     	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("Eventos-%d").setDaemon(true).build();
         ExecutorService ejecucionEventos = Executors.newFixedThreadPool(10, threadFactoryBuilder);
@@ -159,7 +141,7 @@ public class FachadaEventos {
 				ex.printStackTrace();
 			}
             
-            System.out.println(Constantes.ERROR.getString());
+            System.out.println(Mensajes.ERROR.get());
             
         } finally {
         	ejecucionEventos.shutdown();

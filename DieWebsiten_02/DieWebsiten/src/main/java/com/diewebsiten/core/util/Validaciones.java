@@ -1,5 +1,5 @@
 
-package com.diewebsiten.core.eventos.util;
+package com.diewebsiten.core.util;
 
 import static org.apache.commons.lang3.StringUtils.isAlpha;
 import static org.apache.commons.lang3.StringUtils.isAlphaSpace;
@@ -7,8 +7,6 @@ import static org.apache.commons.lang3.StringUtils.isAlphanumeric;
 import static org.apache.commons.lang3.StringUtils.isAlphanumericSpace;
 import static org.apache.commons.lang3.StringUtils.isNumeric;
 import static org.apache.commons.lang3.StringUtils.isNumericSpace;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.validator.routines.DateValidator;
 import org.apache.commons.validator.routines.EmailValidator;
@@ -21,7 +19,7 @@ import com.google.gson.JsonSyntaxException;
  *
  * @author juancamiloroman
  */
-public class UtilidadValidaciones {
+public class Validaciones {
 	
 
 	/**

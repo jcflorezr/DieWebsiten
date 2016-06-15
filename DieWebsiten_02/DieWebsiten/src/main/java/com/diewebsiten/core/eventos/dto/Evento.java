@@ -8,8 +8,8 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.diewebsiten.core.util.Constantes;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -33,7 +33,7 @@ public class Evento {
         
         // Validar que el nombre del evento no llegue vacío.
         if (isBlank(nombreEvento)) {
-            throw new ExcepcionGenerica(Constantes.NOMBRE_EVENTO_VACIO.getString());
+            throw new ExcepcionGenerica(Mensajes.Evento.NOMBRE_EVENTO_VACIO.get());
         } else {
         	// Obtener el nombre del evento que se ejecutará.
             this.nombreEvento = nombreEvento;

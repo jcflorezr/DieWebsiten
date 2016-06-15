@@ -64,7 +64,7 @@ public class WSPrincipalImpl implements WSPrincipal {
             return eg.getMessage() + " " + parametrosRecibidos;
         }*/ catch (Exception e) {
             //Log.getInstance().imprimirErrorEnLog(e);
-            return Constantes.ERROR.getString();
+            return "Intente más tarde";
         }
         
         return resultadoTransaccion;

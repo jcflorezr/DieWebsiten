@@ -1,5 +1,5 @@
 
-package com.diewebsiten.core.eventos.util;
+package com.diewebsiten.core.util;
 
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -15,7 +15,7 @@ import com.google.gson.JsonObject;
  *
  * @author juancamiloroman
  */
-public class UtilidadTransformaciones {
+public class Transformaciones {
     
     
     /**
