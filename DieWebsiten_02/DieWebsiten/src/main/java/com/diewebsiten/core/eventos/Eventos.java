@@ -1,28 +1,36 @@
 
 package com.diewebsiten.core.eventos;
 
+import static com.diewebsiten.core.eventos.dto.transaccion.TransaccionFabrica.obtenerTransaccion;
 import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.*;
-import static com.diewebsiten.core.util.Validaciones.contienePalabra;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.diewebsiten.core.eventos.dto.Campo;
 import com.diewebsiten.core.eventos.dto.Evento;
-import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.eventos.dto.Validacion;
+import com.diewebsiten.core.eventos.dto.transaccion.Transaccion;
 import com.diewebsiten.core.eventos.util.LogEventos;
 import com.diewebsiten.core.eventos.util.Constantes;
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 
@@ -35,8 +43,10 @@ import com.google.gson.JsonObject;
 public class Eventos implements Callable<JsonObject> {
     
     private Evento evento;
-    private static final String VALIDACIONES = "validaciones";
+    
+    private static final String CASSANDRA = "CASSANDRA";
     private static final String TRANSACCIONES = "transacciones";
+    private static final String VALIDACIONES = "validaciones";
     
     Eventos(String url, String nombreEvento, String parametros) throws Exception {
         evento = new Evento(url, nombreEvento, parametros);
@@ -74,8 +84,10 @@ public class Eventos implements Callable<JsonObject> {
      */
     private boolean validarFormulario() throws Exception {
         	
-        evento.getFormulario().setCampos(ejecutarTransaccion(Constantes.SNT_VALIDACIONES_EVENTO.get(), Constantes.NMBR_SNT_VALIDACIONES_EVENTO.get(), evento.getInformacionEvento()));
-
+    	JsonObject datosValidaciones = obtenerDatosTransaccion(Constantes.Formulario.SNT_VALIDACIONES_EVENTO.get(), Constantes.Formulario.NMBR_SNT_VALIDACIONES_EVENTO.get(), evento.getInformacionEvento());
+        
+        evento.getFormulario().setCampos(ejecutarTransaccion(obtenerTransaccion(datosValidaciones)).getAsJsonArray());
+        
         if (!evento.getFormulario().poseeCampos() && evento.getFormulario().poseeParametros()) {
             throw new ExcepcionGenerica(Mensajes.Evento.Formulario.CAMPOS_FORMULARIO_NO_EXISTEN.get());
         } else if (evento.getFormulario().poseeCampos() && !evento.getFormulario().poseeParametros()) {
@@ -102,9 +114,11 @@ public class Eventos implements Callable<JsonObject> {
      * @return
      */
     private void ejecutarEvento() throws Exception {
+    	
+    	JsonObject datosTransacciones = obtenerDatosTransaccion(Constantes.Transacciones.SNT_TRANSACCIONES.get(), Constantes.Transacciones.NMBR_SNT_TRANSACCIONES.get(), evento.getInformacionEvento());
 
         // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-    	evento.setTransacciones(ejecutarTransaccion(Constantes.SNT_TRANSACCIONES.get(), Constantes.NMBR_SNT_TRANSACCIONES.get(), evento.getInformacionEvento()));
+    	evento.setTransacciones(ejecutarTransaccion(obtenerTransaccion(datosTransacciones)).getAsJsonArray());
 
         // Validar que el evento existe.
         if (!evento.poseeTransacciones()) { 
@@ -149,21 +163,23 @@ public class Eventos implements Callable<JsonObject> {
         
     }
     
-    /*
-     * Para consultas con resultado plano
-     */
-    static List<JsonObject> ejecutarTransaccion(String sentencia) throws Exception { 
-    	return FachadaEventos.ejecutarTransaccion(sentencia, null, null); 
-    }
-    static List<JsonObject> ejecutarTransaccion(String sentencia, String nombreSentencia, Object[] parametros) throws Exception { 
-    	return FachadaEventos.ejecutarTransaccion(sentencia, nombreSentencia, parametros); 
+    private JsonObject obtenerDatosTransaccion(String sentencia, String nombre, Object[] parametros) {
+    	JsonObject datosTransaccion = new JsonObject();
+    	Type arrayObjectType = new TypeToken<Object[]>(){private static final long serialVersionUID = 1L;}.getType();
+        datosTransaccion.addProperty(Constantes.Transacciones.SENTENCIA.get(), sentencia);
+        datosTransaccion.addProperty(Constantes.Transacciones.NOMBRE_TRANSACCION.get(), nombre);
+        datosTransaccion.add(Constantes.Transacciones.PARAMETROS_TRANSACCION.get(), new Gson().toJsonTree(parametros, arrayObjectType));
+        datosTransaccion.addProperty(Constantes.Transacciones.MOTOR_ALMACENAMIENTO.get(), CASSANDRA);
+        datosTransaccion.add(Constantes.Transacciones.FILTROS_SENTENCIA.get(), new JsonArray());
+        datosTransaccion.addProperty(Constantes.Transacciones.TRANSACCION_DE_SISTEMA.get(), true);
+        return datosTransaccion;
     }
     
     /*
      * Para consultas con resultado en jerarquía
      */
-    static void ejecutarTransaccion(Transaccion transaccion, JsonObject resultadoConsulta) throws Exception {
-    	FachadaEventos.ejecutarTransaccionConJerarquia(transaccion, resultadoConsulta); 
+    public static JsonElement ejecutarTransaccion(Transaccion transaccion) throws Exception {
+    	return FachadaEventos.ejecutarTransaccion(transaccion); 
     }
     
     
@@ -207,10 +223,10 @@ public class Eventos implements Callable<JsonObject> {
 	    private Void procesarFormulario() throws Exception {
 	    	
 	    	String nombreCampo = campo.getColumnName();
-	        String grupoValidacionCampo = campo.getGrupoValidacion();
+	        String grupoValidacionCampo = campo.getGrupoValidacion(); 
+	        JsonObject datosGruposValidaciones = obtenerDatosTransaccion(Constantes.Formulario.SNT_GRUPO_VALIDACIONES.get(), Constantes.Formulario.NMBR_SNT_GRUPO_VALIDACIONES.get(), new Object[] {grupoValidacionCampo});
 	        
-	        StringBuilder sentencia = new StringBuilder("SELECT grupo_validacion, tipo, validacion FROM diewebsiten.grupos_de_validaciones WHERE grupo_validacion = '").append(grupoValidacionCampo).append("'");
-	        campo.setValidaciones(Eventos.ejecutarTransaccion(sentencia.toString()));
+	        campo.setValidaciones(Eventos.ejecutarTransaccion(obtenerTransaccion(datosGruposValidaciones)).getAsJsonArray());
 	
 	        // Validar que sí existan las validaciones del grupo.
 	        if (!campo.poseeValidaciones()) {
@@ -255,7 +271,6 @@ public class Eventos implements Callable<JsonObject> {
 	private class Transacciones implements Callable<Void> {
 	    
 	    private final Transaccion transaccion;
-	    private static final String TRANSACCIONES_SOPORTADAS = "SELECT,UPDATE,INSERT,DELETE";
 	    
 	    private Transacciones (Transaccion transaccion) {
 	        this.transaccion = transaccion;
@@ -284,59 +299,65 @@ public class Eventos implements Callable<JsonObject> {
 	     * @throws Exception
 	     */
 	    private Void ejecutarTransaccion() throws Exception {
-	      
-	        // Validar que la sentencia CQL sea de tipo válido.
-	        if (!contienePalabra(transaccion.getTipo(), TRANSACCIONES_SOPORTADAS)) {
-				throw new ExcepcionGenerica(Mensajes.Evento.Transaccion.SENTENCIACQL_NO_SOPORTADA.get(transaccion.getNombreTransaccion(), transaccion.getTipo()));
-			}
 	        
 	        // Extraer los valores recibidos desde el cliente (navegador web, dispositivo móvil)
 	        // y guardarlos en una lista para enviarlos a la sentencia preparada
-	        List<Object> valoresSentencia = new ArrayList<>();
+	        List<Object> valoresFiltrosSentencia = new ArrayList<>();
 	        
-	        
-	        
-	        
-	        
-	        // ESTE CICLO ESTA COMPARANDO SI LA COLUMNA ACTUAL CONCUERDA CON EL FILTRO ACTUAL DE LA CONSULTA CQL
-	        // EL FLAG existenFiltros = true NO ESTA BIEN CREADO
-	        // ESTE CICLO ESTA FUNCIONANDO PORQUE ACTUALMENTE SOLO SE ESTA USANDO A CASSANDRA COMO ALMACENAMIENTO
-	        // PERO CUANDO SE IMPLEMENTEN MAS MOTORES DE BASE DE DATOS HABRA QUE CAMBIARLO 
-	        
-	        for (String columnaFiltro : transaccion.getColumnasFiltroSentenciaCql()) {
-	        	
-	        	boolean existenFiltros = false;
+	        for (String filtro : transaccion.getNombresFiltrosSentencia()) {
 	            
 	        	for (Campo campo : evento.getFormulario().getCampos()) {
-	            	
-	            	if (columnaFiltro.equals(campo.getColumnName())) {
-	                    if (isNotBlank(campo.getValorPorDefecto())) {
-	                        valoresSentencia.add(campo.getValorPorDefecto());
-	                    } else {
-	                        valoresSentencia.add(evento.getFormulario().getParametro(campo.getColumnName()));
-	                    }
-	                    existenFiltros = true;
-	            	}
-	            	
+	        		String valorFiltroSentencia;
+	        		if (campo.getColumnName().equals(filtro)) {	        			
+	        			if (isNotBlank(campo.getValorPorDefecto())) {
+	        				valorFiltroSentencia = campo.getValorPorDefecto();
+	        			} else {
+	        				valorFiltroSentencia = evento.getFormulario().getParametro(campo.getColumnName());
+	        			}
+	        			if (StringUtils.isBlank(valorFiltroSentencia)) {
+	        				throw new ExcepcionGenerica(Mensajes.Evento.Transaccion.FILTRO_NO_EXISTE.get(filtro, transaccion.getNombre()));
+	        			}
+	        			valoresFiltrosSentencia.add(valorFiltroSentencia);
+	        			evento.getFormulario().getCampos().remove(campo);
+	        			break;
+	        		}
+	        		
 	            }
 	            
-	            // Validar que existan los filtros necesarios para la sentencia CQL que ejecuta la transacción.
-	            if (!existenFiltros) {
-					throw new ExcepcionGenerica(Mensajes.Evento.Transaccion.FILTRO_NO_EXISTE.get(columnaFiltro, transaccion.getTipo(), transaccion.getNombreTransaccion()));
-				}
 	        }
 	        
-	        // Guardar los detalles de la sentencia de Base de Datos que contiene la transacción
-	        transaccion.setDetallesSentencia(transaccion.getSentenciaCql(), transaccion.getNombreTransaccion(), valoresSentencia.toArray());
+	        transaccion.setParametrosTransaccion(valoresFiltrosSentencia.toArray());
 	        
 	        // Guardar los resultados de esta transacción dentro del resultado final de todo el evento
-	        Eventos.ejecutarTransaccion(transaccion, evento.getResultadoFinal());                  
+	        poblarResultadoFinal(Eventos.ejecutarTransaccion(transaccion));                  
 	             
 	        // Es necesario retornar null debido a que este método es de tipo Void en vez de void. Esto es debido a que 
 	        // este metodo se ejecuta por varios hilos al mismo tiempo
 	        return null;
 	    }
 	    
+	}
+	
+	private void poblarResultadoFinal(JsonElement resultadoTransaccion) {
+		
+		JsonObject nivelActualResultadoFinal = evento.getResultadoFinal();
+		JsonObject nivelActualResultadoTransaccion = resultadoTransaccion.getAsJsonObject();
+		
+		if (nivelActualResultadoFinal.entrySet().size() == 0) {
+			evento.setResultadoFinal(nivelActualResultadoTransaccion);
+			return;
+		}
+		
+		for (Map.Entry<String, JsonElement> objetoActual : nivelActualResultadoTransaccion.entrySet()) {
+			String objetoActualKey = objetoActual.getKey();
+			if (nivelActualResultadoFinal.has(objetoActualKey)) { // POR AHORA SE ASUME QUE EL RESULTADO DE LA TRANSACCION SOLO VIENE EN JSONOBJECT
+				nivelActualResultadoFinal = nivelActualResultadoFinal.get(objetoActualKey).getAsJsonObject();
+				nivelActualResultadoTransaccion = nivelActualResultadoTransaccion.get(objetoActualKey).getAsJsonObject();
+			} else {
+				nivelActualResultadoFinal.add(objetoActualKey, objetoActual.getValue());
+			}
+		}
+		
 	}
 	
 	

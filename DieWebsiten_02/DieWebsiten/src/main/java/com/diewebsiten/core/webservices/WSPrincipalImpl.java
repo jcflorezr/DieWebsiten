@@ -1,6 +1,5 @@
 package com.diewebsiten.core.webservices;
 
-import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
 
 import javax.annotation.Resource;

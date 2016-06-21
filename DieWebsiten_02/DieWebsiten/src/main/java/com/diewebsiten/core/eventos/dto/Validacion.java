@@ -5,6 +5,7 @@ public class Validacion {
 	private String tipo;
 	private String validacion;
 	
+	Validacion(){}
 	
 	public String getTipo() {
 		return tipo;

@@ -1,9 +1,8 @@
-package com.diewebsiten.core.almacenamiento.cassandra;
+package com.diewebsiten.core.almacenamiento;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -17,7 +16,8 @@ import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.diewebsiten.core.almacenamiento.ProveedorAlmacenamiento;
+import com.diewebsiten.core.eventos.dto.transaccion.Transaccion;
+import com.diewebsiten.core.eventos.dto.transaccion.TransaccionCassandra;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.google.common.base.Throwables;
 import com.google.gson.Gson;
@@ -35,11 +35,14 @@ import com.google.gson.JsonPrimitive;
  */
 public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
-    private static ProveedorCassandra proveedorCassandra;
-	private static Cluster cluster;
+    private static volatile ProveedorCassandra proveedorCassandra;
+    private static volatile boolean iniciar = true;
+
+    private static Cluster cluster;
     private static Session sesion;
     private Map<String, PreparedStatement> sentenciasPreparadas;
     private static Object obj = new Object();
+    
     private static final String CASSANDRA_URL = "localhost";
     private static final int CASSANDRA_PORT = 9042;
     
@@ -50,13 +53,14 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     /*
      * Unica instancia de la clase ProveedorCassandra.
      */
-    public static ProveedorCassandra getInstance(boolean iniciar) {
+    static ProveedorCassandra getInstance() {
     	if (iniciar) {
 	    	if (proveedorCassandra == null) {
 	    		synchronized(obj) {
 	    			if (proveedorCassandra == null) {	    				
 	    				proveedorCassandra = new ProveedorCassandra();
 	    				proveedorCassandra.conectar();
+	    				iniciar = false;
 	    			}
 	    		}
 	    	}
@@ -114,40 +118,35 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * 
      */
     @Override
-    public List<JsonObject> ejecutarTransaccion(String sentenciaCQL, String nombreSentencia, Object[] parametros) throws Exception {
-    	try {    		
+    public JsonElement ejecutarTransaccion(Transaccion transaccionGenerica) throws Exception {
+
+    	String sentenciaCQL = transaccionGenerica.getSentencia();
+    	String nombreSentencia = transaccionGenerica.getNombre();
+    	Object[] parametros = transaccionGenerica.getParametrosTransaccion();
+    	
+    	try {	
+    		TransaccionCassandra transaccion = (TransaccionCassandra) transaccionGenerica;
+    		
+    		List<String> columnasJerarquia = transaccion.getColumnasIntermediasSentenciaCql(); 
 	    	if (parametros == null || parametros.length == 0) {
-	    		return obtenerResultado(sesion.execute(sentenciaCQL));
+	    		if (columnasJerarquia != null) {
+	    			return obtenerResultadoConJerarquia(sesion.execute(sentenciaCQL), columnasJerarquia);
+	    		} else {	    			
+	    			return obtenerResultado(sesion.execute(sentenciaCQL));
+	    		}
 	    	} else if (isBlank(nombreSentencia)) {
 	    		throw new ExcepcionGenerica("Si la sentencia sí tiene parámetros, el nombre de la sentencia no puede venir vacío.");
 	    	}
+	    	
 	    	PreparedStatement sentenciaPreparada = obtenerSentenciaPreparada(sentenciaCQL, nombreSentencia);
-			return obtenerResultado(sesion.execute(sentenciaPreparada.bind(parametros)));
-		} catch (Exception e) {
-			// ES NECESARIO IMPRIMIR LOS PARAMETROS??? PUESTO QUE YA SE IMPRIMIRÁN DESDE LOS EVENTOS
-			throw new ExcepcionGenerica("Error al ejecutar la sentencia CQL --> " + sentenciaCQL + "'. Parámetros: " + (parametros != null ? Arrays.asList(parametros).toString() : "{}") + ". Mensaje original --> " + Throwables.getStackTraceAsString(e));
-		}
-    }
-    
-    /**
-     * 
-     * @param sentenciaCQL
-     * @param nombreSentencia
-     * @param parametros
-     * @param resultadoFinal
-     * @throws Exception
-     */
-    public void ejecutarTransaccion(String sentenciaCQL, String nombreSentencia, Object[] parametros, List<String> columnasJerarquia, JsonObject resultadoFinal) throws Exception {
-    	try {    		
-	    	if (parametros == null || parametros.length == 0) {
-	    		obtenerResultadoConJerarquia(sesion.execute(sentenciaCQL), columnasJerarquia, resultadoFinal);
-	    	} else if (isBlank(nombreSentencia)) {
-	    		throw new ExcepcionGenerica("Si la sentencia sí tiene parámetros, el nombre de la sentencia no puede venir vacío.");
-	    	} else {
-	    		PreparedStatement sentenciaPreparada = obtenerSentenciaPreparada(sentenciaCQL, nombreSentencia);
-	    		ResultSet resultadoEjecucion = sesion.execute(sentenciaPreparada.bind(parametros)); 
-	    		obtenerResultadoConJerarquia(resultadoEjecucion, columnasJerarquia, resultadoFinal);
+	    	ResultSet resultadoEjecucion = sesion.execute(sentenciaPreparada.bind(parametros)); 
+	    	if (columnasJerarquia != null) {
+	    		return obtenerResultadoConJerarquia(resultadoEjecucion, columnasJerarquia);
+	    	} else {	    		
+	    		return obtenerResultado(sesion.execute(sentenciaPreparada.bind(parametros)));
 	    	}
+		} catch (ClassCastException e) {
+			throw new ExcepcionGenerica("La transacción no es de tipo Cassandra, es de tipo: " + transaccionGenerica.getClass().getName());
 		} catch (Exception e) {
 			// ES NECESARIO IMPRIMIR LOS PARAMETROS??? PUESTO QUE YA SE IMPRIMIRÁN DESDE LOS EVENTOS
 			throw new ExcepcionGenerica("Error al ejecutar la sentencia CQL --> " + sentenciaCQL + "'. Parámetros: " + (parametros != null ? Arrays.asList(parametros).toString() : "{}") + ". Mensaje original --> " + Throwables.getStackTraceAsString(e));
@@ -159,11 +158,11 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * @param resultadoEjecucion
      * @return
      */
-    private List<JsonObject> obtenerResultado(ResultSet resultadoEjecucion) {
+    private JsonArray obtenerResultado(ResultSet resultadoEjecucion) {
     	
     	Iterator<Row> iterador = resultadoEjecucion.iterator();
 		List<ColumnDefinitions.Definition> columnasResultadoEjecucion = resultadoEjecucion.getColumnDefinitions().asList();
-		List<JsonObject> resultado = new ArrayList<>();
+		JsonArray resultado = new JsonArray();
 		
 		while (iterador.hasNext()) {
 
@@ -190,16 +189,15 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * @param resultadoFinal
      * @throws Exception
      */
-    private void obtenerResultadoConJerarquia (ResultSet resultadoEjecucion, List<String> columnasJerarquia, JsonObject resultadoFinal) throws Exception {
+    private JsonElement obtenerResultadoConJerarquia (ResultSet resultadoEjecucion, List<String> columnasJerarquia) throws Exception {
 		
-		if (resultadoFinal == null) {
-			throw new ExcepcionGenerica("El JsonObject debe estar inicializado");
-		}
+    	JsonElement resultadoFinal = new JsonObject();
+    	
 		
 		// EL ORDEN DE LA LISTA DE JERARQUÍA YA VIENE ESTABLECIDO DESDE 
 		// LA BASE DE DATOS (TABLA EVENTOS) SEGÚN EL ORDEN EN QUE SE CREARON EN LA TABLA
 		
-		JsonObject coleccionColumnasJerarquia = resultadoFinal;
+		JsonObject coleccionColumnasJerarquia = resultadoFinal.getAsJsonObject();
 		List<ColumnDefinitions.Definition> columnasResultadoEjecucion = resultadoEjecucion.getColumnDefinitions().asList();
 		Iterator<Row> iterador = resultadoEjecucion.iterator();
 		
@@ -249,6 +247,8 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
             }
             
         }
+		
+		return resultadoFinal;
 		
 	}
     

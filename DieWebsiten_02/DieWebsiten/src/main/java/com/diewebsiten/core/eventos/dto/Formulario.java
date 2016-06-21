@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
@@ -16,20 +17,30 @@ import com.google.gson.reflect.TypeToken;
 
 public class Formulario {
 	
+	private AtomicBoolean validacionExitosa = new AtomicBoolean();
 	private List<Campo> campos;
 	private boolean poseeCampos;
 	private JsonObject parametros;
 	private boolean poseeParametros;
     private JsonObject parametrosTransformados;
     private boolean poseeParametrosTransformados;
-    private AtomicBoolean validacionExitosa = new AtomicBoolean();
-    
     
     private static final String COLUMN_NAME = "column_name";
     private static final String GRUPO_VALIDACION = "grupovalidacion";
     private static final String FORMA_INGRESO = "formaingreso";
     private static final String VALOR_POR_DEFECTO = "valorpordefecto";
     
+    Formulario(){}
+    
+    // Validación exitosa
+
+  	public boolean isValidacionExitosa() {
+  		return validacionExitosa.get();
+  	}
+
+  	public void setValidacionExitosa(boolean validacionExitosa) {
+  		this.validacionExitosa.set(validacionExitosa);
+  	}
     
     // =====================================================
     // ====================== Campos =======================
@@ -43,14 +54,15 @@ public class Formulario {
 		return new ArrayList<>(campos);
 	}
 
-    public void setCampos(List<JsonObject> camposFormularioEvento) {
+    public void setCampos(JsonArray camposFormularioEvento) {
     	this.campos = new ArrayList<>();
-    	for (JsonObject campoObject : camposFormularioEvento) {
+    	for (JsonElement campoObject : camposFormularioEvento) {
     		Campo campo = new Campo();
-    		campo.setColumnName(campoObject.get(COLUMN_NAME).getAsString());
-    		campo.setGrupoValidacion(campoObject.get(GRUPO_VALIDACION).getAsString());
-    		campo.setFormaIngreso(campoObject.get(FORMA_INGRESO).getAsString());
-    		campo.setValorPorDefecto(campoObject.get(VALOR_POR_DEFECTO).getAsString());
+    		JsonObject camopActual = campoObject.getAsJsonObject();
+    		campo.setColumnName(camopActual.get(COLUMN_NAME).getAsString());
+    		campo.setGrupoValidacion(camopActual.get(GRUPO_VALIDACION).getAsString());
+    		campo.setFormaIngreso(camopActual.get(FORMA_INGRESO).getAsString());
+    		campo.setValorPorDefecto(camopActual.get(VALOR_POR_DEFECTO).getAsString());
     		this.campos.add(campo);
     	}
     	if (!this.campos.isEmpty()) {
@@ -152,16 +164,6 @@ public class Formulario {
     
     public boolean poseeParametrosTransformados() {
 		return poseeParametrosTransformados;
-	}
-    
-    // Validación exitosa
-
-	public boolean isValidacionExitosa() {
-		return validacionExitosa.get();
-	}
-
-	public void setValidacionExitosa(boolean validacionExitosa) {
-		this.validacionExitosa.set(validacionExitosa);
 	}
 
 }

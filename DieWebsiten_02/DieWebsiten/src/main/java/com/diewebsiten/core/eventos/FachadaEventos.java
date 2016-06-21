@@ -7,20 +7,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
-import com.diewebsiten.core.almacenamiento.cassandra.ProveedorCassandra;
-import com.diewebsiten.core.eventos.dto.DetallesSentencia;
-import com.diewebsiten.core.eventos.dto.Transaccion;
+import com.diewebsiten.core.almacenamiento.AlmacenamientoFabrica;
+import com.diewebsiten.core.almacenamiento.ProveedorAlmacenamiento;
+import com.diewebsiten.core.eventos.dto.transaccion.Transaccion;
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Log;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class FachadaEventos {
 	
 	private static Log logger;
-    private static ProveedorCassandra proveedorCassandra;
+    private static ProveedorAlmacenamiento proveedorAlmacenamiento;
 	
     public static void main(String[] args) throws ExcepcionGenerica {
     	new FachadaEventos().iniciarModuloEventos();
@@ -34,7 +35,6 @@ public class FachadaEventos {
         try {
         	
         	iniciarLog();
-        	conectarBaseDeDatos();
 
             long timestamp = System.currentTimeMillis();
             
@@ -136,7 +136,7 @@ public class FachadaEventos {
         } catch (Exception e) {
         	
             try {
-            	imprimirErrorEnLog(e);
+            	logger.imprimirErrorEnLog(e);
 			} catch (Exception ex) {
 				ex.printStackTrace();
 			}
@@ -147,56 +147,29 @@ public class FachadaEventos {
         	ejecucionEventos.shutdown();
         	
         	// Finalizar la conexión con la base de datos cassandra
-        	desconectarBaseDeDatos();
+        	desactivarProveedoresAlmacenamiento();
         	
         }
         
-        
     }
     
-    static void iniciarLog() throws ExcepcionDeLog {
+    private static void iniciarLog() throws ExcepcionDeLog {
     	logger = Log.getInstance();
     }
     
-    static void imprimirErrorEnLog(Throwable e) throws ExcepcionDeLog {
-    	logger.imprimirErrorEnLog(e);
-    }
-    
-    static ProveedorCassandra conectarBaseDeDatos() {
-    	proveedorCassandra = ProveedorCassandra.getInstance(true);
-		return proveedorCassandra;
+    private static void desactivarProveedoresAlmacenamiento() {
+    	AlmacenamientoFabrica.desactivarProveedoresAlmacenamiento();
 	}
     
-    static ProveedorCassandra desconectarBaseDeDatos() {
-    	proveedorCassandra = ProveedorCassandra.getInstance(false);
-		return proveedorCassandra;
-	}
-    
-    /**
-     * 
-     * @param sentencia
-     * @param nombreSentencia
-     * @param parametros
-     * @return
-     * @throws ExcepcionGenerica
-     */
-    static List<JsonObject> ejecutarTransaccion(String sentencia, String nombreSentencia, Object[] parametros) throws Exception {
-		return proveedorCassandra.ejecutarTransaccion(sentencia, nombreSentencia, parametros);
-    }
-
     /**
      * 
      * @param transaccion
-     * @param resultadoConsulta
-     * @throws ExcepcionGenerica
+     * @return
+     * @throws Exception
      */
-    static void ejecutarTransaccionConJerarquia(Transaccion transaccion, JsonObject resultadoConsulta) throws Exception { 
-    	DetallesSentencia detallesSentencia = transaccion.getDetallesSentencia();
-    	proveedorCassandra.ejecutarTransaccion(detallesSentencia.getSentencia(),
-    									   	   detallesSentencia.getNombreSentencia(), 
-								   			   detallesSentencia.getParametrosSentencia(),
-								   			   transaccion.getColumnasIntermediasSentenciaCql(),
-								   			   resultadoConsulta); 
+    static JsonElement ejecutarTransaccion(Transaccion transaccion) throws Exception {
+    	proveedorAlmacenamiento = AlmacenamientoFabrica.obtenerProveedorAlmacenamiento(transaccion.getMotorAlmacenamiento());
+    	return proveedorAlmacenamiento.ejecutarTransaccion(transaccion);
     }
     
 }

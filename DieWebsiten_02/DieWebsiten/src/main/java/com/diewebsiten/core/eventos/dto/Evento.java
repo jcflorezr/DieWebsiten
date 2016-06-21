@@ -1,17 +1,18 @@
 package com.diewebsiten.core.eventos.dto;
 
+import static com.diewebsiten.core.eventos.dto.transaccion.TransaccionFabrica.obtenerTransaccion;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.substringAfter;
 import static org.apache.commons.lang3.StringUtils.substringBefore;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.diewebsiten.core.eventos.dto.transaccion.Transaccion;
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class Evento {
@@ -78,15 +79,7 @@ public class Evento {
     private List<Transaccion> transacciones;
     private boolean poseeTransacciones;
     private JsonObject resultadoFinal;
-    
-    private static final String NOMBRE_TRANSACCION = "transaccion";
-    private static final String TIPO_TRANSACCION = "tipotransaccion";
-    private static final String COLUMNFAMILY_NAME = "columnfamily_name";
-    private static final String SENTENCIA_CQL = "sentenciacql";
-    private static final String COLUMNAS_FILTRO_SENTENCIA_CQL = "filtrossentenciacql";
-    private static final String COLUMNAS_CONSULTA_SENTENCIA_CQL = "columnasconsultasentenciacql";
-    private static final String COLUMNAS_INTERMEDIAS_SENTENCIA_CQL = "columnasintermediassentenciacql";
-    
+
     
     public String getSitioWeb() {
         return nombreSitioWeb;
@@ -114,25 +107,15 @@ public class Evento {
 
 	public List<Transaccion> getTransacciones() {
 		/*
-    	 * Copia defensiva del campo 'new Evento().parametros'
+    	 * Copia defensiva del campo 'new Evento().transacciones'
     	 */
 		return new ArrayList<>(transacciones);
 	}
 
-	public void setTransacciones(List<JsonObject> transacciones) {
+	public void setTransacciones(JsonArray transacciones) throws Exception {
 		this.transacciones = new ArrayList<>();
-		Type listStringType = new TypeToken<List<String>>(){}.getType();
-		Gson gson = new Gson();
-		for (JsonObject transaccionObject : transacciones) {
-			Transaccion transaccion = new Transaccion();
-			transaccion.setNombreTransaccion(transaccionObject.get(NOMBRE_TRANSACCION).getAsString());
-			transaccion.setTipo(transaccionObject.get(TIPO_TRANSACCION).getAsString());
-			transaccion.setColumnfamilyName(transaccionObject.get(COLUMNFAMILY_NAME).getAsString());
-			transaccion.setSentenciaCql(transaccionObject.get(SENTENCIA_CQL).getAsString());
-			transaccion.setColumnasFiltroSentenciaCql(gson.fromJson(transaccionObject.get(COLUMNAS_FILTRO_SENTENCIA_CQL).getAsJsonArray(), listStringType));
-			transaccion.setColumnasConsultaSentenciaCql(gson.fromJson(transaccionObject.get(COLUMNAS_CONSULTA_SENTENCIA_CQL).getAsJsonArray(), listStringType));
-			transaccion.setColumnasIntermediasSentenciaCql(gson.fromJson(transaccionObject.get(COLUMNAS_INTERMEDIAS_SENTENCIA_CQL).getAsJsonArray(), listStringType));
-			this.transacciones.add(transaccion);
+		for (JsonElement transaccionActual : transacciones) {
+			this.transacciones.add(obtenerTransaccion(transaccionActual.getAsJsonObject(), this.nombreEvento));
 		}
 		if (!this.transacciones.isEmpty()) {
 			this.poseeTransacciones = true;

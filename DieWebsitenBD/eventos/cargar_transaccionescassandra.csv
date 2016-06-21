@@ -1,0 +1,8 @@
+CargaInicialPaginaEventos,consultarSitiosWeb,SELECT,diewebsiten,sitiosweb,,"['sitioweb']"
+ConsultarInfoSitioWeb,consultarPaginasSitioWeb,SELECT,diewebsiten,paginas,,"['pagina']"
+ConsultarInfoSitioWeb,consultarBasesDeDatosSitioWeb,SELECT,diewebsiten,sitiosweb,,"['keyspaces']"
+ConsultarInfoTabla,consultarInfoTabla,SELECT,system,schema_columnfamilies,,"['key_aliases','column_aliases']"
+ConsultarInfoTabla,consultarValidacionesColumnas,SELECT,diewebsiten,columnas,"['column_name']","['grupo_validacion']"
+ConsultarInfoTabla,consultarTiposColumnas,SELECT,system,schema_columns,"['column_name']","['type']"
+ConsultarInfoTabla,consultarTiposTransacciones,SELECT,diewebsiten,transacciones_por_tabla,,"['tipo_transaccion']"
+CrearEvento,crearEvento,INSERT,diewebsiten,eventos,,

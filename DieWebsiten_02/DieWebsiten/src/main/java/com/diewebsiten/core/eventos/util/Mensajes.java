@@ -57,17 +57,15 @@ public enum Mensajes {
         
         public enum Transaccion {
         	
-        	
-        	
-        	
-        	// ESTE FILTRO_NO_EXISTE NO ESTA BIEN, HAY QUE ARREGLARLO. (MIRAR MENSAJE EN LA CLASE Eventos.Transaccion método ejecutarTransaccion())
         	FILTRO_NO_EXISTE {
                 @Override
                 public String get(String... valores) {            
-                    return "No se encontró el filtro '" + valores[0] + "' de la sentencia CQL de tipo " + valores[1] + " de la transacción '" + valores[2] + "', " 
+                    return "No se encontró el filtro '" + valores[0] + "' de la sentencia de la transacción '" + valores[1] + "', " 
                          + "en los campos que contiene el formulario.";
                 }
             },        
+            
+            // =========== CASSANDRA =========== //
             SENTENCIACQL_NO_SOPORTADA {
                 @Override
                 public String get(String... valores) {            
