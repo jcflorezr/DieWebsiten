@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
@@ -17,7 +17,7 @@ import com.google.gson.reflect.TypeToken;
 
 public class Formulario {
 	
-	private AtomicBoolean validacionExitosa = new AtomicBoolean();
+	private AtomicBoolean validacionExitosa = new AtomicBoolean(true);
 	private List<Campo> campos;
 	private boolean poseeCampos;
 	private JsonObject parametros;
@@ -39,7 +39,9 @@ public class Formulario {
   	}
 
   	public void setValidacionExitosa(boolean validacionExitosa) {
-  		this.validacionExitosa.set(validacionExitosa);
+  		if (!validacionExitosa && isValidacionExitosa()) {  			
+  			this.validacionExitosa.set(validacionExitosa);
+  		}
   	}
     
     // =====================================================
@@ -54,9 +56,9 @@ public class Formulario {
 		return new ArrayList<>(campos);
 	}
 
-    public void setCampos(JsonArray camposFormularioEvento) {
+    public void setCampos(JsonElement camposFormularioEvento) {
     	this.campos = new ArrayList<>();
-    	for (JsonElement campoObject : camposFormularioEvento) {
+    	for (JsonElement campoObject : camposFormularioEvento.getAsJsonArray()) {
     		Campo campo = new Campo();
     		JsonObject camopActual = campoObject.getAsJsonObject();
     		campo.setColumnName(camopActual.get(COLUMN_NAME).getAsString());
@@ -151,7 +153,10 @@ public class Formulario {
     	return copiaDeParametrosTransformados;
     }
 	
-    public void setParametrosTransformados(String nombreParametro, Object valorParametro) {
+    public void setParametrosTransformados(String nombreParametro, Object valorParametro, String nombreTransformacion) throws ExcepcionGenerica {
+    	if (valorParametro == null) {
+    		throw new ExcepcionGenerica(Mensajes.Evento.Formulario.TRANSFORMACION_FALLIDA.get(nombreParametro, nombreTransformacion));
+    	}
 		if (this.parametrosTransformados == null) {
 			this.parametrosTransformados = new JsonObject();
 		}

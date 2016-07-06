@@ -1,11 +1,11 @@
 
 package com.diewebsiten.core.eventos;
 
-import static com.diewebsiten.core.eventos.dto.transaccion.TransaccionFabrica.obtenerTransaccion;
-import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.*;
+import static com.diewebsiten.core.eventos.dto.Transaccion.obtenerDatosTransaccionEventos;
+import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.transformarParametro;
+import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.validarParametro;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,17 +19,14 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.diewebsiten.core.eventos.dto.Campo;
 import com.diewebsiten.core.eventos.dto.Evento;
+import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.eventos.dto.Validacion;
-import com.diewebsiten.core.eventos.dto.transaccion.Transaccion;
-import com.diewebsiten.core.eventos.util.LogEventos;
 import com.diewebsiten.core.eventos.util.Constantes;
+import com.diewebsiten.core.eventos.util.LogEventos;
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -44,7 +41,6 @@ public class Eventos implements Callable<JsonObject> {
     
     private Evento evento;
     
-    private static final String CASSANDRA = "CASSANDRA";
     private static final String TRANSACCIONES = "transacciones";
     private static final String VALIDACIONES = "validaciones";
     
@@ -57,13 +53,12 @@ public class Eventos implements Callable<JsonObject> {
     public JsonObject call() throws ExcepcionDeLog {
     	
 		try {
-			if (validarFormulario()) {
+			if (validarEvento()) {
 				ejecutarEvento();
-				return evento.getResultadoFinal();
 			} else {
 				evento.getResultadoFinal().add("VAL_" + evento.getNombreEvento(), evento.getFormulario().getParametros());
-				return evento.getResultadoFinal();
 			}
+			return evento.getResultadoFinal();
 		} catch (Exception e) {
 			Throwable excepcionReal = e.getCause();
 			if (excepcionReal != null) {
@@ -82,11 +77,11 @@ public class Eventos implements Callable<JsonObject> {
      * @return
      * @throws Exception
      */
-    private boolean validarFormulario() throws Exception {
+    private boolean validarEvento() throws Exception {
         	
-    	JsonObject datosValidaciones = obtenerDatosTransaccion(Constantes.Formulario.SNT_VALIDACIONES_EVENTO.get(), Constantes.Formulario.NMBR_SNT_VALIDACIONES_EVENTO.get(), evento.getInformacionEvento());
-        
-        evento.getFormulario().setCampos(ejecutarTransaccion(obtenerTransaccion(datosValidaciones)).getAsJsonArray());
+    	Transaccion datosValidaciones = obtenerDatosTransaccionEventos(Constantes.Formulario.SNT_VALIDACIONES_EVENTO.get(), Constantes.Formulario.NMBR_SNT_VALIDACIONES_EVENTO.get(), evento.getInformacionEvento());
+    	
+        evento.getFormulario().setCampos(ejecutarTransaccion(datosValidaciones).getAsJsonArray());
         
         if (!evento.getFormulario().poseeCampos() && evento.getFormulario().poseeParametros()) {
             throw new ExcepcionGenerica(Mensajes.Evento.Formulario.CAMPOS_FORMULARIO_NO_EXISTEN.get());
@@ -115,10 +110,10 @@ public class Eventos implements Callable<JsonObject> {
      */
     private void ejecutarEvento() throws Exception {
     	
-    	JsonObject datosTransacciones = obtenerDatosTransaccion(Constantes.Transacciones.SNT_TRANSACCIONES.get(), Constantes.Transacciones.NMBR_SNT_TRANSACCIONES.get(), evento.getInformacionEvento());
+    	Transaccion datosTransacciones = obtenerDatosTransaccionEventos(Constantes.Transacciones.SNT_TRANSACCIONES.get(), Constantes.Transacciones.NMBR_SNT_TRANSACCIONES.get(), evento.getInformacionEvento());
 
         // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-    	evento.setTransacciones(ejecutarTransaccion(obtenerTransaccion(datosTransacciones)).getAsJsonArray());
+    	evento.setTransacciones(ejecutarTransaccion(datosTransacciones));
 
         // Validar que el evento existe.
         if (!evento.poseeTransacciones()) { 
@@ -163,17 +158,7 @@ public class Eventos implements Callable<JsonObject> {
         
     }
     
-    private JsonObject obtenerDatosTransaccion(String sentencia, String nombre, Object[] parametros) {
-    	JsonObject datosTransaccion = new JsonObject();
-    	Type arrayObjectType = new TypeToken<Object[]>(){private static final long serialVersionUID = 1L;}.getType();
-        datosTransaccion.addProperty(Constantes.Transacciones.SENTENCIA.get(), sentencia);
-        datosTransaccion.addProperty(Constantes.Transacciones.NOMBRE_TRANSACCION.get(), nombre);
-        datosTransaccion.add(Constantes.Transacciones.PARAMETROS_TRANSACCION.get(), new Gson().toJsonTree(parametros, arrayObjectType));
-        datosTransaccion.addProperty(Constantes.Transacciones.MOTOR_ALMACENAMIENTO.get(), CASSANDRA);
-        datosTransaccion.add(Constantes.Transacciones.FILTROS_SENTENCIA.get(), new JsonArray());
-        datosTransaccion.addProperty(Constantes.Transacciones.TRANSACCION_DE_SISTEMA.get(), true);
-        return datosTransaccion;
-    }
+    
     
     /*
      * Para consultas con resultado en jerarquía
@@ -224,9 +209,9 @@ public class Eventos implements Callable<JsonObject> {
 	    	
 	    	String nombreCampo = campo.getColumnName();
 	        String grupoValidacionCampo = campo.getGrupoValidacion(); 
-	        JsonObject datosGruposValidaciones = obtenerDatosTransaccion(Constantes.Formulario.SNT_GRUPO_VALIDACIONES.get(), Constantes.Formulario.NMBR_SNT_GRUPO_VALIDACIONES.get(), new Object[] {grupoValidacionCampo});
+	        Transaccion datosGruposValidaciones = obtenerDatosTransaccionEventos(Constantes.Formulario.SNT_GRUPO_VALIDACIONES.get(), Constantes.Formulario.NMBR_SNT_GRUPO_VALIDACIONES.get(), new Object[] {grupoValidacionCampo});
 	        
-	        campo.setValidaciones(Eventos.ejecutarTransaccion(obtenerTransaccion(datosGruposValidaciones)).getAsJsonArray());
+	        campo.setValidaciones(Eventos.ejecutarTransaccion(datosGruposValidaciones));
 	
 	        // Validar que sí existan las validaciones del grupo.
 	        if (!campo.poseeValidaciones()) {
@@ -240,17 +225,11 @@ public class Eventos implements Callable<JsonObject> {
 	            if (VALIDACION.equals(validacion.getTipo())) {
 	            	String resultadoValidacion = validarParametro(validacion.getValidacion(), valorParametroActual);
 	            	if (valorParametroActual != null && resultadoValidacion != null && !valorParametroActual.equals(resultadoValidacion)) {
-	            		if (evento.getFormulario().isValidacionExitosa()) {
-	            			evento.getFormulario().setValidacionExitosa(false);
-	            		}
+	            		evento.getFormulario().setValidacionExitosa(false);
 	            		evento.getFormulario().setParametros(nombreCampo, resultadoValidacion);	
 	            	}
 	            } else if (evento.getFormulario().isValidacionExitosa() && TRANSFORMACION.equals(validacion.getTipo())) {
-	                Object resTrans = transformarParametro(validacion.getValidacion(), valorParametroActual);
-	                if (null == resTrans) {
-	                    throw new ExcepcionGenerica(Mensajes.Evento.Formulario.TRANSFORMACION_FALLIDA.get(nombreCampo, validacion.getValidacion()));
-	                }
-	                evento.getFormulario().setParametrosTransformados(nombreCampo, resTrans);
+	                evento.getFormulario().setParametrosTransformados(nombreCampo, transformarParametro(validacion.getValidacion(), valorParametroActual), validacion.getValidacion());
 	            }
 	            
 	        }
@@ -304,24 +283,18 @@ public class Eventos implements Callable<JsonObject> {
 	        // y guardarlos en una lista para enviarlos a la sentencia preparada
 	        List<Object> valoresFiltrosSentencia = new ArrayList<>();
 	        
-	        for (String filtro : transaccion.getNombresFiltrosSentencia()) {
+	        for (String filtro : transaccion.getFiltrosSentencia()) {
 	            
 	        	for (Campo campo : evento.getFormulario().getCampos()) {
-	        		String valorFiltroSentencia;
-	        		if (campo.getColumnName().equals(filtro)) {	        			
-	        			if (isNotBlank(campo.getValorPorDefecto())) {
-	        				valorFiltroSentencia = campo.getValorPorDefecto();
-	        			} else {
-	        				valorFiltroSentencia = evento.getFormulario().getParametro(campo.getColumnName());
-	        			}
+	        		if (campo.getColumnName().equals(filtro)) {	  
+	        			String valorFiltroSentencia = isNotBlank(campo.getValorPorDefecto()) ? campo.getValorPorDefecto() : evento.getFormulario().getParametro(campo.getColumnName()); 
 	        			if (StringUtils.isBlank(valorFiltroSentencia)) {
 	        				throw new ExcepcionGenerica(Mensajes.Evento.Transaccion.FILTRO_NO_EXISTE.get(filtro, transaccion.getNombre()));
 	        			}
 	        			valoresFiltrosSentencia.add(valorFiltroSentencia);
-	        			evento.getFormulario().getCampos().remove(campo);
+	        			//evento.getFormulario().removerCampo(campo);
 	        			break;
 	        		}
-	        		
 	            }
 	            
 	        }
@@ -341,7 +314,7 @@ public class Eventos implements Callable<JsonObject> {
 	private void poblarResultadoFinal(JsonElement resultadoTransaccion) {
 		
 		JsonObject nivelActualResultadoFinal = evento.getResultadoFinal();
-		JsonObject nivelActualResultadoTransaccion = resultadoTransaccion.getAsJsonObject();
+		JsonObject nivelActualResultadoTransaccion = resultadoTransaccion.getAsJsonObject(); // POR AHORA SE ASUME QUE EL RESULTADO DE LA TRANSACCION SOLO VIENE EN JSONOBJECT
 		
 		if (nivelActualResultadoFinal.entrySet().size() == 0) {
 			evento.setResultadoFinal(nivelActualResultadoTransaccion);
@@ -350,8 +323,8 @@ public class Eventos implements Callable<JsonObject> {
 		
 		for (Map.Entry<String, JsonElement> objetoActual : nivelActualResultadoTransaccion.entrySet()) {
 			String objetoActualKey = objetoActual.getKey();
-			if (nivelActualResultadoFinal.has(objetoActualKey)) { // POR AHORA SE ASUME QUE EL RESULTADO DE LA TRANSACCION SOLO VIENE EN JSONOBJECT
-				nivelActualResultadoFinal = nivelActualResultadoFinal.get(objetoActualKey).getAsJsonObject();
+			if (nivelActualResultadoFinal.has(objetoActualKey)) { 
+				nivelActualResultadoFinal = nivelActualResultadoFinal.get(objetoActualKey).getAsJsonObject(); // POR AHORA SE ASUME QUE EL ARBOL DE JERARQUÍA SOLO SE COMPONE DE JSONOBJECTs
 				nivelActualResultadoTransaccion = nivelActualResultadoTransaccion.get(objetoActualKey).getAsJsonObject();
 			} else {
 				nivelActualResultadoFinal.add(objetoActualKey, objetoActual.getValue());

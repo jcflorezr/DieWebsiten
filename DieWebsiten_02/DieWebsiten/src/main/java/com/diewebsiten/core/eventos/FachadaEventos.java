@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadFactory;
 
 import com.diewebsiten.core.almacenamiento.AlmacenamientoFabrica;
 import com.diewebsiten.core.almacenamiento.ProveedorAlmacenamiento;
-import com.diewebsiten.core.eventos.dto.transaccion.Transaccion;
+import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;

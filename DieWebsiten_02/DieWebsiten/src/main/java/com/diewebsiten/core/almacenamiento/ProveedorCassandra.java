@@ -1,13 +1,21 @@
 package com.diewebsiten.core.almacenamiento;
 
+import static org.apache.commons.lang3.ArrayUtils.isEmpty;
+import static org.apache.commons.lang3.StringUtils.substringBetween;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ColumnDefinitions;
@@ -16,10 +24,12 @@ import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.diewebsiten.core.eventos.dto.transaccion.Transaccion;
-import com.diewebsiten.core.eventos.dto.transaccion.TransaccionCassandra;
+import com.diewebsiten.core.almacenamiento.dto.Sentencia;
+import com.diewebsiten.core.almacenamiento.dto.SentenciaCassandra;
+import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.google.common.base.Throwables;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -40,14 +50,17 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
     private static Cluster cluster;
     private static Session sesion;
-    private Map<String, PreparedStatement> sentenciasPreparadas;
+    private Map<String, Sentencia> sentenciasPreparadas;
     private static Object obj = new Object();
     
     private static final String CASSANDRA_URL = "localhost";
     private static final int CASSANDRA_PORT = 9042;
+    private static final Gson gson = new Gson();
+    
     
     private ProveedorCassandra() {
     	sentenciasPreparadas = new HashMap<>();
+    	iniciar = false;
     }
     
     /*
@@ -60,7 +73,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 	    			if (proveedorCassandra == null) {	    				
 	    				proveedorCassandra = new ProveedorCassandra();
 	    				proveedorCassandra.conectar();
-	    				iniciar = false;
 	    			}
 	    		}
 	    	}
@@ -93,24 +105,46 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     /**
      * Tener sentencias preparadas con el fin de reusarlas
      * @param sentenciaCQL
-     * @param nombreSentencia
+     * @param nombreTransaccion
      * @return
      */
-    private PreparedStatement obtenerSentenciaPreparada(String sentenciaCQL, String nombreSentencia) throws Exception {
-    	try {			
-    		PreparedStatement sentenciaPreparada = sentenciasPreparadas.get(nombreSentencia);
-    		if (sentenciaPreparada == null) {
+    private SentenciaCassandra obtenerSentencia(String sentenciaCQL, String nombreTransaccion) throws Exception {
+    	try {
+    		SentenciaCassandra sentencia = (SentenciaCassandra) sentenciasPreparadas.get(nombreTransaccion);
+    		if (sentencia == null) {
     			synchronized (obj) {
-    				sentenciaPreparada = sentenciasPreparadas.get(nombreSentencia);
-    				if (sentenciaPreparada == null) {
-    					sentenciaPreparada = sesion.prepare(sentenciaCQL);
-    					sentenciasPreparadas.put(nombreSentencia, sentenciaPreparada);
+    				sentencia = (SentenciaCassandra) sentenciasPreparadas.get(nombreTransaccion);
+    				if (sentencia == null) {
+    					PreparedStatement datosSentencia = sesion.prepare(sentenciaCQL);
+    					ColumnDefinitions parametrosSentencia = datosSentencia.getVariables();
+    					String keyspaceName, columnfamilyName;
+    					if (parametrosSentencia.size() > 0) {    						
+    						keyspaceName = parametrosSentencia.getKeyspace(0); columnfamilyName = parametrosSentencia.getTable(0);
+    					} else {
+    						String query = datosSentencia.getQueryString();
+    						String[] s = substringBetween(query, "FROM", ";").trim().split("\\.");
+    						try {								
+    							keyspaceName = s[0];
+    							columnfamilyName = s[1];
+							} catch (ArrayIndexOutOfBoundsException e) {
+								throw new ExcepcionGenerica("La sentencia '" + query + "' no está bien formada.");
+							}
+    					}
+    					sentencia = new SentenciaCassandra()
+    					.setSentenciaPreparada(datosSentencia)
+    					.setKeyspaceName(keyspaceName)
+    					.setColumnfamilyName(columnfamilyName)
+    					.setLlavesPrimarias(obtenerLlavesPrimarias(keyspaceName, columnfamilyName))
+    					.setNumeroParametros(parametrosSentencia.size());
+    					sentenciasPreparadas.put(nombreTransaccion, sentencia);
     				}
     			}
     		}
-        	return sentenciaPreparada;
+        	return sentencia;
+		} catch (ClassCastException e) {
+			throw new ExcepcionGenerica("La sentencia de la transacción '" + nombreTransaccion + "' no es de tipo Cassandra");
 		} catch (Exception e) {
-			throw new ExcepcionGenerica("Error al preparar la nueva sentencia CQL. Nombre: '" + nombreSentencia + "'. Sentencia: " + sentenciaCQL + ". Mensaje original --> " + e.getMessage());
+			throw new ExcepcionGenerica("Error al preparar la nueva sentencia CQL que pertenece a la transacción '" + nombreTransaccion + "'. Sentencia: " + sentenciaCQL + ". Mensaje original --> " + Throwables.getStackTraceAsString(e));
 		}
     }
     
@@ -118,35 +152,37 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * 
      */
     @Override
-    public JsonElement ejecutarTransaccion(Transaccion transaccionGenerica) throws Exception {
+    public JsonElement ejecutarTransaccion(Transaccion transaccion) throws Exception {
 
-    	String sentenciaCQL = transaccionGenerica.getSentencia();
-    	String nombreSentencia = transaccionGenerica.getNombre();
-    	Object[] parametros = transaccionGenerica.getParametrosTransaccion();
+    	String sentenciaCQL = transaccion.getSentencia();
+    	String nombreTransaccion = transaccion.getNombre();
+    	Object[] parametros = transaccion.getParametrosTransaccion();
+    	boolean necesitaResultadoEnJerarquia = transaccion.isResultadoEnJerarquia();
+    	
+    	if (isBlank(nombreTransaccion)) {
+    		throw new ExcepcionGenerica("El nombre de la sentencia no puede venir vacío.");
+    	}
     	
     	try {	
-    		TransaccionCassandra transaccion = (TransaccionCassandra) transaccionGenerica;
+    		SentenciaCassandra sentencia = (SentenciaCassandra) obtenerSentencia(sentenciaCQL, nombreTransaccion);
     		
-    		List<String> columnasJerarquia = transaccion.getColumnasIntermediasSentenciaCql(); 
-	    	if (parametros == null || parametros.length == 0) {
-	    		if (columnasJerarquia != null) {
-	    			return obtenerResultadoConJerarquia(sesion.execute(sentenciaCQL), columnasJerarquia);
-	    		} else {	    			
-	    			return obtenerResultado(sesion.execute(sentenciaCQL));
-	    		}
-	    	} else if (isBlank(nombreSentencia)) {
-	    		throw new ExcepcionGenerica("Si la sentencia sí tiene parámetros, el nombre de la sentencia no puede venir vacío.");
-	    	}
-	    	
-	    	PreparedStatement sentenciaPreparada = obtenerSentenciaPreparada(sentenciaCQL, nombreSentencia);
-	    	ResultSet resultadoEjecucion = sesion.execute(sentenciaPreparada.bind(parametros)); 
-	    	if (columnasJerarquia != null) {
-	    		return obtenerResultadoConJerarquia(resultadoEjecucion, columnasJerarquia);
-	    	} else {	    		
-	    		return obtenerResultado(sesion.execute(sentenciaPreparada.bind(parametros)));
-	    	}
-		} catch (ClassCastException e) {
-			throw new ExcepcionGenerica("La transacción no es de tipo Cassandra, es de tipo: " + transaccionGenerica.getClass().getName());
+    		if (parametros.length != sentencia.getNumeroParametros()) {
+    			throw new ExcepcionGenerica("La sentencia necesita " + sentencia.getNumeroParametros() + " parámetros para ser ejecutada.");
+    		}
+    		
+    		ResultSet resultadoEjecucion = isEmpty(parametros) ? sesion.execute(sentenciaCQL) : sesion.execute(sentencia.getSentenciaPreparada().bind(parametros));
+    		
+    		if (resultadoEjecucion.isExhausted()) {
+    			if (necesitaResultadoEnJerarquia) return new JsonObject();
+    			else return new JsonArray();
+    		}
+    		
+    		if (necesitaResultadoEnJerarquia) {
+    			return obtenerResultadoConJerarquia(resultadoEjecucion, sentencia.getLlavesPrimarias());
+    		} else {
+    			return obtenerResultado(resultadoEjecucion);
+    		}
+    		 
 		} catch (Exception e) {
 			// ES NECESARIO IMPRIMIR LOS PARAMETROS??? PUESTO QUE YA SE IMPRIMIRÁN DESDE LOS EVENTOS
 			throw new ExcepcionGenerica("Error al ejecutar la sentencia CQL --> " + sentenciaCQL + "'. Parámetros: " + (parametros != null ? Arrays.asList(parametros).toString() : "{}") + ". Mensaje original --> " + Throwables.getStackTraceAsString(e));
@@ -160,22 +196,16 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      */
     private JsonArray obtenerResultado(ResultSet resultadoEjecucion) {
     	
-    	Iterator<Row> iterador = resultadoEjecucion.iterator();
-		List<ColumnDefinitions.Definition> columnasResultadoEjecucion = resultadoEjecucion.getColumnDefinitions().asList();
+		Stream<Row> filas = StreamSupport.stream(resultadoEjecucion.spliterator(), false);
+		List<ColumnDefinitions.Definition> columnas = resultadoEjecucion.getColumnDefinitions().asList();
 		JsonArray resultado = new JsonArray();
 		
-		while (iterador.hasNext()) {
-
-			Map<String, Object> filaMap = new HashMap<>();
-			Row fila = iterador.next();
-			
-			for (ColumnDefinitions.Definition columnaActual : columnasResultadoEjecucion) {
-				filaMap.put(columnaActual.getName(), obtenerValorColumnaActual(fila, columnaActual));
-			}
-			
-			resultado.add(new JsonParser().parse(new Gson().toJson(filaMap)).getAsJsonObject());
-			
-		}
+		filas.forEach(fila -> {
+				JsonObject obj = new JsonObject(); 
+				columnas.forEach(columna -> obj.add(columna.getName(), gson.toJsonTree(obtenerValorColumnaActual(fila, columna))));
+				resultado.add(obj);
+				}
+		);
 		
 		return resultado;
 		
@@ -189,16 +219,16 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * @param resultadoFinal
      * @throws Exception
      */
-    private JsonElement obtenerResultadoConJerarquia (ResultSet resultadoEjecucion, List<String> columnasJerarquia) throws Exception {
+    private JsonElement obtenerResultadoConJerarquia (ResultSet resultadoEjecucion, List<String> llavesPrimarias) throws Exception {
 		
-    	JsonElement resultadoFinal = new JsonObject();
-    	
+    	JsonElement resultado = new JsonObject();
 		
 		// EL ORDEN DE LA LISTA DE JERARQUÍA YA VIENE ESTABLECIDO DESDE 
 		// LA BASE DE DATOS (TABLA EVENTOS) SEGÚN EL ORDEN EN QUE SE CREARON EN LA TABLA
 		
-		JsonObject coleccionColumnasJerarquia = resultadoFinal.getAsJsonObject();
+		JsonObject coleccionColumnasJerarquia = resultado.getAsJsonObject();
 		List<ColumnDefinitions.Definition> columnasResultadoEjecucion = resultadoEjecucion.getColumnDefinitions().asList();
+		List<String> columnasJerarquia = columnasResultadoEjecucion.size() > 1 ? obtenerColumnasIntermedias(llavesPrimarias, resultadoEjecucion.one().getColumnDefinitions()) : new ArrayList<>();
 		Iterator<Row> iterador = resultadoEjecucion.iterator();
 		
 		while (iterador.hasNext()) {
@@ -248,7 +278,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
             
         }
 		
-		return resultadoFinal;
+		return resultado;
 		
 	}
     
@@ -275,7 +305,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 		if (bf != null) {
 			return columnaActual.getType().deserialize((bf), ProtocolVersion.NEWEST_SUPPORTED);
 		} else {
-			return obtenerValorVacio(bf, columnaActual);
+			return obtenerValorVacio(columnaActual);
 		}
 	}
     
@@ -287,7 +317,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * @param columnaActual
      * @return
      */
-    private Object obtenerValorVacio(ByteBuffer bf, ColumnDefinitions.Definition columnaActual) {
+    private Object obtenerValorVacio(ColumnDefinitions.Definition columnaActual) {
 		String tipoColumna = columnaActual.getType().asJavaClass().getSimpleName();
 		if (columnaActual.getType().isCollection()) {
 			return "List".equals(tipoColumna) ? new JsonArray() : new JsonObject();
@@ -299,6 +329,39 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 			else
 				return null;
 		}
+    }
+    
+    private List<String> obtenerLlavesPrimarias(String keyspaceName, String columnFamilyName) throws ExcepcionGenerica {
+		
+    	if (isBlank(keyspaceName) || isBlank(columnFamilyName)) {
+			throw new ExcepcionGenerica("Para obtener las llaves primarias de la sentencia actual ninguno de estos valores puede ser nulo. Keyspace Name: " + keyspaceName + ". ColumnFamily Name: " + columnFamilyName);
+		}
+    	
+		String sentenciaLlavesPrimarias = "SELECT key_aliases, column_aliases FROM system.schema_columnfamilies "
+				+ "WHERE keyspace_name = '" + keyspaceName + "' and columnfamily_name = '" + columnFamilyName + "';";
+		Row llavesPrimarias = sesion.execute(sentenciaLlavesPrimarias).one();
+
+		Type listStringType = new TypeToken<List<String>>(){private static final long serialVersionUID = 1L;}.getType();
+		Gson gson = new Gson();
+		
+		List<String> listaLlavesPrimarias = new ArrayList<>();
+		listaLlavesPrimarias.addAll(gson.fromJson(llavesPrimarias.getString("key_aliases"), listStringType));
+		listaLlavesPrimarias.addAll(gson.fromJson(llavesPrimarias.getString("column_aliases"), listStringType));
+		
+		return listaLlavesPrimarias;
+		
+    }
+    
+    private List<String> obtenerColumnasIntermedias(List<String> llavesPrimarias, ColumnDefinitions metadataResultadoEjecucion) {
+    	List<String> columnasIntermedias = new ArrayList<>();
+    	int i = 0;
+    	for (String llavePrimaria : llavesPrimarias) {
+    		if (llavePrimaria.equals(metadataResultadoEjecucion.getName(i))) {
+    			columnasIntermedias.add(llavePrimaria);
+    			i++;
+    		}
+    	}
+    	return columnasIntermedias;
     }
     
 }

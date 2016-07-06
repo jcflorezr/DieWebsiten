@@ -44,10 +44,10 @@ public enum Constantes {
     	FILTROS_SENTENCIA("filtrossentencia"),
     	MOTOR_ALMACENAMIENTO("motoralmacenamiento"),
     	PARAMETROS_TRANSACCION("parametrostransaccion"),
-    	TRANSACCION_DE_SISTEMA("transacciondesistema"),
+    	RESULTADO_EN_JERARQUIA("resultadoenjerarquia"),
     	
     	NMBR_SNT_TRANSACCIONES("SentenciaTransacciones"),
-    	SNT_TRANSACCIONES("SELECT transaccion, motoralmacenamiento, sentencia, filtrossentencia FROM diewebsiten.eventos WHERE sitioweb = ? AND pagina = ? AND evento = ?;");
+    	SNT_TRANSACCIONES("SELECT transaccion, motoralmacenamiento, sentencia, filtrossentencia, resultadoenjerarquia FROM diewebsiten.eventos WHERE sitioweb = ? AND pagina = ? AND evento = ?;");
     	
     	private String constante;
     	
@@ -57,38 +57,6 @@ public enum Constantes {
     	
     	public String get() {
     		return this.constante;
-    	}
-    	
-    	public enum Cassandra {
-    		
-    		NMBR_SNT_TRANSACCIONES_CASSANDRA("TransaccionesCassandra"),
-    	    SNT_TRANSACCIONES_CASSANDRA("SELECT tipotransaccion, keyspace_name, columnfamily_name, columnasconsultasentenciacql, columnasintermediassentenciacql FROM diewebsiten.transaccionescassandra WHERE evento = ? AND transaccion = ?;");
-    	    
-    		private String constante;
-    		
-    		private Cassandra(String constante) {
-    			this.constante = constante;
-    		}
-    		
-    		public String get() {
-    			return this.constante;
-    		}
-    	}
-    	
-    	public enum MySql {
-    		
-    		NMBR_SNT_TRANSACCIONES_MYSQL("TransaccionesMySql"),
-    	    SNT_TRANSACCIONES_MYSQL("?");
-    	    
-    		private String constante;
-    		
-    		private MySql(String constante) {
-    			this.constante = constante;
-    		}
-    		
-    		public String get() {
-    			return this.constante;
-    		}
     	}
     	
     }

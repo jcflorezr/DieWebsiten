@@ -1,6 +1,6 @@
 package com.diewebsiten.core.eventos.dto;
 
-import static com.diewebsiten.core.eventos.dto.transaccion.TransaccionFabrica.obtenerTransaccion;
+import static com.diewebsiten.core.eventos.dto.Transaccion.obtenerDatosTransaccion;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.substringAfter;
 import static org.apache.commons.lang3.StringUtils.substringBefore;
@@ -8,10 +8,8 @@ import static org.apache.commons.lang3.StringUtils.substringBefore;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.diewebsiten.core.eventos.dto.transaccion.Transaccion;
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -112,10 +110,10 @@ public class Evento {
 		return new ArrayList<>(transacciones);
 	}
 
-	public void setTransacciones(JsonArray transacciones) throws Exception {
+	public void setTransacciones(JsonElement transacciones) throws Exception {
 		this.transacciones = new ArrayList<>();
-		for (JsonElement transaccionActual : transacciones) {
-			this.transacciones.add(obtenerTransaccion(transaccionActual.getAsJsonObject(), this.nombreEvento));
+		for (JsonElement transaccionActual : transacciones.getAsJsonArray()) {
+			this.transacciones.add(obtenerDatosTransaccion(transaccionActual.getAsJsonObject(), this.nombreEvento));
 		}
 		if (!this.transacciones.isEmpty()) {
 			this.poseeTransacciones = true;
