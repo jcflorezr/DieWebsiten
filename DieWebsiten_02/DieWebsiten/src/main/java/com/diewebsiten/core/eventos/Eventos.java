@@ -1,22 +1,33 @@
 
 package com.diewebsiten.core.eventos;
 
+import static com.diewebsiten.core.eventos.dto.Transaccion.obtenerDatosTransaccionEventos;
+import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.transformarParametro;
+import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.validarParametro;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.diewebsiten.core.eventos.dto.Campo;
 import com.diewebsiten.core.eventos.dto.Evento;
 import com.diewebsiten.core.eventos.dto.Transaccion;
+import com.diewebsiten.core.eventos.dto.Validacion;
+import com.diewebsiten.core.eventos.util.Constantes;
 import com.diewebsiten.core.eventos.util.LogEventos;
+import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.diewebsiten.core.util.Constantes;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 
@@ -29,8 +40,9 @@ import com.google.gson.JsonObject;
 public class Eventos implements Callable<JsonObject> {
     
     private Evento evento;
-    private static final String VALIDACIONES = "validaciones";
+    
     private static final String TRANSACCIONES = "transacciones";
+    private static final String VALIDACIONES = "validaciones";
     
     Eventos(String url, String nombreEvento, String parametros) throws Exception {
         evento = new Evento(url, nombreEvento, parametros);
@@ -41,13 +53,12 @@ public class Eventos implements Callable<JsonObject> {
     public JsonObject call() throws ExcepcionDeLog {
     	
 		try {
-			if (validarFormulario()) {
+			if (validarEvento()) {
 				ejecutarEvento();
-				return evento.getResultadoFinal();
 			} else {
 				evento.getResultadoFinal().add("VAL_" + evento.getNombreEvento(), evento.getFormulario().getParametros());
-				return evento.getResultadoFinal();
 			}
+			return evento.getResultadoFinal();
 		} catch (Exception e) {
 			Throwable excepcionReal = e.getCause();
 			if (excepcionReal != null) {
@@ -55,7 +66,7 @@ public class Eventos implements Callable<JsonObject> {
 			} else {
 				new LogEventos(evento).imprimirErrorEnLog(e);
 			}
-			evento.getResultadoFinal().addProperty("error", Constantes.ERROR.getString());
+			evento.getResultadoFinal().addProperty("error", Mensajes.ERROR.get());
 			return evento.getResultadoFinal();
 		}
         
@@ -66,14 +77,16 @@ public class Eventos implements Callable<JsonObject> {
      * @return
      * @throws Exception
      */
-    private boolean validarFormulario() throws Exception {
+    private boolean validarEvento() throws Exception {
         	
-        evento.getFormulario().setCampos(ejecutarTransaccion(Constantes.SNT_VALIDACIONES_EVENTO.getString(), Constantes.NMBR_SNT_VALIDACIONES_EVENTO.getString(), evento.getInformacionEvento()));
-
+    	Transaccion datosValidaciones = obtenerDatosTransaccionEventos(Constantes.Formulario.SNT_VALIDACIONES_EVENTO.get(), Constantes.Formulario.NMBR_SNT_VALIDACIONES_EVENTO.get(), evento.getInformacionEvento());
+    	
+        evento.getFormulario().setCampos(ejecutarTransaccion(datosValidaciones).getAsJsonArray());
+        
         if (!evento.getFormulario().poseeCampos() && evento.getFormulario().poseeParametros()) {
-            throw new ExcepcionGenerica(Constantes.Mensajes.CAMPOS_FORMULARIO_NO_EXISTEN.getMensaje(evento.getNombreEvento()));
+            throw new ExcepcionGenerica(Mensajes.Evento.Formulario.CAMPOS_FORMULARIO_NO_EXISTEN.get());
         } else if (evento.getFormulario().poseeCampos() && !evento.getFormulario().poseeParametros()) {
-            throw new ExcepcionGenerica(Constantes.Mensajes.PARAMETROS_FORMULARIO_NO_EXISTEN.getMensaje(evento.getNombreEvento()));
+            throw new ExcepcionGenerica(Mensajes.Evento.Formulario.PARAMETROS_FORMULARIO_NO_EXISTEN.get());
         } else if (!evento.getFormulario().poseeCampos()) {
         	return true; // Si no se encontraron campos para la ejecución de este evento significa que no los necesita.
         }
@@ -96,13 +109,15 @@ public class Eventos implements Callable<JsonObject> {
      * @return
      */
     private void ejecutarEvento() throws Exception {
+    	
+    	Transaccion datosTransacciones = obtenerDatosTransaccionEventos(Constantes.Transacciones.SNT_TRANSACCIONES.get(), Constantes.Transacciones.NMBR_SNT_TRANSACCIONES.get(), evento.getInformacionEvento());
 
         // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-    	evento.setTransacciones(ejecutarTransaccion(Constantes.SNT_TRANSACCIONES.getString(), Constantes.NMBR_SNT_TRANSACCIONES.getString(), evento.getInformacionEvento()));
+    	evento.setTransacciones(ejecutarTransaccion(datosTransacciones));
 
         // Validar que el evento existe.
         if (!evento.poseeTransacciones()) { 
-            throw new ExcepcionGenerica (Constantes.Mensajes.EVENTO_NO_EXISTE.getMensaje((String[]) evento.getInformacionEvento()));
+            throw new ExcepcionGenerica (Mensajes.Evento.EVENTO_NO_EXISTE.get());
         }
         
         ejecucionParalela(TRANSACCIONES); 
@@ -125,11 +140,11 @@ public class Eventos implements Callable<JsonObject> {
             
             if (VALIDACIONES.equals(moduloAEjecutar)) {
             	for (Campo campoFormularioEvento : evento.getFormulario().getCampos()) {
-            		hilosEjecucion.add(ejecucionParalela.submit(new Formularios(campoFormularioEvento, evento)));
+            		hilosEjecucion.add(ejecucionParalela.submit(new Formularios(campoFormularioEvento)));
             	}
             } else if (TRANSACCIONES.equals(moduloAEjecutar)) {
             	for (Transaccion transaccion : evento.getTransacciones()) {
-            		hilosEjecucion.add(ejecucionParalela.submit(new Transacciones(transaccion, evento)));                
+            		hilosEjecucion.add(ejecucionParalela.submit(new Transacciones(transaccion)));                
             	}            	
             }
             
@@ -143,29 +158,180 @@ public class Eventos implements Callable<JsonObject> {
         
     }
     
-    /*
-     * Para consultas con resultado plano
-     */
-    static List<JsonObject> ejecutarTransaccion(String sentencia) throws Exception { 
-    	return FachadaEventos.ejecutarTransaccion(sentencia, null, null); 
-    }
-    static List<JsonObject> ejecutarTransaccion(String sentencia, String nombreSentencia, Object[] parametros) throws Exception { 
-    	return FachadaEventos.ejecutarTransaccion(sentencia, nombreSentencia, parametros); 
-    }
+    
     
     /*
      * Para consultas con resultado en jerarquía
      */
-    static void ejecutarTransaccion(Transaccion transaccion, JsonObject resultadoConsulta) throws Exception {
-    	FachadaEventos.ejecutarTransaccionConJerarquia(transaccion, resultadoConsulta); 
+    public static JsonElement ejecutarTransaccion(Transaccion transaccion) throws Exception {
+    	return FachadaEventos.ejecutarTransaccion(transaccion); 
     }
     
-
+    
+    // =========================================================================== //
+    // =========================== FORMULARIOS =================================== //
+    // =========================================================================== //
+	
+	private class Formularios implements Callable<Void> {
+	    
+	    private final Campo campo;
+	    private static final String VALIDACION = "Validación";
+	    private static final String TRANSFORMACION = "Transformación";
+	    
+	    private Formularios(Campo campo) {            
+	        this.campo = campo;
+	    } 
+	    
+	    @Override
+	    public Void call() throws Exception {
+	    	try {			
+	    		return procesarFormulario();
+			} catch (Exception e) {
+				Throwable excepcionReal = e.getCause();
+				if (excepcionReal != null) {
+					throw (Exception) excepcionReal;
+				} else {
+					throw e;
+				}
+			}
+	    }
+	    
+	    /**
+	     * Recibir los valores de los parámetros de un formulario, luego obtener de
+	     * la base de datos la validación de cada parámetro y por último validar cada parámetro.
+	     *
+	     * @param camposFormulario
+	     * @param validacionesCampos
+	     * @param parametros
+	     * @throws com.diewebsiten.core.excepciones.ExcepcionGenerica
+	     */
+	    private Void procesarFormulario() throws Exception {
+	    	
+	    	String nombreCampo = campo.getColumnName();
+	        String grupoValidacionCampo = campo.getGrupoValidacion(); 
+	        Transaccion datosGruposValidaciones = obtenerDatosTransaccionEventos(Constantes.Formulario.SNT_GRUPO_VALIDACIONES.get(), Constantes.Formulario.NMBR_SNT_GRUPO_VALIDACIONES.get(), new Object[] {grupoValidacionCampo});
+	        
+	        campo.setValidaciones(Eventos.ejecutarTransaccion(datosGruposValidaciones));
+	
+	        // Validar que sí existan las validaciones del grupo.
+	        if (!campo.poseeValidaciones()) {
+				throw new ExcepcionGenerica(Mensajes.Evento.Formulario.VALIDACIONES_NO_EXISTEN.get());
+			}
+	        
+	        for (Validacion validacion : campo.getValidaciones()) {
+	        	
+	            Object valorParametroActual = evento.getFormulario().getParametro(nombreCampo);
+	            
+	            if (VALIDACION.equals(validacion.getTipo())) {
+	            	String resultadoValidacion = validarParametro(validacion.getValidacion(), valorParametroActual);
+	            	if (valorParametroActual != null && resultadoValidacion != null && !valorParametroActual.equals(resultadoValidacion)) {
+	            		evento.getFormulario().setValidacionExitosa(false);
+	            		evento.getFormulario().setParametros(nombreCampo, resultadoValidacion);	
+	            	}
+	            } else if (evento.getFormulario().isValidacionExitosa() && TRANSFORMACION.equals(validacion.getTipo())) {
+	                evento.getFormulario().setParametrosTransformados(nombreCampo, transformarParametro(validacion.getValidacion(), valorParametroActual), validacion.getValidacion());
+	            }
+	            
+	        }
+	        
+	        // Es necesario retornar null debido a que este método es de tipo Void en vez de void.
+	        // El resultado de la validacion ya se está guardando en el objeto new Evento().new Formulario().validacionExitosa
+	        return null;
+	    	
+	    }
+	    
+	}
 	
 	
+	// =========================================================================== //
+    // ============================== TRANSACCIONES ============================== //
+    // =========================================================================== //
 	
+	private class Transacciones implements Callable<Void> {
+	    
+	    private final Transaccion transaccion;
+	    
+	    private Transacciones (Transaccion transaccion) {
+	        this.transaccion = transaccion;
+	    }
 	
+	    /** 
+	     * @see java.util.concurrent.Callable#call()
+	     */
+	    @Override
+	    public Void call() throws Exception {
+	    	try {
+	    		return ejecutarTransaccion();			
+			} catch (Exception e) {
+				Throwable excepcionReal = e.getCause();
+				if (excepcionReal != null) {
+					throw (Exception) excepcionReal;
+				} else {
+					throw e;
+				}
+			}
+	    }
+	    
+	    /**
+	     * 
+	     * @return
+	     * @throws Exception
+	     */
+	    private Void ejecutarTransaccion() throws Exception {
+	        
+	        // Extraer los valores recibidos desde el cliente (navegador web, dispositivo móvil)
+	        // y guardarlos en una lista para enviarlos a la sentencia preparada
+	        List<Object> valoresFiltrosSentencia = new ArrayList<>();
+	        
+	        for (String filtro : transaccion.getFiltrosSentencia()) {
+	            
+	        	for (Campo campo : evento.getFormulario().getCampos()) {
+	        		if (campo.getColumnName().equals(filtro)) {	  
+	        			String valorFiltroSentencia = isNotBlank(campo.getValorPorDefecto()) ? campo.getValorPorDefecto() : evento.getFormulario().getParametro(campo.getColumnName()); 
+	        			if (StringUtils.isBlank(valorFiltroSentencia)) {
+	        				throw new ExcepcionGenerica(Mensajes.Evento.Transaccion.FILTRO_NO_EXISTE.get(filtro, transaccion.getNombre()));
+	        			}
+	        			valoresFiltrosSentencia.add(valorFiltroSentencia);
+	        			//evento.getFormulario().removerCampo(campo);
+	        			break;
+	        		}
+	            }
+	            
+	        }
+	        
+	        transaccion.setParametrosTransaccion(valoresFiltrosSentencia.toArray());
+	        
+	        // Guardar los resultados de esta transacción dentro del resultado final de todo el evento
+	        poblarResultadoFinal(Eventos.ejecutarTransaccion(transaccion));                  
+	             
+	        // Es necesario retornar null debido a que este método es de tipo Void en vez de void. Esto es debido a que 
+	        // este metodo se ejecuta por varios hilos al mismo tiempo
+	        return null;
+	    }
+	    
+	}
 	
+	private void poblarResultadoFinal(JsonElement resultadoTransaccion) {
+		
+		JsonObject nivelActualResultadoFinal = evento.getResultadoFinal();
+		JsonObject nivelActualResultadoTransaccion = resultadoTransaccion.getAsJsonObject(); // POR AHORA SE ASUME QUE EL RESULTADO DE LA TRANSACCION SOLO VIENE EN JSONOBJECT
+		
+		if (nivelActualResultadoFinal.entrySet().size() == 0) {
+			evento.setResultadoFinal(nivelActualResultadoTransaccion);
+			return;
+		}
+		
+		for (Map.Entry<String, JsonElement> objetoActual : nivelActualResultadoTransaccion.entrySet()) {
+			String objetoActualKey = objetoActual.getKey();
+			if (nivelActualResultadoFinal.has(objetoActualKey)) { 
+				nivelActualResultadoFinal = nivelActualResultadoFinal.get(objetoActualKey).getAsJsonObject(); // POR AHORA SE ASUME QUE EL ARBOL DE JERARQUÍA SOLO SE COMPONE DE JSONOBJECTs
+				nivelActualResultadoTransaccion = nivelActualResultadoTransaccion.get(objetoActualKey).getAsJsonObject();
+			} else {
+				nivelActualResultadoFinal.add(objetoActualKey, objetoActual.getValue());
+			}
+		}
+		
+	}
 	
 	
 	

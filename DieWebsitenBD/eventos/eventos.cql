@@ -41,18 +41,13 @@ CREATE TABLE DIEWEBSITEN.EVENTOS (
 	PAGINA VARCHAR,	
 	EVENTO VARCHAR,
 	TRANSACCION VARCHAR,
-	TIPOTRANSACCION VARCHAR,
-	KEYSPACE_NAME VARCHAR,
-	COLUMNFAMILY_NAME VARCHAR,
 	ORDEN INT,
+	MOTORALMACENAMIENTO VARCHAR,
+	SENTENCIA VARCHAR,
+	FILTROSSENTENCIA LIST<VARCHAR>,
 	DESCRIPCION VARCHAR,
-	SENTENCIACQL VARCHAR,
-	FILTROSSENTENCIACQL LIST<VARCHAR>,	
-	COLUMNASINTERMEDIASSENTENCIACQL LIST<VARCHAR>,
-	COLUMNASCONSULTASENTENCIACQL LIST<VARCHAR>,
-	--NECESITAFORMULARIO VARCHAR,
-	--TIPOLISTA VARCHAR,
-	PRIMARY KEY (SITIOWEB, PAGINA, EVENTO, TRANSACCION/*, TIPOTRANSACCION, BASEDEDATOS*/)
+	RESULTADOENJERARQUIA BOOLEAN,
+	PRIMARY KEY (SITIOWEB, PAGINA, EVENTO, TRANSACCION)
 )WITH comment = '{"transacciones" : ["SELECT", "INSERT", "UPDATE", "DELETE"], "comentario" : ""}';
 
 CREATE TABLE DIEWEBSITEN.FORMULARIOS (
@@ -123,7 +118,7 @@ COPY diewebsiten.paginas (sitioweb, pagina, nombre, descripcion) FROM '~/DieWebs
 --COPY diewebsiten.despliegues (sitioweb, pagina, ruta) FROM '~/DieWebsiten/DieWebsitenBD/cargar_despliegues.csv';
 --COPY diewebsiten.codigos_por_pagina (sitioweb, idioma, pagina, nombre, codigo) FROM '~/DieWebsiten/DieWebsitenBD/cargar_codigos_por_pagina.csv';
 --COPY diewebsiten.enunciados (sitioweb, pagina, idioma, nivel, etiqueta, ruta, atributos, texto) FROM '~/DieWebsiten/DieWebsitenBD/cargar_enunciados.csv';
-COPY diewebsiten.eventos (sitioweb, pagina, evento, transaccion, tipotransaccion, keyspace_name, columnfamily_name, orden, descripcion, sentenciacql, filtrossentenciacql, columnasintermediassentenciacql, columnasconsultasentenciacql) FROM '~/DieWebsiten/DieWebsitenBD/eventos/cargar_eventos.csv';
+COPY diewebsiten.eventos (sitioweb, pagina, evento, transaccion, orden, motoralmacenamiento, sentencia, filtrossentencia, descripcion, resultadoenjerarquia) FROM '~/DieWebsiten/DieWebsitenBD/eventos/cargar_eventos.csv';
 --COPY diewebsiten.grupos_validaciones (grupo, tipo, validacion) FROM '~/DieWebsiten/DieWebsitenBD/cargar_grupos_validaciones.csv';
 --COPY diewebsiten.sentencias_cql (sitioweb, pagina, tipotransaccion, transaccion, clausula, campo, alias, valorpordefecto) FROM '~/DieWebsiten/DieWebsitenBD/cargar_sentencias_cql.csv';
 COPY diewebsiten.formularios (sitioweb, pagina, evento, /*keyspace_name, columnfamily_name,*/ column_name, grupovalidacion, formaingreso, valorpordefecto) FROM '~/DieWebsiten/DieWebsitenBD/eventos/cargar_formularios.csv';

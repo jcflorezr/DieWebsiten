@@ -1,6 +1,5 @@
 package com.diewebsiten.core.webservices;
 
-import com.diewebsiten.core.util.Constantes;
 import com.diewebsiten.core.util.Log;
 
 import javax.annotation.Resource;
@@ -64,7 +63,7 @@ public class WSPrincipalImpl implements WSPrincipal {
             return eg.getMessage() + " " + parametrosRecibidos;
         }*/ catch (Exception e) {
             //Log.getInstance().imprimirErrorEnLog(e);
-            return Constantes.ERROR.getString();
+            return "Intente más tarde";
         }
         
         return resultadoTransaccion;

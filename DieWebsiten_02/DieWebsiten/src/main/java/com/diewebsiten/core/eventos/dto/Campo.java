@@ -3,6 +3,7 @@ package com.diewebsiten.core.eventos.dto;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class Campo {
@@ -17,6 +18,7 @@ public class Campo {
 	private static final String TIPO = "tipo";
     private static final String VALIDACION = "validacion";
 	
+    Campo(){}
 	
 	public String getColumnName() {
 		return columnName;
@@ -57,12 +59,13 @@ public class Campo {
 		return new ArrayList<>(validaciones);
 	}
 
-	public void setValidaciones(List<JsonObject> validacionesCampo) {
+	public void setValidaciones(JsonElement validacionesCampo) {
 		this.validaciones = new ArrayList<>();
-		for (JsonObject validacionesObject : validacionesCampo) {
+		for (JsonElement validacionObject : validacionesCampo.getAsJsonArray()) {
 			Validacion validacion = new Validacion();
-			validacion.setTipo(validacionesObject.get(TIPO).getAsString());
-			validacion.setValidacion(validacionesObject.get(VALIDACION).getAsString());
+			JsonObject validacionActual = validacionObject.getAsJsonObject();
+			validacion.setTipo(validacionActual.get(TIPO).getAsString());
+			validacion.setValidacion(validacionActual.get(VALIDACION).getAsString());
 			this.validaciones.add(validacion);
 		}
 		if (!this.validaciones.isEmpty()) {

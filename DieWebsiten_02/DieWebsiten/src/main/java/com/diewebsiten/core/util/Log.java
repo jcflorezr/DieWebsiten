@@ -114,17 +114,7 @@ public class Log {
             Class<? extends Throwable> clase = error.getClass();
             String tipoExcepcion = clase.toString().trim().replace("class ", "");
             StackTraceElement[] elementos = error.getStackTrace();
-            
-            if (Constantes.EXCEPCION_GENERICA.equals(tipoExcepcion)) {
-                logger.warn(error.getMessage());
-                return;
-            }
-//            
-//            if (null != log.evento) {
-//                log.error("SITIO WEB: " + log.evento.getSitioWeb());
-//                log.error("PÁGINA: " + log.evento.getPagina());
-//                log.error("EVENTO: " + log.evento.getNombreEvento());
-//            }
+
             trazaError.append("\n").append("[EXCEPCIÓN]  --> ").append(tipoExcepcion).append("\n");
             trazaError.append("[MENSAJE]    --> ").append(error.getMessage()).append("\n");
 

@@ -16,6 +16,10 @@ target/
 *.classpath
 .metadata/
 
+# IntelliJ IDEA generated files #
+###############################
+.idea/
+
 # NetBeans IDE generated files #
 ################################
 .nbproject/

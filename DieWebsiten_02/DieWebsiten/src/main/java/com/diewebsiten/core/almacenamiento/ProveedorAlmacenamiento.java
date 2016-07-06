@@ -1,9 +1,10 @@
 package com.diewebsiten.core.almacenamiento;
 
-import java.util.List;
+import com.diewebsiten.core.eventos.dto.Transaccion;
+import com.google.gson.JsonElement;
 
 public abstract class ProveedorAlmacenamiento {
 	
-	public abstract List<?> ejecutarTransaccion(String sentenciaCQL, String nombreSentencia, Object[] parametros) throws Exception;
+	public abstract JsonElement ejecutarTransaccion(Transaccion transaccion) throws Exception;
 
 }
