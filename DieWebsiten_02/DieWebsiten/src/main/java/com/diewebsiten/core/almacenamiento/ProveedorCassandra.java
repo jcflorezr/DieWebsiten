@@ -6,12 +6,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -24,6 +19,7 @@ import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.diewebsiten.core.almacenamiento.dto.Conexion;
 import com.diewebsiten.core.almacenamiento.dto.Sentencia;
 import com.diewebsiten.core.almacenamiento.dto.SentenciaCassandra;
 import com.diewebsiten.core.eventos.dto.Transaccion;
@@ -45,7 +41,7 @@ import com.google.gson.JsonPrimitive;
  */
 public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
-    private static volatile ProveedorCassandra proveedorCassandra;
+    private static volatile Conexion proveedorCassandra;
     private static volatile boolean iniciar = true;
 
     private static Cluster cluster;
@@ -66,18 +62,25 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     /*
      * Unica instancia de la clase ProveedorCassandra.
      */
-    static ProveedorCassandra getInstance() {
+    static Conexion getInstance() {
     	if (iniciar) {
 	    	if (proveedorCassandra == null) {
 	    		synchronized(obj) {
-	    			if (proveedorCassandra == null) {	    				
-	    				proveedorCassandra = new ProveedorCassandra();
-	    				proveedorCassandra.conectar();
+	    			if (proveedorCassandra == null) {
+						try {
+							proveedorCassandra = new Conexion();
+							proveedorCassandra.setProveedorAlmacenamiento(new ProveedorCassandra());
+							proveedorCassandra.getProveedorAlmacenamiento().get().conectar();
+							proveedorCassandra.setConexionExitosa(true);
+						} catch (Exception e) {
+							proveedorCassandra.setProveedorAlmacenamiento(null);
+							proveedorCassandra.setErrorConexion(e);
+						}
 	    			}
 	    		}
 	    	}
     	} else {
-    		proveedorCassandra.desconectar();
+    		proveedorCassandra.getProveedorAlmacenamiento().get().desconectar();
     	}
     	return proveedorCassandra;
     }
@@ -88,7 +91,8 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
      * 1. Establecer los parámetros de conexión al motor de base de datos.
      * 2. Crear una sesión de conexión a la base de datos.
      */
-    private void conectar() {
+	@Override
+	void conectar() {
         cluster = Cluster.builder().addContactPoint(CASSANDRA_URL).withPort(CASSANDRA_PORT).build();
         sesion = cluster.connect();
     }
@@ -96,7 +100,8 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     /**
      * Cerrar la conexión con el motor de base de datos.
      */
-    private void desconectar() {
+	@Override
+	void desconectar() {
     	if (cluster != null) {
     		cluster.close();
     	}
@@ -164,7 +169,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     	}
     	
     	try {	
-    		SentenciaCassandra sentencia = (SentenciaCassandra) obtenerSentencia(sentenciaCQL, nombreTransaccion);
+    		SentenciaCassandra sentencia = obtenerSentencia(sentenciaCQL, nombreTransaccion);
     		
     		if (parametros.length != sentencia.getNumeroParametros()) {
     			throw new ExcepcionGenerica("La sentencia necesita " + sentencia.getNumeroParametros() + " parámetros para ser ejecutada.");

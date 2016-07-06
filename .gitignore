@@ -19,15 +19,12 @@ target/
 # IntelliJ IDEA generated files #
 ###############################
 .idea/
+**/*.iml
 
 # NetBeans IDE generated files #
 ################################
 .nbproject/
 
-# IntelliJ IDEA generated files #
-################################
-.idea/
-*.iml
 
 # OS generated files #
 ######################
