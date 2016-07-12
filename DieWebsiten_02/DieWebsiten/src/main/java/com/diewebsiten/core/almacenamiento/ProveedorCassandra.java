@@ -61,8 +61,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     private static Object obj = new Object();
     
     private Map<String, Sentencia> sentenciasPreparadas;
-    
-    //PARA TRASTEAR
+
     private Function<String, ResultSet> obtenerResultSet = (sentencia) -> sesion.execute(sentencia);
     private BiFunction<SentenciaCassandra, Object[], ResultSet> obtenerResultSetParametros = (sentencia, parametros) -> sesion.execute(sentencia.getSentenciaPreparada().bind(parametros));
     
@@ -190,9 +189,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 		}
     }
     
-    
-    
-    
     private class Estructura {
     	
     	private ObjectNode resultado = mapper.createObjectNode();
@@ -201,11 +197,9 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     	private boolean noEsUnicaColumna;
     	private SentenciaCassandra sentencia;
     	private Supplier<Stream<Definition>> columnasResultado;
-    	
-//    	private BiPredicate<Integer, String> esLlavePrimaria = (indice, nombreColumna) -> nombreColumna.equals(sentencia.getLlavePrimaria(indice));
-//    	private BiConsumer<Integer, Definition> agregarColumnaIntermediaORegular = (indice, datosColumna) -> {if (esLlavePrimaria.test(indice, datosColumna.getName())) sentencia.agregarColumnaIntermedia(datosColumna);
-//    																									 	  else sentencia.agregarColumnaRegular(datosColumna);};
-    																									 
+		private Function<String, ObjectNode> ponerObjeto = nombreColumna -> (ObjectNode) Optional.ofNullable(coleccionActual.get(nombreColumna))
+				.orElseGet(() -> coleccionActual.putObject(nombreColumna));
+
     	private Estructura(ResultSet resultadoEjecucion) {
 			this.resultadoEjecucion = resultadoEjecucion;
 			this.noEsUnicaColumna = resultadoEjecucion.getColumnDefinitions().size() > 1;
@@ -226,26 +220,17 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 		private void categorizarColumnas() {
 			SentenciaCassandra sentenciaLlavesPrimarias = obtenerSentencia(Sentencias.LLAVES_PRIMARIAS.sentencia(), Sentencias.LLAVES_PRIMARIAS.nombre());
 			Row llavesPrimarias = obtenerResultSetParametros.apply(sentenciaLlavesPrimarias, new Object[]{sentencia.getKeyspaceName().get(), sentencia.getColumnfamilyName().get()}).one();
-			// Llaves primarias
-			
 			if (noEsUnicaColumna) {
-				
-				sentencia.setColumnasIntermedias(Stream.of(stringToListString.apply(llavesPrimarias.getString("key_aliases")), 
- 					   	   stringToListString.apply(llavesPrimarias.getString("column_aliases"))
- 					   	   )
- 				   .flatMap(List::stream)
- 				   .filter(llavePrimaria -> sentencia.getParametrosSentencia().get().noneMatch(
- 						   		parametro -> llavePrimaria.equals(parametro)
- 						   		)
- 						   )
- 				   .map(columnaIntermedia -> columnasResultado.get().limit(1)
- 						   											.filter(columna -> columna.getName().equals(columnaIntermedia))
- 						   											.findAny()
- 						   											.orElseThrow(() -> new ExcepcionGenerica("no se encontró la columna"))
- 						   											)
- 				   .collect(Collectors.toList()));
-				
-				
+				// Columnas intermedias
+				sentencia.setColumnasIntermedias(Stream.of(stringToListString.apply(llavesPrimarias.getString("key_aliases")),
+ 					   	   								   stringToListString.apply(llavesPrimarias.getString("column_aliases")))
+													   .flatMap(List::stream)
+													   .filter(llavePrimaria -> sentencia.getParametrosSentencia().get().noneMatch(parametro -> llavePrimaria.equals(parametro)))
+													   .map(columnaIntermedia -> columnasResultado.get().limit(1)
+															   .filter(columna -> columna.getName().equals(columnaIntermedia))
+															   .findAny()
+															   .orElse(null)) // ESTO NO PUEDE QUEDAR ASI (CAMBIARLO POR orElseThrow)
+													   .collect(Collectors.toList()));
 				// Columnas regulares
 				sentencia.setColumnasRegulares(
 						columnasResultado.get().filter(columna -> sentencia.getColumnasIntermedias().get().noneMatch(columnaIntermedia -> columnaIntermedia.getName().equals(columna.getName())))
@@ -255,37 +240,31 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 				sentencia.setColumnasRegulares(columnasResultado.get().collect(Collectors.toList()));
 			}
 		}    	
-    	
+
     	private ObjectNode obtenerResultadoConJerarquia () {
 
     		Stream<Row> filas = StreamSupport.stream(resultadoEjecucion.spliterator(), false);
     		coleccionActual = resultado;
 
     		filas.forEach(fila -> {
-    			
-    			sentencia.getColumnasIntermedias().get().forEach(columnaIntermedia -> {
-    						 			String nombreColumnaActual = columnaIntermedia.getName();
-    						 			coleccionActual = (ObjectNode) Optional.ofNullable(coleccionActual.get(nombreColumnaActual))
-    						 									  			   .orElse(coleccionActual.putObject(nombreColumnaActual));
-    						 			
-    						 			String valorColumnaActual = obtenerValorColumnaActual(fila, columnaIntermedia).toString();
-    						 			coleccionActual = (ObjectNode) Optional.ofNullable(coleccionActual.get(valorColumnaActual))
-    						 												   .orElse(coleccionActual.putObject(valorColumnaActual));
-    						 			
-    					 				});
-    			sentencia.getColumnasRegulares().get().forEach(columnaRegular -> {
-    						 			String nombreColumnaActual = columnaRegular.getName();
-    						 			String valorColumnaActual = obtenerValorColumnaActual(fila, columnaRegular).toString();
-    						 			Optional<JsonNode> nombreColumnaRegular = Optional.ofNullable(coleccionActual.get(nombreColumnaActual));
-    						 			nombreColumnaRegular.ifPresent(valorColumnaRegular -> 
-    						 									{if (valorColumnaRegular.isArray()) ((ArrayNode)valorColumnaRegular).add(valorColumnaActual); 
-    						 									 else coleccionActual.set(nombreColumnaActual, mapper.createArrayNode().add(valorColumnaRegular).add(valorColumnaActual));
-    						 									});
-    						 			if (!nombreColumnaRegular.isPresent()) coleccionActual.put(nombreColumnaActual, valorColumnaActual);
-    					 		 });
+    			sentencia.getColumnasIntermedias().get()
+						.forEach(columnaIntermedia -> {
+							coleccionActual = ponerObjeto.apply(columnaIntermedia.getName());
+							coleccionActual = ponerObjeto.apply(obtenerValorColumnaActual(fila, columnaIntermedia).toString());
+						});
+    			sentencia.getColumnasRegulares().get()
+						.forEach(columnaRegular -> {
+							String nombreColumnaActual = columnaRegular.getName();
+							JsonNode valorColumnaActual = mapper.valueToTree(obtenerValorColumnaActual(fila, columnaRegular).toString());
+							Optional<JsonNode> nombreColumnaRegular = Optional.ofNullable(coleccionActual.get(nombreColumnaActual));
+							nombreColumnaRegular.ifPresent(valorColumnaRegular ->
+									{if (valorColumnaRegular.isArray()) ((ArrayNode)valorColumnaRegular).add(valorColumnaActual);
+									 else coleccionActual.set(nombreColumnaActual, mapper.createArrayNode().add(valorColumnaRegular).add(valorColumnaActual));});
+							if (!nombreColumnaRegular.isPresent()) coleccionActual.set(nombreColumnaActual, valorColumnaActual);
+						 });
     			coleccionActual = resultado;
     		});
-    		System.out.println("res --> "+resultado);
+
     		return resultado;
     		
     	}
@@ -338,8 +317,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     		return resultado;
     		
         }
-    	
-    	
     	
     }
     

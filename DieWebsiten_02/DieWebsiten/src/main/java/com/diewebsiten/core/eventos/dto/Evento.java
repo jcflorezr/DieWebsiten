@@ -10,6 +10,9 @@ import java.util.List;
 
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -64,7 +67,7 @@ public class Evento {
         this.formulario.setValidacionExitosa(true);
         
         // Inicializar el objeto JSON que va a contener el resultado de la ejecución del evento.
-        this.resultadoFinal = new JsonObject();
+        this.resultadoFinal = new ObjectMapper().createObjectNode();
         
     }
 	
@@ -76,7 +79,7 @@ public class Evento {
     private Formulario formulario;
     private List<Transaccion> transacciones;
     private boolean poseeTransacciones;
-    private JsonObject resultadoFinal;
+    private ObjectNode resultadoFinal;
 
     
     public String getSitioWeb() {
@@ -124,12 +127,12 @@ public class Evento {
 		return poseeTransacciones;
 	}
 
-	public JsonObject getResultadoFinal() {
+	public ObjectNode getResultadoFinal() {
 		return resultadoFinal;
 	}
 
-	public void setResultadoFinal(JsonObject resultadoFinal) {
-		this.resultadoFinal = resultadoFinal;
+	public void setResultadoFinal(JsonNode resultadoFinal) {
+		this.resultadoFinal = (ObjectNode) resultadoFinal;
 	}
 	
 }

@@ -14,7 +14,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.StringUtils;
 
 import com.diewebsiten.core.almacenamiento.util.Sentencias;
@@ -41,7 +45,7 @@ import com.google.gson.JsonParser;
  *
  * @author Juan Camilo Flórez Román (www.diewebstien.com).
  */
-public class Eventos implements Callable<JsonObject> {
+public class Eventos implements Callable<ObjectNode> {
     
     private Evento evento;
     
@@ -54,13 +58,13 @@ public class Eventos implements Callable<JsonObject> {
     
     
     @Override
-    public JsonObject call() throws ExcepcionDeLog {
+    public ObjectNode call() throws ExcepcionDeLog {
     	
 		try {
 			if (validarEvento()) {
 				ejecutarEvento();
 			} else {
-				evento.getResultadoFinal().add("VAL_" + evento.getNombreEvento(), evento.getFormulario().getParametros());
+				evento.getResultadoFinal().put("VAL_" + evento.getNombreEvento(), "");//evento.getFormulario().getParametros());
 			}
 			return evento.getResultadoFinal();
 		} catch (Exception e) {
@@ -70,7 +74,7 @@ public class Eventos implements Callable<JsonObject> {
 			} else {
 				new LogEventos(evento).imprimirErrorEnLog(e);
 			}
-			evento.getResultadoFinal().addProperty("error", Mensajes.ERROR.get());
+			evento.getResultadoFinal().put("error", Mensajes.ERROR.get());
 			return evento.getResultadoFinal();
 		}
         
@@ -304,9 +308,14 @@ public class Eventos implements Callable<JsonObject> {
 	        }
 	        
 	        transaccion.setParametrosTransaccion(valoresFiltrosSentencia.toArray());
-	        
-	        // Guardar los resultados de esta transacción dentro del resultado final de todo el evento
-	        poblarResultadoFinal(Eventos.ejecutarTransaccion(transaccion));                  
+
+			// Guardar los resultados de esta transacción dentro del resultado final de todo el evento
+			JsonNode resultadoTransaccion = Eventos.ejecutarTransaccion(transaccion);
+			if (evento.getResultadoFinal().size() == 0) {
+				evento.setResultadoFinal(resultadoTransaccion);
+			} else if (resultadoTransaccion.size() > 0) {
+				poblarResultadoFinal(resultadoTransaccion);
+			}
 	             
 	        // Es necesario retornar null debido a que este método es de tipo Void en vez de void. Esto es debido a que 
 	        // este metodo se ejecuta por varios hilos al mismo tiempo
@@ -316,18 +325,26 @@ public class Eventos implements Callable<JsonObject> {
 	}
 	
 	private void poblarResultadoFinal(JsonNode resultadoTransaccion) {
-		
-//		JsonObject nivelActualResultadoFinal = evento.getResultadoFinal();
+
+
+
+//		JsonObject nivelActualResultadoFinal = evento.getResultadoFinal().;
 //		JsonObject nivelActualResultadoTransaccion = resultadoTransaccion.getAsJsonObject(); // POR AHORA SE ASUME QUE EL RESULTADO DE LA TRANSACCION SOLO VIENE EN JSONOBJECT
-//		
-//		if (nivelActualResultadoFinal.entrySet().size() == 0) {
-//			evento.setResultadoFinal(nivelActualResultadoTransaccion);
-//			return;
-//		}
-//		
+
+
+//		Supplier<Stream<JsonNode>> sup = () -> StreamSupport.stream(resultadoTransaccion.spliterator(), false);
+//
+//		sup.get().forEach(json -> System.out.println("JSON-->" + json));
+//
+//
+
+		resultadoTransaccion.forEach(json -> System.out.println("JSON-->" + json));
+
+
+
 //		for (Map.Entry<String, JsonElement> objetoActual : nivelActualResultadoTransaccion.entrySet()) {
 //			String objetoActualKey = objetoActual.getKey();
-//			if (nivelActualResultadoFinal.has(objetoActualKey)) { 
+//			if (nivelActualResultadoFinal.has(objetoActualKey)) {
 //				nivelActualResultadoFinal = nivelActualResultadoFinal.get(objetoActualKey).getAsJsonObject(); // POR AHORA SE ASUME QUE EL ARBOL DE JERARQUÍA SOLO SE COMPONE DE JSONOBJECTs
 //				nivelActualResultadoTransaccion = nivelActualResultadoTransaccion.get(objetoActualKey).getAsJsonObject();
 //			} else {

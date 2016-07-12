@@ -15,6 +15,7 @@ import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Log;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -105,7 +106,7 @@ public class FachadaEventos {
             
             
             
-            List<Future<JsonObject>> grupoEventos = new ArrayList<>();
+            List<Future<ObjectNode>> grupoEventos = new ArrayList<>();
             
             
             
@@ -120,7 +121,7 @@ public class FachadaEventos {
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
             
             
-            for (Future<JsonObject> evento : grupoEventos) {
+            for (Future<ObjectNode> evento : grupoEventos) {
                 System.out.println(evento.get());
             }
             
