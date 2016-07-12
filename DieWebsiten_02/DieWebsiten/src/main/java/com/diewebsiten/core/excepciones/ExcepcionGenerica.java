@@ -6,9 +6,11 @@ package com.diewebsiten.core.excepciones;
  * 
  * @author Juan Camilo Flórez Román (www.diewebsiten.com)
  */
-public class ExcepcionGenerica extends Exception {
+public class ExcepcionGenerica extends RuntimeException {
     
-    public ExcepcionGenerica() {
+	private static final long serialVersionUID = 1L;
+
+	public ExcepcionGenerica() {
         super();
     }
     

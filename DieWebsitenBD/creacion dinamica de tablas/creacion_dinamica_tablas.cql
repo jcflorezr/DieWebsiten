@@ -58,7 +58,7 @@ CREATE TABLE COLUMNAS (
 );
 
 CREATE TABLE GRUPOS_DE_VALIDACIONES (
-	GRUPO_VALIDACION VARCHAR,
+	GRUPOVALIDACION VARCHAR,
 	TIPO VARCHAR,
 	VALIDACION VARCHAR,		
 	PRIMARY KEY (GRUPO_VALIDACION, TIPO, VALIDACION)
@@ -80,5 +80,5 @@ COPY diewebsiten.TIPOS_DE_TRANSACCIONES (tipo_transaccion, descripcion) FROM '~/
 COPY diewebsiten.TIPOS_DE_DATOS (cql_type, inicial, validador, descripcion) FROM '~/DieWebsiten/DieWebsitenBD/creacion dinamica de tablas/cargar_tipos_de_datos.csv';
 COPY diewebsiten.TIPOS_DE_COLUMNAS (tipo_columna, identificador, descripcion) FROM '~/DieWebsiten/DieWebsitenBD/creacion dinamica de tablas/cargar_tipos_de_columnas.csv';
 COPY diewebsiten.columnas (keyspace_name, columnfamily_name, column_name, grupo_validacion, cql_type, tipos_columna, columna_referencia, query_columna_referencia) FROM '~/DieWebsiten/DieWebsitenBD/creacion dinamica de tablas/cargar_columnas.csv';
-COPY diewebsiten.grupos_de_validaciones (grupo_validacion, tipo, validacion) FROM '~/DieWebsiten/DieWebsitenBD/creacion dinamica de tablas/cargar_grupos_validaciones.csv';
+COPY diewebsiten.grupos_de_validaciones (grupovalidacion, tipo, validacion) FROM '~/DieWebsiten/DieWebsitenBD/creacion dinamica de tablas/cargar_grupos_validaciones.csv';
 COPY diewebsiten.validaciones (tipo, validacion, descripcion) FROM '~/DieWebsiten/DieWebsitenBD/creacion dinamica de tablas/cargar_validaciones.csv';

@@ -1,14 +1,12 @@
 package com.diewebsiten.core.almacenamiento;
 
 import com.diewebsiten.core.eventos.dto.Transaccion;
-import com.google.gson.JsonElement;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public abstract class ProveedorAlmacenamiento {
 
-	abstract void conectar();
+	public abstract JsonNode ejecutarTransaccion(Transaccion transaccion) throws Exception;
 
 	abstract void desconectar();
-
-	public abstract JsonElement ejecutarTransaccion(Transaccion transaccion) throws Exception;
 
 }

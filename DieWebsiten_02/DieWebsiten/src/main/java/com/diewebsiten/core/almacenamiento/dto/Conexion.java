@@ -7,9 +7,8 @@ import java.util.Optional;
 
 public class Conexion {
 
-    private Optional<ProveedorAlmacenamiento> proveedorAlmacenamiento;
-    private boolean conexionExitosa;
-    private Throwable errorConexion;
+    private Optional<ProveedorAlmacenamiento> proveedorAlmacenamiento = Optional.empty();
+    private Exception errorConexion;
 
     public Optional<ProveedorAlmacenamiento> getProveedorAlmacenamiento() {
         return proveedorAlmacenamiento;
@@ -19,19 +18,11 @@ public class Conexion {
         this.proveedorAlmacenamiento = Optional.of(proveedorAlmacenamiento);
     }
 
-    public boolean isConexionExitosa() {
-        return conexionExitosa;
-    }
-
-    public void setConexionExitosa(boolean conexionExitosa) {
-        this.conexionExitosa = conexionExitosa;
-    }
-
-    public Throwable getErrorConexion() {
+    public Exception getErrorConexion() {
         return errorConexion;
     }
 
-    public void setErrorConexion(Throwable errorConexion) {
+    public void setErrorConexion(Exception errorConexion) {
         this.errorConexion = errorConexion;
     }
 

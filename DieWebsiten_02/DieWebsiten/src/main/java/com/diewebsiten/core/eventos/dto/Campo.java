@@ -3,6 +3,10 @@ package com.diewebsiten.core.eventos.dto;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -20,6 +24,7 @@ public class Campo {
 	
     Campo(){}
 	
+    @JsonProperty("column_name")
 	public String getColumnName() {
 		return columnName;
 	}
@@ -28,6 +33,7 @@ public class Campo {
 		this.columnName = columnName;
 	}
 	
+	@JsonProperty("grupovalidacion")
 	public String getGrupoValidacion() {
 		return grupoValidacion;
 	}
@@ -36,6 +42,7 @@ public class Campo {
 		this.grupoValidacion = grupoValidacion;
 	}
 	
+	@JsonProperty("formaingreso")
 	public String getFormaIngreso() {
 		return formaIngreso;
 	}
@@ -44,6 +51,7 @@ public class Campo {
 		this.formaIngreso = formaIngreso;
 	}
 	
+	@JsonProperty("valorpordefecto")
 	public String getValorPorDefecto() {
 		return valorPorDefecto;
 	}
@@ -59,13 +67,13 @@ public class Campo {
 		return new ArrayList<>(validaciones);
 	}
 
-	public void setValidaciones(JsonElement validacionesCampo) {
+	public void setValidaciones(JsonNode validacionesCampo) {
 		this.validaciones = new ArrayList<>();
-		for (JsonElement validacionObject : validacionesCampo.getAsJsonArray()) {
-			Validacion validacion = new Validacion();
-			JsonObject validacionActual = validacionObject.getAsJsonObject();
-			validacion.setTipo(validacionActual.get(TIPO).getAsString());
-			validacion.setValidacion(validacionActual.get(VALIDACION).getAsString());
+		for (JsonNode validacionObject : validacionesCampo) {
+			Validacion validacion = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true).convertValue(validacionObject, Validacion.class);
+//			JsonObject validacionActual = validacionObject.getAsJsonObject();
+//			validacion.setTipo(validacionActual.get(TIPO).getAsString());
+//			validacion.setValidacion(validacionActual.get(VALIDACION).getAsString());
 			this.validaciones.add(validacion);
 		}
 		if (!this.validaciones.isEmpty()) {

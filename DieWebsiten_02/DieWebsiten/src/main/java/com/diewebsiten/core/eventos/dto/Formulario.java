@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -56,15 +58,15 @@ public class Formulario {
 		return new ArrayList<>(campos);
 	}
 
-    public void setCampos(JsonElement camposFormularioEvento) {
+    public void setCampos(JsonNode camposFormularioEvento) {
     	this.campos = new ArrayList<>();
-    	for (JsonElement campoObject : camposFormularioEvento.getAsJsonArray()) {
-    		Campo campo = new Campo();
-    		JsonObject camopActual = campoObject.getAsJsonObject();
-    		campo.setColumnName(camopActual.get(COLUMN_NAME).getAsString());
-    		campo.setGrupoValidacion(camopActual.get(GRUPO_VALIDACION).getAsString());
-    		campo.setFormaIngreso(camopActual.get(FORMA_INGRESO).getAsString());
-    		campo.setValorPorDefecto(camopActual.get(VALOR_POR_DEFECTO).getAsString());
+    	for (JsonNode campoObject : camposFormularioEvento) {
+    		Campo campo = new ObjectMapper().convertValue(campoObject, Campo.class);
+//    		JsonObject camopActual = campoObject.getAsJsonObject();
+//    		campo.setColumnName(camopActual.get(COLUMN_NAME).getAsString());
+//    		campo.setGrupoValidacion(camopActual.get(GRUPO_VALIDACION).getAsString());
+//    		campo.setFormaIngreso(camopActual.get(FORMA_INGRESO).getAsString());
+//    		campo.setValorPorDefecto(camopActual.get(VALOR_POR_DEFECTO).getAsString());
     		this.campos.add(campo);
     	}
     	if (!this.campos.isEmpty()) {

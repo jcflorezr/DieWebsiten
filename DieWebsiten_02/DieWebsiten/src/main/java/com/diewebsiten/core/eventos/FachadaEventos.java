@@ -14,6 +14,7 @@ import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Log;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -167,7 +168,7 @@ public class FachadaEventos {
      * @return
      * @throws Exception
      */
-    static JsonElement ejecutarTransaccion(Transaccion transaccion) throws Exception {
+    static JsonNode ejecutarTransaccion(Transaccion transaccion) throws Exception {
     	proveedorAlmacenamiento = AlmacenamientoFabrica.obtenerProveedorAlmacenamiento(transaccion.getMotorAlmacenamiento());
     	return proveedorAlmacenamiento.ejecutarTransaccion(transaccion);
     }

@@ -17,18 +17,22 @@ import java.util.concurrent.ThreadFactory;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.diewebsiten.core.almacenamiento.util.Sentencias;
 import com.diewebsiten.core.eventos.dto.Campo;
 import com.diewebsiten.core.eventos.dto.Evento;
 import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.eventos.dto.Validacion;
-import com.diewebsiten.core.eventos.util.Constantes;
 import com.diewebsiten.core.eventos.util.LogEventos;
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 
 /**
@@ -79,9 +83,9 @@ public class Eventos implements Callable<JsonObject> {
      */
     private boolean validarEvento() throws Exception {
         	
-    	Transaccion datosValidaciones = obtenerDatosTransaccionEventos(Constantes.Formulario.SNT_VALIDACIONES_EVENTO.get(), Constantes.Formulario.NMBR_SNT_VALIDACIONES_EVENTO.get(), evento.getInformacionEvento());
+    	Transaccion datosValidaciones = obtenerDatosTransaccionEventos(Sentencias.VALIDACIONES_EVENTO.sentencia(), Sentencias.VALIDACIONES_EVENTO.nombre(), evento.getInformacionEvento());
     	
-        evento.getFormulario().setCampos(ejecutarTransaccion(datosValidaciones).getAsJsonArray());
+        evento.getFormulario().setCampos((ArrayNode)ejecutarTransaccion(datosValidaciones));
         
         if (!evento.getFormulario().poseeCampos() && evento.getFormulario().poseeParametros()) {
             throw new ExcepcionGenerica(Mensajes.Evento.Formulario.CAMPOS_FORMULARIO_NO_EXISTEN.get());
@@ -110,10 +114,10 @@ public class Eventos implements Callable<JsonObject> {
      */
     private void ejecutarEvento() throws Exception {
     	
-    	Transaccion datosTransacciones = obtenerDatosTransaccionEventos(Constantes.Transacciones.SNT_TRANSACCIONES.get(), Constantes.Transacciones.NMBR_SNT_TRANSACCIONES.get(), evento.getInformacionEvento());
+    	Transaccion datosTransacciones = obtenerDatosTransaccionEventos(Sentencias.TRANSACCIONES.sentencia(), Sentencias.TRANSACCIONES.nombre(), evento.getInformacionEvento());
 
         // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-    	evento.setTransacciones(ejecutarTransaccion(datosTransacciones));
+    	evento.setTransacciones(new JsonParser().parse(ejecutarTransaccion(datosTransacciones).toString()));
 
         // Validar que el evento existe.
         if (!evento.poseeTransacciones()) { 
@@ -163,7 +167,7 @@ public class Eventos implements Callable<JsonObject> {
     /*
      * Para consultas con resultado en jerarquía
      */
-    public static JsonElement ejecutarTransaccion(Transaccion transaccion) throws Exception {
+    public static JsonNode ejecutarTransaccion(Transaccion transaccion) throws Exception {
     	return FachadaEventos.ejecutarTransaccion(transaccion); 
     }
     
@@ -209,7 +213,7 @@ public class Eventos implements Callable<JsonObject> {
 	    	
 	    	String nombreCampo = campo.getColumnName();
 	        String grupoValidacionCampo = campo.getGrupoValidacion(); 
-	        Transaccion datosGruposValidaciones = obtenerDatosTransaccionEventos(Constantes.Formulario.SNT_GRUPO_VALIDACIONES.get(), Constantes.Formulario.NMBR_SNT_GRUPO_VALIDACIONES.get(), new Object[] {grupoValidacionCampo});
+	        Transaccion datosGruposValidaciones = obtenerDatosTransaccionEventos(Sentencias.GRUPO_VALIDACIONES.sentencia(), Sentencias.GRUPO_VALIDACIONES.nombre(), new Object[] {grupoValidacionCampo});
 	        
 	        campo.setValidaciones(Eventos.ejecutarTransaccion(datosGruposValidaciones));
 	
@@ -311,25 +315,25 @@ public class Eventos implements Callable<JsonObject> {
 	    
 	}
 	
-	private void poblarResultadoFinal(JsonElement resultadoTransaccion) {
+	private void poblarResultadoFinal(JsonNode resultadoTransaccion) {
 		
-		JsonObject nivelActualResultadoFinal = evento.getResultadoFinal();
-		JsonObject nivelActualResultadoTransaccion = resultadoTransaccion.getAsJsonObject(); // POR AHORA SE ASUME QUE EL RESULTADO DE LA TRANSACCION SOLO VIENE EN JSONOBJECT
-		
-		if (nivelActualResultadoFinal.entrySet().size() == 0) {
-			evento.setResultadoFinal(nivelActualResultadoTransaccion);
-			return;
-		}
-		
-		for (Map.Entry<String, JsonElement> objetoActual : nivelActualResultadoTransaccion.entrySet()) {
-			String objetoActualKey = objetoActual.getKey();
-			if (nivelActualResultadoFinal.has(objetoActualKey)) { 
-				nivelActualResultadoFinal = nivelActualResultadoFinal.get(objetoActualKey).getAsJsonObject(); // POR AHORA SE ASUME QUE EL ARBOL DE JERARQUÍA SOLO SE COMPONE DE JSONOBJECTs
-				nivelActualResultadoTransaccion = nivelActualResultadoTransaccion.get(objetoActualKey).getAsJsonObject();
-			} else {
-				nivelActualResultadoFinal.add(objetoActualKey, objetoActual.getValue());
-			}
-		}
+//		JsonObject nivelActualResultadoFinal = evento.getResultadoFinal();
+//		JsonObject nivelActualResultadoTransaccion = resultadoTransaccion.getAsJsonObject(); // POR AHORA SE ASUME QUE EL RESULTADO DE LA TRANSACCION SOLO VIENE EN JSONOBJECT
+//		
+//		if (nivelActualResultadoFinal.entrySet().size() == 0) {
+//			evento.setResultadoFinal(nivelActualResultadoTransaccion);
+//			return;
+//		}
+//		
+//		for (Map.Entry<String, JsonElement> objetoActual : nivelActualResultadoTransaccion.entrySet()) {
+//			String objetoActualKey = objetoActual.getKey();
+//			if (nivelActualResultadoFinal.has(objetoActualKey)) { 
+//				nivelActualResultadoFinal = nivelActualResultadoFinal.get(objetoActualKey).getAsJsonObject(); // POR AHORA SE ASUME QUE EL ARBOL DE JERARQUÍA SOLO SE COMPONE DE JSONOBJECTs
+//				nivelActualResultadoTransaccion = nivelActualResultadoTransaccion.get(objetoActualKey).getAsJsonObject();
+//			} else {
+//				nivelActualResultadoFinal.add(objetoActualKey, objetoActual.getValue());
+//			}
+//		}
 		
 	}
 	
