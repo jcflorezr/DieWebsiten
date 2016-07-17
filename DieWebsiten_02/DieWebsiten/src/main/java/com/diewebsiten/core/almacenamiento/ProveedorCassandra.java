@@ -1,50 +1,30 @@
 package com.diewebsiten.core.almacenamiento;
 
-import static org.apache.commons.lang3.ArrayUtils.isEmpty;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ColumnDefinitions;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.diewebsiten.core.almacenamiento.dto.Conexion;
 import com.diewebsiten.core.almacenamiento.dto.Sentencia;
 import com.diewebsiten.core.almacenamiento.dto.SentenciaCassandra;
 import com.diewebsiten.core.almacenamiento.util.Sentencias;
 import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.diewebsiten.core.util.Transformaciones;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Throwables;
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+
+import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static org.apache.commons.lang3.ArrayUtils.isEmpty;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * Administrar las conexiones y transacciones que se realizan al
@@ -67,15 +47,12 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     
     private static final String CASSANDRA_URL = "localhost";
     private static final int CASSANDRA_PORT = 9042;
-    
     private static final ObjectMapper mapper = new ObjectMapper();
-    
-    private static final Gson gson = new Gson();
-    private static final Type listStringType = new TypeToken<List<String>>(){private static final long serialVersionUID = 1L;}.getType();
-    private Function<String, List<String>> stringToListString = (stringAConvertir) -> gson.fromJson(stringAConvertir, listStringType);
+    private static final Transformaciones<String> t = new Transformaciones<>();
     
     
     private ProveedorCassandra() {
+        conectar();
     	sentenciasPreparadas = new HashMap<>();
     }
     
@@ -88,11 +65,9 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     		synchronized(obj) {
     			if (proveedorCassandra == null) {
 					try {
-						proveedorCassandra = new Conexion();
-						conectar();
-						proveedorCassandra.setProveedorAlmacenamiento(new ProveedorCassandra());
+						proveedorCassandra = new Conexion().setProveedorAlmacenamiento(new ProveedorCassandra());
 					} catch (Exception e) {
-						proveedorCassandra.setErrorConexion(e);
+						proveedorCassandra = new Conexion().setErrorConexion(e);
 					}
     			}
     		}
@@ -184,8 +159,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
         	return sentencia;
 		} catch (ClassCastException e) {
 			throw new ExcepcionGenerica("La sentencia de la transacción '" + nombreTransaccion + "' no es de tipo Cassandra");
-		} catch (Exception e) {
-			throw new ExcepcionGenerica("Error al preparar la nueva sentencia CQL que pertenece a la transacción '" + nombreTransaccion + "'. Sentencia: " + sentenciaCQL + ". Mensaje original --> " + Throwables.getStackTraceAsString(e));
 		}
     }
     
@@ -198,7 +171,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     	private SentenciaCassandra sentencia;
     	private Supplier<Stream<Definition>> columnasResultado;
 		private Function<String, ObjectNode> ponerObjeto = nombreColumna -> (ObjectNode) Optional.ofNullable(coleccionActual.get(nombreColumna))
-				.orElseGet(() -> coleccionActual.putObject(nombreColumna));
+																								 .orElseGet(() -> coleccionActual.putObject(nombreColumna));
 
     	private Estructura(ResultSet resultadoEjecucion) {
 			this.resultadoEjecucion = resultadoEjecucion;
@@ -222,8 +195,8 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 			Row llavesPrimarias = obtenerResultSetParametros.apply(sentenciaLlavesPrimarias, new Object[]{sentencia.getKeyspaceName().get(), sentencia.getColumnfamilyName().get()}).one();
 			if (noEsUnicaColumna) {
 				// Columnas intermedias
-				sentencia.setColumnasIntermedias(Stream.of(stringToListString.apply(llavesPrimarias.getString("key_aliases")),
- 					   	   								   stringToListString.apply(llavesPrimarias.getString("column_aliases")))
+				sentencia.setColumnasIntermedias(Stream.of(t.stringToList.apply(llavesPrimarias.getString("key_aliases"), String.class),
+                                                           t.stringToList.apply(llavesPrimarias.getString("column_aliases"), String.class))
 													   .flatMap(List::stream)
 													   .filter(llavePrimaria -> sentencia.getParametrosSentencia().get().noneMatch(parametro -> llavePrimaria.equals(parametro)))
 													   .map(columnaIntermedia -> columnasResultado.get().limit(1)

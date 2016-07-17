@@ -9,6 +9,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -18,6 +19,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.StringUtils;
 
@@ -165,8 +167,6 @@ public class Eventos implements Callable<ObjectNode> {
         }
         
     }
-    
-    
     
     /*
      * Para consultas con resultado en jerarquía
@@ -324,34 +324,12 @@ public class Eventos implements Callable<ObjectNode> {
 	    
 	}
 	
-	private void poblarResultadoFinal(JsonNode resultadoTransaccion) {
-
-
-
-//		JsonObject nivelActualResultadoFinal = evento.getResultadoFinal().;
-//		JsonObject nivelActualResultadoTransaccion = resultadoTransaccion.getAsJsonObject(); // POR AHORA SE ASUME QUE EL RESULTADO DE LA TRANSACCION SOLO VIENE EN JSONOBJECT
-
-
-//		Supplier<Stream<JsonNode>> sup = () -> StreamSupport.stream(resultadoTransaccion.spliterator(), false);
-//
-//		sup.get().forEach(json -> System.out.println("JSON-->" + json));
-//
-//
-
-		resultadoTransaccion.forEach(json -> System.out.println("JSON-->" + json));
-
-
-
-//		for (Map.Entry<String, JsonElement> objetoActual : nivelActualResultadoTransaccion.entrySet()) {
-//			String objetoActualKey = objetoActual.getKey();
-//			if (nivelActualResultadoFinal.has(objetoActualKey)) {
-//				nivelActualResultadoFinal = nivelActualResultadoFinal.get(objetoActualKey).getAsJsonObject(); // POR AHORA SE ASUME QUE EL ARBOL DE JERARQUÍA SOLO SE COMPONE DE JSONOBJECTs
-//				nivelActualResultadoTransaccion = nivelActualResultadoTransaccion.get(objetoActualKey).getAsJsonObject();
-//			} else {
-//				nivelActualResultadoFinal.add(objetoActualKey, objetoActual.getValue());
-//			}
-//		}
-		
+	private void poblarResultadoFinal(JsonNode coleccion) {
+		coleccion.fieldNames().forEachRemaining(
+				fieldName -> {Optional.ofNullable(evento.getResultadoFinal().get(fieldName))
+									  .ifPresent(objetoActual -> poblarResultadoFinal(objetoActual));
+							  evento.getResultadoFinal().setAll((ObjectNode) coleccion);}
+		);
 	}
 	
 	

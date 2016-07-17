@@ -3,10 +3,16 @@ package com.diewebsiten.core.util;
 
 import static org.apache.commons.lang3.StringUtils.*;
 
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.function.BiFunction;
 
+import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.apache.commons.lang3.text.WordUtils;
 
 import com.google.gson.JsonObject;
@@ -15,7 +21,19 @@ import com.google.gson.JsonObject;
  *
  * @author juancamiloroman
  */
-public class Transformaciones {
+public class Transformaciones<T> {
+
+
+    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final TypeFactory typeFactory = mapper.getTypeFactory();
+
+    public BiFunction<String, Class<?>, List<T>> stringToList = (stringAConvertir, tipoDeLista) -> {
+        try {
+            return mapper.readValue(stringAConvertir, typeFactory.constructCollectionType(List.class, tipoDeLista));
+        } catch (IOException e) {
+            throw new ExcepcionGenerica("no se pudo serializar el String: " + stringAConvertir + " a una lista de tipo: " + tipoDeLista);
+        }
+    };
     
     
     /**

@@ -5,12 +5,13 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.diewebsiten.core.util.Transformaciones;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -27,12 +28,7 @@ public class Formulario {
     private JsonObject parametrosTransformados;
     private boolean poseeParametrosTransformados;
     
-    private static final String COLUMN_NAME = "column_name";
-    private static final String GRUPO_VALIDACION = "grupovalidacion";
-    private static final String FORMA_INGRESO = "formaingreso";
-    private static final String VALOR_POR_DEFECTO = "valorpordefecto";
-    
-    Formulario(){}
+    private static final Transformaciones<Campo> t = new Transformaciones<>();
     
     // Validación exitosa
 
@@ -59,16 +55,8 @@ public class Formulario {
 	}
 
     public void setCampos(JsonNode camposFormularioEvento) {
-    	this.campos = new ArrayList<>();
-    	for (JsonNode campoObject : camposFormularioEvento) {
-    		Campo campo = new ObjectMapper().convertValue(campoObject, Campo.class);
-//    		JsonObject camopActual = campoObject.getAsJsonObject();
-//    		campo.setColumnName(camopActual.get(COLUMN_NAME).getAsString());
-//    		campo.setGrupoValidacion(camopActual.get(GRUPO_VALIDACION).getAsString());
-//    		campo.setFormaIngreso(camopActual.get(FORMA_INGRESO).getAsString());
-//    		campo.setValorPorDefecto(camopActual.get(VALOR_POR_DEFECTO).getAsString());
-    		this.campos.add(campo);
-    	}
+    	this.campos = Optional.ofNullable(t.stringToList.apply(camposFormularioEvento.toString(), Campo.class))
+							  .orElse(new ArrayList<>());
     	if (!this.campos.isEmpty()) {
     		this.poseeCampos = true; // El formulario sí posee campos
     	}

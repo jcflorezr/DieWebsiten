@@ -14,16 +14,18 @@ public class Conexion {
         return proveedorAlmacenamiento;
     }
 
-    public void setProveedorAlmacenamiento(ProveedorAlmacenamiento proveedorAlmacenamiento) {
+    public Conexion setProveedorAlmacenamiento(ProveedorAlmacenamiento proveedorAlmacenamiento) {
         this.proveedorAlmacenamiento = Optional.of(proveedorAlmacenamiento);
+        return this;
     }
 
     public Exception getErrorConexion() {
         return errorConexion;
     }
 
-    public void setErrorConexion(Exception errorConexion) {
+    public Conexion setErrorConexion(Exception errorConexion) {
         this.errorConexion = errorConexion;
+        return this;
     }
 
 }
