@@ -21,20 +21,20 @@ import com.google.gson.JsonObject;
  *
  * @author juancamiloroman
  */
-public class Transformaciones<T> {
+public class Transformaciones {
 
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final TypeFactory typeFactory = mapper.getTypeFactory();
 
-    public BiFunction<String, Class<?>, List<T>> stringToList = (stringAConvertir, tipoDeLista) -> {
+
+    public static <T> List<T> stringToList(String stringAConvertir, Class<T> tipoDeLista) {
         try {
             return mapper.readValue(stringAConvertir, typeFactory.constructCollectionType(List.class, tipoDeLista));
         } catch (IOException e) {
             throw new ExcepcionGenerica("no se pudo serializar el String: " + stringAConvertir + " a una lista de tipo: " + tipoDeLista);
         }
-    };
-    
+    }
     
     /**
      * Cifrar el valor a una cadena de caracteres base 64.

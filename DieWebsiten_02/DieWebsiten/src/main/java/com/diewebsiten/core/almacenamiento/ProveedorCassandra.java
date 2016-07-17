@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static com.diewebsiten.core.util.Transformaciones.stringToList;
 import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -48,7 +49,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     private static final String CASSANDRA_URL = "localhost";
     private static final int CASSANDRA_PORT = 9042;
     private static final ObjectMapper mapper = new ObjectMapper();
-    private static final Transformaciones<String> t = new Transformaciones<>();
     
     
     private ProveedorCassandra() {
@@ -195,8 +195,8 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 			Row llavesPrimarias = obtenerResultSetParametros.apply(sentenciaLlavesPrimarias, new Object[]{sentencia.getKeyspaceName().get(), sentencia.getColumnfamilyName().get()}).one();
 			if (noEsUnicaColumna) {
 				// Columnas intermedias
-				sentencia.setColumnasIntermedias(Stream.of(t.stringToList.apply(llavesPrimarias.getString("key_aliases"), String.class),
-                                                           t.stringToList.apply(llavesPrimarias.getString("column_aliases"), String.class))
+				sentencia.setColumnasIntermedias(Stream.of(stringToList(llavesPrimarias.getString("key_aliases"), String.class),
+                                                           stringToList(llavesPrimarias.getString("column_aliases"), String.class))
 													   .flatMap(List::stream)
 													   .filter(llavePrimaria -> sentencia.getParametrosSentencia().get().noneMatch(parametro -> llavePrimaria.equals(parametro)))
 													   .map(columnaIntermedia -> columnasResultado.get().limit(1)

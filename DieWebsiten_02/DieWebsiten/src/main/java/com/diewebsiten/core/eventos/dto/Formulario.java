@@ -1,5 +1,6 @@
 package com.diewebsiten.core.eventos.dto;
 
+import static com.diewebsiten.core.util.Transformaciones.stringToList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.ArrayList;
@@ -10,7 +11,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.diewebsiten.core.util.Transformaciones;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -27,10 +27,7 @@ public class Formulario {
 	private boolean poseeParametros;
     private JsonObject parametrosTransformados;
     private boolean poseeParametrosTransformados;
-    
-    private static final Transformaciones<Campo> t = new Transformaciones<>();
-    
-    // Validación exitosa
+
 
   	public boolean isValidacionExitosa() {
   		return validacionExitosa.get();
@@ -55,7 +52,7 @@ public class Formulario {
 	}
 
     public void setCampos(JsonNode camposFormularioEvento) {
-    	this.campos = Optional.ofNullable(t.stringToList.apply(camposFormularioEvento.toString(), Campo.class))
+    	this.campos = Optional.ofNullable(stringToList(camposFormularioEvento.toString(), Campo.class))
 							  .orElse(new ArrayList<>());
     	if (!this.campos.isEmpty()) {
     		this.poseeCampos = true; // El formulario sí posee campos
