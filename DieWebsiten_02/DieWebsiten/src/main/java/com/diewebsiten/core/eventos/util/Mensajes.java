@@ -31,13 +31,13 @@ public enum Mensajes {
             },
             CAMPOS_FORMULARIO_NO_EXISTEN {
                 @Override
-                public String get() {            
+                public String get(String... valores) {
                     return "No hay campos para la ejecución del formulario.";
                 }
             },
     		VALIDACIONES_NO_EXISTEN {
                 @Override
-                public String get() {            
+                public String get(String... valores) {
                     return "No se encontraron las validaciones o las transformaciones "
                          + "necesarias para los campos del formulario.";
                 }
@@ -48,9 +48,8 @@ public enum Mensajes {
                     return "Error en el formulario. No se pudo transformar el campo '" + valores[0] + "'. Tipo de transformación: " + valores[1];
                 }
             };
-            
-            public String get() {return "";}
-            public String get(String... valores) {return "";}            
+
+            public abstract String get(String... valores);
             
         }
         

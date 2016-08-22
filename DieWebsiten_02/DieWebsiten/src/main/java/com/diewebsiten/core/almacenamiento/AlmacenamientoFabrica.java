@@ -3,30 +3,36 @@ package com.diewebsiten.core.almacenamiento;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 
 import com.diewebsiten.core.almacenamiento.dto.Conexion;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 
-public class AlmacenamientoFabrica {
+public class AlmacenamientoFabrica implements AutoCloseable {
 	
-	private static Map<MotoresAlmacenamiento, Conexion> motoresAlmacenamiento = new EnumMap<>(MotoresAlmacenamiento.class);
-	
-	static {
-		motoresAlmacenamiento.put(MotoresAlmacenamiento.CASSANDRA, ProveedorCassandra.inicializar());
+	private static Map<MotoresAlmacenamiento, Conexion> instanciasBasesDeDatos = new EnumMap<>(MotoresAlmacenamiento.class);
+	private Object obj = new Object();
+
+	public AlmacenamientoFabrica() {
+		if (instanciasBasesDeDatos.isEmpty()) {
+			synchronized (obj) {
+				if (instanciasBasesDeDatos.isEmpty()) {
+					instanciasBasesDeDatos.put(MotoresAlmacenamiento.CASSANDRA, ProveedorCassandra.inicializar());
+				}
+			}
+		}
 	}
 	
-	public static ProveedorAlmacenamiento obtenerProveedorAlmacenamiento(MotoresAlmacenamiento motorAlmacenamiento) throws Exception {
-		if (motorAlmacenamiento == null) {
+	public static ProveedorAlmacenamiento obtenerProveedorAlmacenamiento(MotoresAlmacenamiento nombreBaseDeDatos) throws Exception {
+		if (nombreBaseDeDatos == null) {
 			throw new ExcepcionGenerica("El nombre del motor de almacenamiento a obtener no puede ser nulo");
 		}
-		Conexion infoConexion = motoresAlmacenamiento.get(motorAlmacenamiento);
-		Optional<ProveedorAlmacenamiento> proveedorAlmacenamiento = infoConexion.getProveedorAlmacenamiento();
-		return proveedorAlmacenamiento.orElseThrow(() -> infoConexion.getErrorConexion());
+		Conexion infoConexion = instanciasBasesDeDatos.get(nombreBaseDeDatos);
+		return infoConexion.getProveedorAlmacenamiento().orElseThrow(() -> infoConexion.getErrorConexion());
 	}
-	
-	public static void desactivarProveedoresAlmacenamiento() {
-		for (Entry<MotoresAlmacenamiento, Conexion> motorAlmacenamiento : motoresAlmacenamiento.entrySet()) {
+
+	@Override
+	public void close() {
+		for (Entry<MotoresAlmacenamiento, Conexion> motorAlmacenamiento : instanciasBasesDeDatos.entrySet()) {
 			switch (motorAlmacenamiento.getKey()) {
 				case CASSANDRA:
 					motorAlmacenamiento.getValue().getProveedorAlmacenamiento().ifPresent(ProveedorAlmacenamiento::desconectar);

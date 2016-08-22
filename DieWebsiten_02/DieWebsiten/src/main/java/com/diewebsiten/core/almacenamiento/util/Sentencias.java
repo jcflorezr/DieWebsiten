@@ -10,7 +10,7 @@ public enum Sentencias {
 	private String nombre;
 	private String sentencia;
 	
-	private Sentencias(String nombre, String sentencia) {
+	Sentencias(String nombre, String sentencia) {
 		this.nombre = nombre;
 		this.sentencia = sentencia;
 	}

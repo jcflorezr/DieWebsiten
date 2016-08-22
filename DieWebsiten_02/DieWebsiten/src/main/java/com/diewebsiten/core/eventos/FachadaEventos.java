@@ -34,7 +34,7 @@ public class FachadaEventos {
     	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("Eventos-%d").setDaemon(true).build();
         ExecutorService ejecucionEventos = Executors.newFixedThreadPool(10, threadFactoryBuilder);
         
-        try {
+        try (AlmacenamientoFabrica almacenamiento = new AlmacenamientoFabrica()) {
         	
         	iniciarLog();
 
@@ -149,7 +149,7 @@ public class FachadaEventos {
         	ejecucionEventos.shutdown();
         	
         	// Finalizar la conexión con la base de datos cassandra
-        	desactivarProveedoresAlmacenamiento();
+//        	desactivarProveedoresAlmacenamiento();
         	
         }
         
@@ -159,9 +159,9 @@ public class FachadaEventos {
     	logger = Log.getInstance();
     }
     
-    private static void desactivarProveedoresAlmacenamiento() {
-    	AlmacenamientoFabrica.desactivarProveedoresAlmacenamiento();
-	}
+//    private static void desactivarProveedoresAlmacenamiento() {
+//    	AlmacenamientoFabrica.desactivarProveedoresAlmacenamiento();
+//	}
     
     /**
      * 
@@ -170,8 +170,7 @@ public class FachadaEventos {
      * @throws Exception
      */
     static JsonNode ejecutarTransaccion(Transaccion transaccion) throws Exception {
-    	proveedorAlmacenamiento = AlmacenamientoFabrica.obtenerProveedorAlmacenamiento(transaccion.getMotorAlmacenamiento());
-    	return proveedorAlmacenamiento.ejecutarTransaccion(transaccion);
+    	return AlmacenamientoFabrica.obtenerProveedorAlmacenamiento(transaccion.getMotorAlmacenamiento()).ejecutarTransaccion(transaccion);
     }
     
 }

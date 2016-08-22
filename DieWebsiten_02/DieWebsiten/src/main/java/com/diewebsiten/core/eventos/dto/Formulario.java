@@ -8,9 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -44,26 +47,87 @@ public class Formulario {
     // === Guardar los campos que componen el formulario === 
     // =====================================================
     
-	public List<Campo> getCampos() {
-		/*
-    	 * Copia defensiva del campo 'new Formulario().campos'
-    	 */
-		return new ArrayList<>(campos);
+	public Supplier<Stream<Campo>> getCampos() {
+		return () -> campos.stream();
 	}
 
     public void setCampos(JsonNode camposFormularioEvento) {
-    	this.campos = Optional.ofNullable(stringToList(camposFormularioEvento.toString(), Campo.class))
-							  .orElse(new ArrayList<>());
-    	if (!this.campos.isEmpty()) {
-    		this.poseeCampos = true; // El formulario sí posee campos
-    	}
+    	this.campos = stringToList(camposFormularioEvento.toString(), Campo.class);
+		if (!this.campos.isEmpty()) this.poseeCampos = true; // El formulario sí posee campos
 	}
 
 	public boolean poseeCampos() {
 		return poseeCampos;
 	}
-	
-    
+
+
+
+
+
+	private Map<String, GrupoValidacion> columnName;
+
+	private String formaIngreso;
+	private String valorPorDefecto;
+	private boolean poseeValidaciones;
+
+	@JsonProperty("column_name")
+	public Map<String, GrupoValidacion> getColumnName() {
+		return columnName;
+	}
+
+	public void setColumnName(Map<String, GrupoValidacion> columnName) {
+		this.columnName = columnName;
+	}
+
+	@JsonProperty("formaingreso")
+	public String getFormaIngreso() {
+		return formaIngreso;
+	}
+
+	public void setFormaIngreso(String formaIngreso) {
+		this.formaIngreso = formaIngreso;
+	}
+
+	@JsonProperty("valorpordefecto")
+	public String getValorPorDefecto() {
+		return valorPorDefecto;
+	}
+
+	public void setValorPorDefecto(String valorPorDefecto) {
+		this.valorPorDefecto = valorPorDefecto;
+	}
+
+//	public List<GrupoValidacion> getValidaciones() {
+//		/*
+//    	 * Copia defensiva del campo 'new Campo().validaciones'
+//    	 */
+//		return new ArrayList<>(validaciones);
+//	}
+//
+//	public void setValidaciones(JsonNode validacionesCampo) {
+//		this.validaciones = new ArrayList<>();
+//		for (JsonNode validacionObject : validacionesCampo) {
+//			GrupoValidacion validacion = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true).convertValue(validacionObject, GrupoValidacion.class);
+////			JsonObject validacionActual = validacionObject.getAsJsonObject();
+////			validacion.setTipo(validacionActual.get(TIPO).getAsString());
+////			validacion.setValidacion(validacionActual.get(VALIDACION).getAsString());
+//			this.validaciones.add(validacion);
+//		}
+//		if (!this.validaciones.isEmpty()) {
+//    		this.poseeValidaciones = true; // El campo sí posee validaciones
+//    	}
+//	}
+//
+//	public boolean poseeValidaciones() {
+//		return poseeValidaciones;
+//	}
+
+
+
+
+
+
+
     // =================================================================
     // ========================== Parámetros ===========================
 	// === Guardar los parámetros que se recibieron desde el cliente ===

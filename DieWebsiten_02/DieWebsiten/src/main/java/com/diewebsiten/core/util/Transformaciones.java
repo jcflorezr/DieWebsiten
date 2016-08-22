@@ -8,10 +8,15 @@ import java.security.MessageDigest;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.apache.commons.lang3.text.WordUtils;
 
@@ -33,6 +38,23 @@ public class Transformaciones {
             return mapper.readValue(stringAConvertir, typeFactory.constructCollectionType(List.class, tipoDeLista));
         } catch (IOException e) {
             throw new ExcepcionGenerica("no se pudo serializar el String: " + stringAConvertir + " a una lista de tipo: " + tipoDeLista);
+        }
+    }
+
+    public static BiFunction<ObjectNode, String, ObjectNode> ponerObjeto = (coleccion, nombrePropiedad) ->
+            (ObjectNode) Optional.ofNullable(coleccion.get(nombrePropiedad))
+            .orElseGet(() -> coleccion.putObject(nombrePropiedad));
+
+    public static void agruparValores(ObjectNode coleccion, String nombrePropiedad, JsonNode valorPropiedad) {
+        JsonNode valorExistente = coleccion.get(nombrePropiedad);
+        if (valorExistente != null) {
+            if (valorExistente.isArray()) {
+                ((ArrayNode)valorExistente).add(valorPropiedad);
+            } else {
+                coleccion.set(nombrePropiedad, mapper.createArrayNode().add(valorExistente).add(valorPropiedad));
+            }
+        } else {
+            coleccion.set(nombrePropiedad, valorPropiedad);
         }
     }
     
