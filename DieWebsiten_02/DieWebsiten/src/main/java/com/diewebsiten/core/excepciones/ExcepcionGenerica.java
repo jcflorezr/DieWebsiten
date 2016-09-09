@@ -17,6 +17,10 @@ public class ExcepcionGenerica extends RuntimeException {
     public ExcepcionGenerica(String mensaje) {
         super(mensaje);        
     }
+
+    public ExcepcionGenerica(Exception e) {
+        super(e);
+    }
     
     @Override
     public String toString() {

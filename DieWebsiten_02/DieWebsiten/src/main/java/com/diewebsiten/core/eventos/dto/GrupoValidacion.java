@@ -1,41 +1,36 @@
 package com.diewebsiten.core.eventos.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 public class GrupoValidacion {
 
-	private Map<String, Validacion> grupoValidacion;
+	private static final ObjectMapper mapper = new ObjectMapper();
 
-    @JsonProperty("grupovalidacion")
-    public Map<String, Validacion> getGrupoValidacion() {
-        return grupoValidacion;
-    }
+	private Map<String, Validacion> tipo;
 
-    public void setGrupoValidacion(Map<String, Validacion> grupoValidacion) {
-        this.grupoValidacion = grupoValidacion;
-    }
+	public Map<String, Validacion> getTipo() {
+		return tipo;
+	}
 
-    class Validacion {
+	public void setTipo(Map<String, Validacion> tipo) {
+		this.tipo = tipo;
+	}
 
-		private String tipo;
-		private String validacion;
+	public static class Validacion {
 
-		public String getTipo() {
-			return tipo;
-		}
+		private List<String> validacion;
 
-		public void setTipo(String tipo) {
-			this.tipo = tipo;
-		}
-
-		public String getValidacion() {
+		public List<String> getValidacion() {
 			return validacion;
 		}
 
-		public void setValidacion(String validacion) {
-			this.validacion = validacion;
+		public void setValidacion(Object validacion) {
+			if (validacion instanceof String) this.validacion = Arrays.asList((String) validacion);
+			else this.validacion = mapper.convertValue(validacion, List.class);
 		}
 
 	}

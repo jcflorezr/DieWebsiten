@@ -5,9 +5,11 @@ import static org.apache.commons.lang3.StringUtils.*;
 
 import java.io.IOException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -37,7 +39,16 @@ public class Transformaciones {
         try {
             return mapper.readValue(stringAConvertir, typeFactory.constructCollectionType(List.class, tipoDeLista));
         } catch (IOException e) {
-            throw new ExcepcionGenerica("no se pudo serializar el String: " + stringAConvertir + " a una lista de tipo: " + tipoDeLista);
+            throw new ExcepcionGenerica("no se pudo deserializar el String: " + stringAConvertir + " a una lista de tipo: " + tipoDeLista);
+        }
+    }
+
+    public static <K, V> Map<K, V> jsonToMap(JsonNode jsonAConvertir, Class<K> tipoDeLlave, Class<V> tipoDeValor) {
+        try {
+            return mapper.readValue(jsonAConvertir.toString(), typeFactory.constructMapType(Map.class, tipoDeLlave, tipoDeValor));
+        } catch (IOException e) {
+            throw new ExcepcionGenerica("no se pudo deserializar el String: " + jsonAConvertir.toString() + " a un map de tipo: " + tipoDeLlave + "," + tipoDeValor
+            + "MOTIVO: " + e.getMessage());
         }
     }
 
@@ -64,9 +75,14 @@ public class Transformaciones {
      * @param valor
      * @return 
      */
-    public static String encriptarCadena(String valor) throws Exception {
-                  
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
+    public static String encriptarCadena(String valor) {
+
+        MessageDigest md = null;
+        try {
+            md = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new ExcepcionGenerica(e);
+        }
         md.update(valor.getBytes());
 
         byte[] byteContrasena = md.digest();
@@ -83,26 +99,17 @@ public class Transformaciones {
     }
     
     /**
-     * Dividir el valor con formato email en dos campos.
-     * Ej: email@dominio.com --> {"usuario": "email", "dominio": "dominio.com"}
-     * @param valor
-     * @return
-     */
-    public static String transformarEmailCassandra(String valor) {
-    	JsonObject transformacion = new JsonObject();
-        transformacion.addProperty("usuario", substringBefore(valor, "@"));
-        transformacion.addProperty("dominio", substringAfter(valor, "@"));
-        return transformacion.toString();
-    }
-    
-    /**
      * Transformar un valor a tipo Fecha y Hora con el siguiente formato: yyyy-MM-dd HH:mm:ss
      * @param valor
      * @return
      * @throws ParseException
      */
-    public static String trasformarFechaHora(Object valor) throws ParseException {
-    	return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(valor.toString()).toString();
+    public static String trasformarFechaHora(Object valor) {
+        try {
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(valor.toString()).toString();
+        } catch (ParseException e) {
+            throw new ExcepcionGenerica(e);
+        }
     }
     
     /**

@@ -1,5 +1,7 @@
 package com.diewebsiten.core.almacenamiento;
 
+import static com.diewebsiten.core.almacenamiento.dto.Sentencia.TiposResultado;
+
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.diewebsiten.core.almacenamiento.dto.Conexion;
@@ -16,12 +18,12 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.diewebsiten.core.util.Transformaciones.agruparValores;
 import static com.diewebsiten.core.util.Transformaciones.ponerObjeto;
+import static java.util.stream.Collectors.*;
 import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -44,7 +46,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
     private static final String CASSANDRA_URL = "localhost";
     private static final int CASSANDRA_PORT = 9042;
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
     
     
     private ProveedorCassandra() {
@@ -97,10 +99,10 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     @Override
     public JsonNode ejecutarTransaccion(Transaccion transaccion) throws ExcepcionGenerica {
 
-    	String sentenciaCQL = transaccion.getSentencia();
-    	String nombreTransaccion = transaccion.getNombre();
+		String nombreTransaccion = transaccion.getNombre();
+		String sentenciaCQL = transaccion.getSentencia();
     	Object[] parametros = Optional.ofNullable(transaccion.getParametrosTransaccion()).orElse(new Object[]{});
-    	boolean necesitaResultadoEnJerarquia = transaccion.isResultadoEnJerarquia();
+    	TiposResultado tipoResultado = transaccion.getTipoResultado();
 
     	if (isBlank(nombreTransaccion)) {
     		throw new ExcepcionGenerica("El nombre de la sentencia no puede venir vacío.");
@@ -109,26 +111,21 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     	try {
 
     		// ESTE LLAMADO PODRIA SER MEDIANTE UNA FABRICA????
-    		SentenciaCassandra sentencia = SentenciaCassandra.obtenerSentencia(sesion, sentenciaCQL, nombreTransaccion);
+    		SentenciaCassandra sentencia = new SentenciaCassandra().obtenerSentencia(sesion, sentenciaCQL, nombreTransaccion);
 
     		if (parametros.length != sentencia.getNumeroParametrosSentencia()) {
     			throw new ExcepcionGenerica("La sentencia necesita " + sentencia.getNumeroParametrosSentencia() + " parámetros para ser ejecutada.");
     		}
 
-    		ResultSet resultadoEjecucion = isEmpty(parametros) ? obtenerResultSet.apply(sentenciaCQL) :  obtenerResultSetParametros.apply(sentencia, parametros);
+    		ResultSet resultadoEjecucion = isEmpty(parametros) ? obtenerResultSet.apply(sentenciaCQL)
+															   : obtenerResultSetParametros.apply(sentencia, parametros);
 
     		if (resultadoEjecucion.isExhausted()) {
-    			if (necesitaResultadoEnJerarquia) return mapper.createObjectNode();
-    			else return mapper.createArrayNode();
+    			if (TiposResultado.PLANO.equals(tipoResultado)) return MAPPER.createArrayNode();
+    			else return MAPPER.createObjectNode();
     		}
 
-			Supplier<Stream<Definition>> columnasResultado = () -> StreamSupport.stream(resultadoEjecucion.getColumnDefinitions().spliterator(), false);
-    		if (necesitaResultadoEnJerarquia) {
-    			SentenciaCassandra.enriquecerSentencia(sesion, columnasResultado, sentencia);
-    			return new Estructura(resultadoEjecucion, sentencia, columnasResultado).obtenerResultadoConJerarquia();
-    		} else {
-    			return new Estructura(resultadoEjecucion, columnasResultado).obtenerResultado();
-    		}
+			return new Estructura(resultadoEjecucion, sentencia).obtenerResultado(tipoResultado);
 
 		} catch (Throwable e) {
 			// ES NECESARIO IMPRIMIR LOS PARAMETROS??? PUESTO QUE YA SE IMPRIMIRÁN DESDE LOS EVENTOS
@@ -138,57 +135,56 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
     private class Estructura {
     	
-    	private ObjectNode coleccionActual, resultado = mapper.createObjectNode();
+    	private ObjectNode coleccionActual, resultado = MAPPER.createObjectNode();
     	private ResultSet resultadoEjecucion;
-
     	private SentenciaCassandra sentencia;
-    	private Supplier<Stream<Definition>> columnasResultado;
 
-    	private Estructura(ResultSet resultadoEjecucion, Supplier<Stream<Definition>> columnasResultado) {
+		private Estructura(ResultSet resultadoEjecucion, SentenciaCassandra sentencia) {
 			this.resultadoEjecucion = resultadoEjecucion;
-			this.columnasResultado = columnasResultado;
-		}
-
-		private Estructura(ResultSet resultadoEjecucion, SentenciaCassandra sentencia, Supplier<Stream<Definition>> columnasResultado) {
-			this(resultadoEjecucion, columnasResultado);
+			sentencia.enriquecerSentencia(sesion, resultadoEjecucion, sentencia);
 			this.sentencia = sentencia;
-
-
-
 		}
 
-    	private ObjectNode obtenerResultadoConJerarquia () {
+		private Supplier<Stream<Map<String, Object>>> transformarResultadoEjecucion() {
+			Supplier<Stream<Row>> filasStream = () -> StreamSupport.stream(resultadoEjecucion.spliterator(), false);
+			Function<Row, Stream<Definition>> columnasStream = (fila) -> StreamSupport.stream(fila.getColumnDefinitions().spliterator(), false);
+			return () -> filasStream.get().parallel().map(fila -> columnasStream.apply(fila)
+										  			 .collect(toMap(Definition::getName, columna -> obtenerValorColumnaActual(fila, columna))));
+		}
 
-    		Stream<Row> filas = StreamSupport.stream(resultadoEjecucion.spliterator(), false);
-			Supplier<Stream<Row>> sFilas = () -> filas;
+		private JsonNode obtenerResultado(TiposResultado tipoResultado) {
+			switch (tipoResultado) {
+				case PLANO: return obtenerResultadoPlano();
+				case JERARQUÍA: return obtenerResultadoConJerarquia(false);
+				case JERARQUÍA_CON_NOMBRES_DE_COLUMNAS: return obtenerResultadoConJerarquia(true);
+				default: throw new ExcepcionGenerica("El tipo de resultado: '" + tipoResultado + "', no es válido.");
+			}
+		}
+
+        private ArrayNode obtenerResultadoPlano() {
+			List<Map<String, Object>> resultSet = transformarResultadoEjecucion().get().collect(toList());
+			return MAPPER.convertValue(resultSet, ArrayNode.class);
+        }
+
+    	private ObjectNode obtenerResultadoConJerarquia (boolean incluirNombresColumnasPrimarias) {
+			Supplier<Stream<Map<String, Object>>> resultSet = transformarResultadoEjecucion();
     		coleccionActual = resultado;
-
-			System.out.println(
-			sFilas.get()
-				.map(fila -> StreamSupport.stream(fila.getColumnDefinitions().spliterator(), false)
-										  .collect(Collectors.toMap(Definition::getName, columna -> obtenerValorColumnaActual(fila, columna))))
-					.peek(System.out::println)
-				.collect(Collectors.toList())
-			);
-
-    		filas.forEach(fila -> {
-    			sentencia.getColumnasIntermedias().get()
+			resultSet.get().parallel().forEach(fila -> {
+				sentencia.getColumnasIntermedias().get()
 						.forEach(columnaIntermedia -> {
-							coleccionActual = ponerObjeto.apply(coleccionActual, columnaIntermedia.getName());
-							coleccionActual = ponerObjeto.apply(coleccionActual, obtenerValorColumnaActual(fila, columnaIntermedia).toString());
+							if (incluirNombresColumnasPrimarias) coleccionActual = ponerObjeto.apply(coleccionActual, columnaIntermedia);
+							coleccionActual = ponerObjeto.apply(coleccionActual, fila.get(columnaIntermedia).toString());
 						});
-    			sentencia.getColumnasRegulares().get()
-						.forEach(columnaRegular -> agruparValores(coleccionActual, columnaRegular.getName(), mapper.valueToTree(obtenerValorColumnaActual(fila, columnaRegular))));
-    			coleccionActual = resultado;
-    		});
-
+				sentencia.getColumnasRegulares().get()
+						.forEach(columnaRegular -> agruparValores(coleccionActual, columnaRegular, MAPPER.valueToTree(fila.get(columnaRegular))));
+				coleccionActual = resultado;
+			});
     		return resultado;
-    		
     	}
     	
     	private Object obtenerValorColumnaActual(Row fila, Definition columnaActual) {
-    		return Optional.ofNullable(fila.getBytesUnsafe(columnaActual.getName()))
-    					   .map(buffer -> columnaActual.getType().deserialize(buffer, ProtocolVersion.NEWEST_SUPPORTED))
+			return Optional.ofNullable(fila.getBytesUnsafe(columnaActual.getName()))
+    					   .map(buffer -> new CodecRegistry().codecFor(columnaActual.getType()).deserialize(buffer, ProtocolVersion.NEWEST_SUPPORTED))
     					   .orElse(obtenerValorVacio(columnaActual));
     	}
     	
@@ -200,9 +196,9 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     	 * @return
     	 */
     	private Object obtenerValorVacio(ColumnDefinitions.Definition columnaActual) {
-    		String tipoColumna = columnaActual.getType().asJavaClass().getSimpleName();
+    		String tipoColumna = new CodecRegistry().codecFor(columnaActual.getType()).getJavaType().getRawType().getSimpleName();
     		if (columnaActual.getType().isCollection()) {
-    			return "List".equals(tipoColumna) ? new ArrayList<>() : new HashMap<>();
+    			return "List".equals(tipoColumna) ? new ArrayList<String>() : new HashMap<>();
     		} else {    							
     			if ("String".equals(tipoColumna))
     				return "";
@@ -212,26 +208,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     				return null;
     		}
     	}
-
-    	/**
-         *
-         * @return
-         */
-        private ArrayNode obtenerResultado() {
-
-    		Stream<Row> filas = StreamSupport.stream(resultadoEjecucion.spliterator(), false);
-    		ArrayNode resultado = mapper.createArrayNode();
-
-    		filas.forEach(fila -> {
-    				ObjectNode obj = mapper.createObjectNode();
-    				columnasResultado.get().forEach(columna -> obj.set(columna.getName(), mapper.valueToTree(obtenerValorColumnaActual(fila, columna))));
-    				resultado.add(obj);
-    				}
-    		);
-
-    		return resultado;
-
-        }
     	
     }
     

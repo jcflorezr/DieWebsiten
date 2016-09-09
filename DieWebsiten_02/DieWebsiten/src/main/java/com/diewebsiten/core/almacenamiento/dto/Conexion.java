@@ -2,13 +2,14 @@ package com.diewebsiten.core.almacenamiento.dto;
 
 
 import com.diewebsiten.core.almacenamiento.ProveedorAlmacenamiento;
+import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 
 import java.util.Optional;
 
 public class Conexion {
 
     private Optional<ProveedorAlmacenamiento> proveedorAlmacenamiento = Optional.empty();
-    private Exception errorConexion;
+    private ExcepcionGenerica errorConexion;
 
     public Optional<ProveedorAlmacenamiento> getProveedorAlmacenamiento() {
         return proveedorAlmacenamiento;
@@ -19,12 +20,12 @@ public class Conexion {
         return this;
     }
 
-    public Exception getErrorConexion() {
+    public ExcepcionGenerica getErrorConexion() {
         return errorConexion;
     }
 
     public Conexion setErrorConexion(Exception errorConexion) {
-        this.errorConexion = errorConexion;
+        this.errorConexion = new ExcepcionGenerica(errorConexion);
         return this;
     }
 

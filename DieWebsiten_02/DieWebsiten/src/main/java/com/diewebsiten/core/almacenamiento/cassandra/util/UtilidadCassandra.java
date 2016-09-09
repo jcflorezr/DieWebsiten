@@ -1,6 +1,24 @@
 package com.diewebsiten.core.almacenamiento.cassandra.util;
 
+import com.google.gson.JsonObject;
+
+import static org.apache.commons.lang3.StringUtils.substringAfter;
+import static org.apache.commons.lang3.StringUtils.substringBefore;
+
 public class UtilidadCassandra {
+
+	/**
+	 * Dividir el valor con formato email en dos campos.
+	 * Ej: email@dominio.com --> {"usuario": "email", "dominio": "dominio.com"}
+	 * @param valor
+	 * @return
+	 */
+	public static String transformarEmailCassandra(String valor) {
+		JsonObject transformacion = new JsonObject();
+		transformacion.addProperty("usuario", substringBefore(valor, "@"));
+		transformacion.addProperty("dominio", substringAfter(valor, "@"));
+		return transformacion.toString();
+	}
 	
 	
 	/*java.lang.String

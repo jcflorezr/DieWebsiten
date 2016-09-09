@@ -34,7 +34,7 @@ public class FachadaEventos {
     	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("Eventos-%d").setDaemon(true).build();
         ExecutorService ejecucionEventos = Executors.newFixedThreadPool(10, threadFactoryBuilder);
         
-        try (AlmacenamientoFabrica almacenamiento = new AlmacenamientoFabrica()) {
+        try {
         	
         	iniciarLog();
 
@@ -51,7 +51,7 @@ public class FachadaEventos {
                                  "\"basededatos\": \"diewebsiten\"," +
                                  "\"keyspace_name\": \"diewebsiten\"," +
                                  "\"columnfamily_name\": \"eventos\"," +
-                                 "\"tipotransaccion\": \"SELECT\"" +
+                                 "\"tipotransaccion\": \"sELECT\"" +
                                  "}";
             
             /*Map<String, Object> parametros11 = new HashMap<String, Object>();
@@ -117,9 +117,44 @@ public class FachadaEventos {
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
-            //grupoEventos.add(ejecucionEventos.submit(new Evento("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
+//            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
-            
+
+//            System.out.println(
+////            grupoEventos.add(ejecucionEventos.submit(
+//                    new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null).call()
+////                    ));
+//            );
+//            System.out.println(
+////            grupoEventos.add(ejecucionEventos.submit(
+//                    new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros).call()
+////            ));
+//            );
+//            System.out.println(
+////            grupoEventos.add(ejecucionEventos.submit(
+//                    new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros).call()
+////            ));
+//            );
+//            System.out.println(
+////            grupoEventos.add(ejecucionEventos.submit(
+//                    new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null).call()
+////            ));
+//            );
+//            System.out.println(
+////            grupoEventos.add(ejecucionEventos.submit(
+//                    new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1).call()
+////            ));
+//            );
+//            System.out.println(
+////            grupoEventos.add(ejecucionEventos.submit(
+//                    new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1).call()
+////            ));
+//            );
+//            System.out.println(
+////            grupoEventos.add(ejecucionEventos.submit(
+//                    new Eventos("localhost:@:eventos", "ConsultarInfoTabla", parametros1).call()
+////            ));
+//            );
             
             for (Future<ObjectNode> evento : grupoEventos) {
                 System.out.println(evento.get());
@@ -146,11 +181,9 @@ public class FachadaEventos {
             System.out.println(Mensajes.ERROR.get());
             
         } finally {
-        	ejecucionEventos.shutdown();
-        	
+//        	ejecucionEventos.shutdown();
         	// Finalizar la conexión con la base de datos cassandra
-//        	desactivarProveedoresAlmacenamiento();
-        	
+            AlmacenamientoFabrica.desactivarProveedoresAlmacenamiento();
         }
         
     }
@@ -169,7 +202,7 @@ public class FachadaEventos {
      * @return
      * @throws Exception
      */
-    static JsonNode ejecutarTransaccion(Transaccion transaccion) throws Exception {
+    static JsonNode ejecutarTransaccion(Transaccion transaccion) {
     	return AlmacenamientoFabrica.obtenerProveedorAlmacenamiento(transaccion.getMotorAlmacenamiento()).ejecutarTransaccion(transaccion);
     }
     

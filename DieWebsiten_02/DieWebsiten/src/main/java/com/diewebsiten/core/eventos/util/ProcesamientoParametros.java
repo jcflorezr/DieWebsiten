@@ -1,9 +1,13 @@
 
 package com.diewebsiten.core.eventos.util;
 
+import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+
+import static com.diewebsiten.core.almacenamiento.cassandra.util.UtilidadCassandra.transformarEmailCassandra;
 import static com.diewebsiten.core.almacenamiento.cassandra.util.UtilidadCassandra.validarTipoColumna;
 import static com.diewebsiten.core.util.Transformaciones.*;
 import static com.diewebsiten.core.util.Validaciones.*;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  *
@@ -13,7 +17,7 @@ public class ProcesamientoParametros {
 	
 
 	/**
-     * Fachada que cumple con la funcion de ejecutar cualquiera de las validaciones que se
+     * Fachada que cumple con la funcion de ejecutar cualquiera de las setValidaciones que se
      * implementan en esta clase
      * 
      * AGREGAR LA LISTA DE NOMBRES DE VALIDACIONES
@@ -24,10 +28,10 @@ public class ProcesamientoParametros {
      * fue exitosa se retorna el mismo valor recibido en el parámetro @valor 
      * @throws Exception
      */
-    public static String validarParametro(String nombreValidacion, Object valor) throws Exception {
+    public static String validarParametro(String nombreValidacion, Object valor) {
     	
-       	if (esVacio(nombreValidacion)) {
-       		throw new Exception("El nombre de la validación ha llegado nulo.");
+       	if (isBlank(nombreValidacion)) {
+       		throw new ExcepcionGenerica("El nombre de la validación ha llegado nulo.");
        	}
 
        	if (esVacio(valor) && !Validaciones.V_OPCIONAL.equals(nombreValidacion)) {
@@ -97,7 +101,7 @@ public class ProcesamientoParametros {
            		}
            		break;
            	default:
-           		throw new Exception("La validación '" + nombreValidacion + "' no existe.");
+           		throw new ExcepcionGenerica("La validación '" + nombreValidacion + "' no existe.");
        
        	}
     	
@@ -118,10 +122,10 @@ public class ProcesamientoParametros {
      * fue exitosa se retorna el mismo valor recibido en el parámetro @valor 
      * @throws Exception
      */
-    public static Object transformarParametro (String nombreTransformacion, Object valor) throws Exception {
+    public static Object transformarParametro (String nombreTransformacion, Object valor) {
         //Thread.sleep(1000);
         if (esVacio(valor) || esVacio(nombreTransformacion)) {
-            throw new Exception("No se puede hacer la ransformación de un valor nulo. Nombre Validación: " + nombreTransformacion + ". Parámetro : " + valor);
+            throw new ExcepcionGenerica("No se puede hacer la ransformación de un valor nulo. Nombre Validación: " + nombreTransformacion + ". Parámetro : " + valor);
         }
                 
         switch(Transformaciones.valueOf(nombreTransformacion)) {
@@ -131,7 +135,7 @@ public class ProcesamientoParametros {
             case T_CIFRADO:
                 return encriptarCadena((String) valor);       
             case T_FECHAHORA:                
-            	return trasformarFechaHora((String) valor);
+            	return trasformarFechaHora(valor);
             case T_MINUSCULAS:
                 return minimizar((String) valor);                
             case T_MAYUSCULAS :
@@ -151,7 +155,7 @@ public class ProcesamientoParametros {
                 /*************************** nueva cadena con guiones bajos --> nueva_cadena_con_guiones_bajos *****************************/
             	return null;
             default:
-                throw new Exception("La transformación '" + nombreTransformacion + "' no existe.");
+                throw new ExcepcionGenerica("La transformación '" + nombreTransformacion + "' no existe.");
         
         }
         

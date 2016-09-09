@@ -2,6 +2,7 @@ package com.diewebsiten.core.almacenamiento.dto;
 
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.diewebsiten.core.almacenamiento.util.Sentencias;
@@ -25,17 +26,18 @@ public class SentenciaCassandra extends Sentencia {
 	private Optional<String> columnfamilyName;
 	private PreparedStatement sentenciaPreparada;
 	private List<String> parametrosSentencia;
-	private List<Definition> columnasIntermedias;
-	private List<Definition> columnasRegulares;
-	
-	private SentenciaCassandra init(PreparedStatement sentenciaPreparada, List<String> parametrosSentencia) {
+	private List<String> columnasIntermedias;
+	private List<String> columnasRegulares;
+
+	public SentenciaCassandra() {}
+
+	private SentenciaCassandra(PreparedStatement sentenciaPreparada, List<String> parametrosSentencia) {
 		this.sentenciaPreparada = sentenciaPreparada;
 		this.parametrosSentencia = Optional.ofNullable(parametrosSentencia).orElse(new ArrayList<>());
 		this.keyspaceName = Optional.empty();
 		this.columnfamilyName = Optional.empty();
 		this.columnasIntermedias = new ArrayList<>();
 		this.columnasRegulares = new ArrayList<>();
-		return this;
 	}
 
 	
@@ -71,11 +73,11 @@ public class SentenciaCassandra extends Sentencia {
 		this.columnfamilyName = Optional.ofNullable(columnfamilyName);
 	}
 	
-	public Supplier<Stream<Definition>> getColumnasIntermedias() {
+	public Supplier<Stream<String>> getColumnasIntermedias() {
 		return () -> columnasIntermedias.stream();
 	}
 	
-	public void setColumnasIntermedias(List<Definition> columnasIntermedias) {
+	public void setColumnasIntermedias(List<String> columnasIntermedias) {
 		this.columnasIntermedias = Optional.ofNullable(columnasIntermedias).orElse(new ArrayList<>());
 	}
 	
@@ -83,16 +85,20 @@ public class SentenciaCassandra extends Sentencia {
 		return columnasIntermedias.size();
 	}
 	
-	public Supplier<Stream<Definition>> getColumnasRegulares() {
+	public Supplier<Stream<String>> getColumnasRegulares() {
 		return () -> columnasRegulares.stream();
 	}
 
-	public void setColumnasRegulares(List<Definition> columnasRegulares) {
+	public void setColumnasRegulares(List<String> columnasRegulares) {
 		this.columnasRegulares = Optional.ofNullable(columnasRegulares).orElse(new ArrayList<>());
 	}
 	
 	public int getNumeroColumnasRegulares() {
 		return columnasRegulares.size();
+	}
+
+	private boolean columnasEstanCategorizadas(SentenciaCassandra sentencia) {
+		return sentencia.getNumeroColumnasIntermedias() == 0 && sentencia.getNumeroColumnasRegulares() == 0;
 	}
 
 	/**
@@ -102,7 +108,7 @@ public class SentenciaCassandra extends Sentencia {
 	 * @param nombreTransaccion
 	 * @return
 	 */
-	 public static SentenciaCassandra obtenerSentencia(Session sesion, String sentenciaCQL, String nombreTransaccion) {
+	 public SentenciaCassandra obtenerSentencia(Session sesion, String sentenciaCQL, String nombreTransaccion) {
 		try {
 			Optional<Sentencia> sentencia = Sentencia.getSentenciaPreparada(nombreTransaccion);
 			if (!sentencia.isPresent()) {
@@ -113,7 +119,7 @@ public class SentenciaCassandra extends Sentencia {
 						List<String> parametrosSentencia = StreamSupport.stream(sentenciaPreparada.getVariables().spliterator(), false)
 								.map(Definition::getName)
 								.collect(Collectors.toList());
-						sentencia = Optional.of(new SentenciaCassandra().init(sentenciaPreparada, parametrosSentencia));
+						sentencia = Optional.of(new SentenciaCassandra(sentenciaPreparada, parametrosSentencia));
 						Sentencia.setSentenciaPreparada(nombreTransaccion, sentencia.get());
 					}
 				}
@@ -124,43 +130,36 @@ public class SentenciaCassandra extends Sentencia {
 		}
 	}
 
-	public static void enriquecerSentencia(Session sesion, Supplier<Stream<Definition>> columnasResultado, SentenciaCassandra sentencia) {
-
-		//LOS SIGUIENTES TRES CONDICIONALES SE PUEDEN OPTIMIZAR A UNO SOLO.. Y DEBERIAN ESTAR DENTRO DE LA CLASE SentenciaCassandra
-		if (!sentencia.getKeyspaceName().isPresent()) sentencia.setKeyspaceName(columnasResultado.get().map(Definition::getKeyspace).findAny().get());
-		if (!sentencia.getColumnfamilyName().isPresent()) sentencia.setColumnfamilyName(columnasResultado.get().map(Definition::getTable).findAny().get());
-
-		//			ESTE HAY QUE MODIFICARLO
-		if (sentencia.getNumeroColumnasIntermedias() == 0 && sentencia.getNumeroColumnasRegulares() == 0) {
-			categorizarColumnas(sesion, columnasResultado, sentencia);
+	public void enriquecerSentencia(Session sesion, ResultSet resultadoEjecucion, SentenciaCassandra sentencia) {
+		Supplier<Stream<Definition>> columnasResultado = () -> StreamSupport.stream(resultadoEjecucion.getColumnDefinitions().spliterator(), false);
+		columnasResultado.get().limit(1).forEach(columna -> {sentencia.setKeyspaceName(columna.getKeyspace());
+															 sentencia.setColumnfamilyName(columna.getTable());});
+		if (columnasEstanCategorizadas(sentencia)) {
+			categorizarColumnas(sesion, () -> columnasResultado.get().map(Definition::getName), sentencia);
 		}
-
-
-
-
 	}
 
-	private static void categorizarColumnas(Session sesion, Supplier<Stream<Definition>> columnasResultado, SentenciaCassandra sentencia) {
+	private void categorizarColumnas(Session sesion, Supplier<Stream<String>> columnasResultado, SentenciaCassandra sentencia) {
 		SentenciaCassandra sentenciaLlavesPrimarias = obtenerSentencia(sesion, Sentencias.LLAVES_PRIMARIAS.sentencia(), Sentencias.LLAVES_PRIMARIAS.nombre());
 		Row llavesPrimarias = sesion.execute(sentenciaLlavesPrimarias.getSentenciaPreparada().bind(sentencia.getKeyspaceName().get(), sentencia.getColumnfamilyName().get())).one();
-		boolean noEsUnicaColumna = columnasResultado.get().count() > 1;
-		if (noEsUnicaColumna) {
-			// Columnas intermedias
-			sentencia.setColumnasIntermedias(Stream.of(stringToList(llavesPrimarias.getString("key_aliases"), String.class),
-													   stringToList(llavesPrimarias.getString("column_aliases"), String.class))
-											.flatMap(List::stream)
-											.filter(llavePrimaria -> sentencia.getParametrosSentencia().get().noneMatch(parametro -> llavePrimaria.equals(parametro)))
-											.map(columnaIntermedia -> columnasResultado.get()
-											.filter(columna -> columna.getName().equals(columnaIntermedia)).limit(1).findAny().get())
-											.collect(Collectors.toList()));
-			// Columnas regulares
-			sentencia.setColumnasRegulares(
-					columnasResultado.get().filter(columna -> sentencia.getColumnasIntermedias().get().noneMatch(columnaIntermedia -> columnaIntermedia.getName().equals(columna.getName())))
-							.collect(Collectors.toList()));
-		} else {
-			// Columnas regulares (en caso de que haya una única columna en el resultSet)
+		int numColumnasResultado = (int) columnasResultado.get().count();
+		if (numColumnasResultado == 1) {
 			sentencia.setColumnasRegulares(columnasResultado.get().collect(Collectors.toList()));
 		}
+		// Columnas intermedias
+		sentencia.setColumnasIntermedias(Stream.of(stringToList(llavesPrimarias.getString("key_aliases"), String.class),
+												   stringToList(llavesPrimarias.getString("column_aliases"), String.class))
+				.flatMap(List::stream)
+				.filter(llavePrimaria -> sentencia.getParametrosSentencia().get().noneMatch(parametro -> llavePrimaria.equals(parametro)))
+				.map(columnaIntermedia -> columnasResultado.get().filter(columna -> columna.equals(columnaIntermedia)).findFirst().get())
+				.collect(Collectors.toList()));
+		if (numColumnasResultado > 0 && numColumnasResultado == getNumeroColumnasIntermedias()) {
+			columnasIntermedias.remove(getNumeroColumnasIntermedias() - 1);
+		}
+		// Columnas regulares
+		sentencia.setColumnasRegulares(
+				columnasResultado.get().filter(columna -> sentencia.getColumnasIntermedias().get().noneMatch(columnaIntermedia -> columnaIntermedia.equals(columna)))
+						.collect(Collectors.toList()));
 	}
 
 }

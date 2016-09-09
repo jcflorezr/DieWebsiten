@@ -38,7 +38,7 @@ public enum Mensajes {
     		VALIDACIONES_NO_EXISTEN {
                 @Override
                 public String get(String... valores) {
-                    return "No se encontraron las validaciones o las transformaciones "
+                    return "No se encontraron las setValidaciones o las transformaciones "
                          + "necesarias para los campos del formulario.";
                 }
             },

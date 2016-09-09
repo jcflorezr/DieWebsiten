@@ -7,22 +7,16 @@ import java.util.Map.Entry;
 import com.diewebsiten.core.almacenamiento.dto.Conexion;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 
-public class AlmacenamientoFabrica implements AutoCloseable {
+public class AlmacenamientoFabrica {
 	
 	private static Map<MotoresAlmacenamiento, Conexion> instanciasBasesDeDatos = new EnumMap<>(MotoresAlmacenamiento.class);
 	private Object obj = new Object();
 
-	public AlmacenamientoFabrica() {
-		if (instanciasBasesDeDatos.isEmpty()) {
-			synchronized (obj) {
-				if (instanciasBasesDeDatos.isEmpty()) {
-					instanciasBasesDeDatos.put(MotoresAlmacenamiento.CASSANDRA, ProveedorCassandra.inicializar());
-				}
-			}
-		}
+	static {
+		instanciasBasesDeDatos.put(MotoresAlmacenamiento.CASSANDRA, ProveedorCassandra.inicializar());
 	}
 	
-	public static ProveedorAlmacenamiento obtenerProveedorAlmacenamiento(MotoresAlmacenamiento nombreBaseDeDatos) throws Exception {
+	public static ProveedorAlmacenamiento obtenerProveedorAlmacenamiento(MotoresAlmacenamiento nombreBaseDeDatos) {
 		if (nombreBaseDeDatos == null) {
 			throw new ExcepcionGenerica("El nombre del motor de almacenamiento a obtener no puede ser nulo");
 		}
@@ -30,12 +24,13 @@ public class AlmacenamientoFabrica implements AutoCloseable {
 		return infoConexion.getProveedorAlmacenamiento().orElseThrow(() -> infoConexion.getErrorConexion());
 	}
 
-	@Override
-	public void close() {
+
+	public static void desactivarProveedoresAlmacenamiento() {
 		for (Entry<MotoresAlmacenamiento, Conexion> motorAlmacenamiento : instanciasBasesDeDatos.entrySet()) {
 			switch (motorAlmacenamiento.getKey()) {
 				case CASSANDRA:
 					motorAlmacenamiento.getValue().getProveedorAlmacenamiento().ifPresent(ProveedorAlmacenamiento::desconectar);
+					instanciasBasesDeDatos.remove(MotoresAlmacenamiento.CASSANDRA);
 					break;
 				case MYSQL:
 					break;

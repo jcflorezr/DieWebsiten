@@ -16,4 +16,9 @@ public class Sentencia {
     public static void setSentenciaPreparada(String nombreSentencia, Sentencia sentenciaPreparada) {
         sentenciasPreparadas.put(nombreSentencia, sentenciaPreparada);
     }
+
+    public enum TiposResultado {
+        PLANO, JERARQUÍA, JERARQUÍA_CON_NOMBRES_DE_COLUMNAS
+    }
+
 }

@@ -1,34 +1,36 @@
 
 package com.diewebsiten.core.eventos;
 
-import static com.diewebsiten.core.eventos.dto.Transaccion.obtenerDatosTransaccionEventos;
+import static com.diewebsiten.core.almacenamiento.dto.Sentencia.TiposResultado.JERARQUÍA_CON_NOMBRES_DE_COLUMNAS;
+import static com.diewebsiten.core.almacenamiento.dto.Sentencia.TiposResultado.PLANO;
+import static com.diewebsiten.core.almacenamiento.util.Sentencias.*;
+import static com.diewebsiten.core.eventos.util.Mensajes.*;
+import static com.diewebsiten.core.eventos.util.Mensajes.Evento.*;
+import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario.*;
 import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.transformarParametro;
 import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.validarParametro;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
+import com.diewebsiten.core.eventos.util.Mensajes;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.commons.lang3.StringUtils;
 
-import com.diewebsiten.core.almacenamiento.util.Sentencias;
-import com.diewebsiten.core.eventos.dto.Campo;
+import com.diewebsiten.core.eventos.dto.Campo.InformacionCampo;
 import com.diewebsiten.core.eventos.dto.Evento;
 import com.diewebsiten.core.eventos.dto.Transaccion;
-import com.diewebsiten.core.eventos.dto.GrupoValidacion;
 import com.diewebsiten.core.eventos.util.LogEventos;
-import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.gson.JsonParser;
 
 
 /**
@@ -41,8 +43,8 @@ public class Eventos implements Callable<ObjectNode> {
     
     private Evento evento;
     
-    private static final String TRANSACCIONES = "transacciones";
-    private static final String VALIDACIONES = "validaciones";
+    private static final String EJECUTAR_TRANSACCIONES = "transacciones";
+    private static final String EJECUTAR_VALIDACIONES = "validaciones";
 
     Eventos(String url, String nombreEvento, String parametros) throws Exception {
         evento = new Evento(url, nombreEvento, parametros);
@@ -56,7 +58,7 @@ public class Eventos implements Callable<ObjectNode> {
 			if (validarEvento()) {
 				ejecutarEvento();
 			} else {
-				evento.getResultadoFinal().put("VAL_" + evento.getNombreEvento(), "");//evento.getFormulario().getParametros());
+				evento.getResultadoFinal().put("VAL_" + evento.getNombreEvento(), evento.getFormulario().getParametros());
 			}
 			return evento.getResultadoFinal();
 		} catch (Exception e) {
@@ -66,7 +68,7 @@ public class Eventos implements Callable<ObjectNode> {
 			} else {
 				new LogEventos(evento).imprimirErrorEnLog(e);
 			}
-			evento.getResultadoFinal().put("error", Mensajes.ERROR.get());
+			evento.getResultadoFinal().put("error", ERROR.get());
 			return evento.getResultadoFinal();
 		}
 
@@ -77,28 +79,25 @@ public class Eventos implements Callable<ObjectNode> {
      * @return
      * @throws Exception
      */
-    private boolean validarEvento() throws Exception {
+    private boolean validarEvento() {
         	
-    	Transaccion datosValidaciones = obtenerDatosTransaccionEventos(Sentencias.VALIDACIONES_EVENTO.sentencia(), Sentencias.VALIDACIONES_EVENTO.nombre(), evento.getInformacionEvento());
-    	
+    	Transaccion datosValidaciones = new Transaccion(VALIDACIONES_EVENTO.sentencia(), VALIDACIONES_EVENTO.nombre(), JERARQUÍA_CON_NOMBRES_DE_COLUMNAS, evento.getInformacionEvento());
         evento.getFormulario().setCampos(ejecutarTransaccion(datosValidaciones));
         
         if (!evento.getFormulario().poseeCampos() && evento.getFormulario().poseeParametros()) {
-            throw new ExcepcionGenerica(Mensajes.Evento.Formulario.CAMPOS_FORMULARIO_NO_EXISTEN.get());
+            throw new ExcepcionGenerica(CAMPOS_FORMULARIO_NO_EXISTEN.get());
         } else if (evento.getFormulario().poseeCampos() && !evento.getFormulario().poseeParametros()) {
-            throw new ExcepcionGenerica(Mensajes.Evento.Formulario.PARAMETROS_FORMULARIO_NO_EXISTEN.get());
+            throw new ExcepcionGenerica(PARAMETROS_FORMULARIO_NO_EXISTEN.get());
         } else if (!evento.getFormulario().poseeCampos()) {
         	return true; // Si no se encontraron campos para la ejecución de este evento significa que no los necesita.
         }
 
-        ejecucionParalela(VALIDACIONES);
+		evento.getFormulario().getCampos().get().forEach(campoFormulario ->
+				new ValidacionFormularios(campoFormulario.getKey(), campoFormulario.getValue()).run());
 
-        if (!evento.getFormulario().isValidacionExitosa()) {
-            return evento.getFormulario().isValidacionExitosa();
-        } 
-        
-        // Cambiar los parámetros originales por los que ya fueron transformados durante el proceso de validación.
-        evento.getFormulario().setParametros(evento.getFormulario().getParametrosTransformados());
+//        ejecucionParalela(EJECUTAR_VALIDACIONES);
+
+        if (!evento.getFormulario().isValidacionExitosa()) return false;
 
         return true;
         
@@ -108,19 +107,20 @@ public class Eventos implements Callable<ObjectNode> {
      *
      * @return
      */
-    private void ejecutarEvento() throws Exception {
+    private void ejecutarEvento() {
     	
-    	Transaccion datosTransacciones = obtenerDatosTransaccionEventos(Sentencias.TRANSACCIONES.sentencia(), Sentencias.TRANSACCIONES.nombre(), evento.getInformacionEvento());
+    	Transaccion datosTransacciones = new Transaccion(TRANSACCIONES.sentencia(), TRANSACCIONES.nombre(), PLANO, evento.getInformacionEvento());
 
         // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-    	evento.setTransacciones(new JsonParser().parse(ejecutarTransaccion(datosTransacciones).toString()));
+    	evento.setTransacciones(ejecutarTransaccion(datosTransacciones));
 
         // Validar que el evento existe.
-        if (!evento.poseeTransacciones()) { 
-            throw new ExcepcionGenerica (Mensajes.Evento.EVENTO_NO_EXISTE.get());
-        }
-        
-        ejecucionParalela(TRANSACCIONES); 
+        if (!evento.poseeTransacciones()) throw new ExcepcionGenerica(EVENTO_NO_EXISTE.get());
+
+//        ejecucionParalela(EJECUTAR_TRANSACCIONES);
+
+		for (Transaccion transaccion : evento.getTransacciones())
+					new EjecucionTransacciones(transaccion).run();
 
     }
     
@@ -129,36 +129,30 @@ public class Eventos implements Callable<ObjectNode> {
      * @param moduloAEjecutar
      * @throws Exception
      */
-    private void ejecucionParalela(String moduloAEjecutar) throws Exception {
-
-    	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat(evento.getNombreEvento() + "-%d").setDaemon(true).build();
-        ExecutorService ejecucionParalela = Executors.newFixedThreadPool(10, threadFactoryBuilder);
-        
-        try {
-
-//            List<Future<?>> hilosEjecucion = new ArrayList<>();
-
-            if (VALIDACIONES.equals(moduloAEjecutar)) {
-            	evento.getFormulario().getCampos().get().forEach(campoFormularioEvento ->
-            		ejecucionParalela.execute( new ValidacionFormularios(campoFormularioEvento)));
-            } else if (TRANSACCIONES.equals(moduloAEjecutar)) {
-            	for (Transaccion transaccion : evento.getTransacciones()) {
-            		ejecucionParalela.execute(new EjecucionTransacciones(transaccion));
-            	}
-            }
-
-//            for (Future<?> hiloActual : hilosEjecucion) hiloActual.get();
-            
-        } finally {
-            ejecucionParalela.shutdown();
-        }
-        
-    }
+//    private void ejecucionParalela(String moduloAEjecutar) {
+//
+//    	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat(evento.getNombreEvento() + "-%d").setDaemon(true).build();
+//        ExecutorService ejecucionParalelas = Executors.newFixedThreadPool(10, threadFactoryBuilder);
+//
+//        try {
+//            if (EJECUTAR_VALIDACIONES.equals(moduloAEjecutar)) {
+//            	evento.getFormulario().getCampos().get().forEach(campoFormulario ->
+//					ejecucionParalelas.execute(new ValidacionFormularios(campoFormulario.getKey(), campoFormulario.getValue())));
+//            } else if (EJECUTAR_TRANSACCIONES.equals(moduloAEjecutar)) {
+//            	for (Transaccion transaccion : evento.getTransacciones())
+//					ejecucionParalelas.execute(new EjecucionTransacciones(transaccion));
+//            }
+//
+//        } finally {
+//            if (ejecucionParalelas != null) ejecucionParalelas.shutdown();
+//        }
+//
+//    }
     
     /*
      * Para consultas con resultado en jerarquía
      */
-    public static JsonNode ejecutarTransaccion(Transaccion transaccion) throws Exception {
+    public static JsonNode ejecutarTransaccion(Transaccion transaccion) {
     	return FachadaEventos.ejecutarTransaccion(transaccion); 
     }
     
@@ -167,24 +161,26 @@ public class Eventos implements Callable<ObjectNode> {
     // =========================== FORMULARIOS =================================== //
     // =========================================================================== //
 	
-	private class ValidacionFormularios implements Runnable {
+	private class ValidacionFormularios
+//			implements Runnable
+	{
+
+		private final String columnName;
+	    private final InformacionCampo campo;
 	    
-	    private final Campo campo;
-	    private static final String VALIDACION = "Validación";
-	    private static final String TRANSFORMACION = "Transformación";
-	    
-	    private ValidacionFormularios(Campo campo) {
+	    private ValidacionFormularios(String columnName, InformacionCampo campo) {
+	    	this.columnName = columnName;
 	        this.campo = campo;
 	    } 
 	    
-	    @Override
+//	    @Override
 	    public void run() {
 	    	try {			
 	    		procesarFormulario();
-			} catch (RuntimeException e) {
+			} catch (Exception e) {
 				Throwable excepcionReal = e.getCause();
 				if (excepcionReal != null) {
-					throw (RuntimeException) excepcionReal;
+					throw new RuntimeException(excepcionReal);
 				} else {
 					throw e;
 				}
@@ -196,34 +192,27 @@ public class Eventos implements Callable<ObjectNode> {
 	     * la base de datos la validación de cada parámetro y por último validar cada parámetro.
 	     */
 	    private void procesarFormulario() {
-	    	
-//	    	String nombreCampo = campo.getColumnName();
-//	        String grupoValidacionCampo = campo.getGrupoValidacion();
-//	        Transaccion datosGruposValidaciones = obtenerDatosTransaccionEventos(Sentencias.GRUPO_VALIDACIONES.sentencia(), Sentencias.GRUPO_VALIDACIONES.nombre(), new Object[] {grupoValidacionCampo});
-//
-//	        campo.setValidaciones(Eventos.ejecutarTransaccion(datosGruposValidaciones));
-//
-//	        // Validar que sí existan las validaciones del grupo.
-//	        if (!campo.poseeValidaciones()) {
-//				throw new ExcepcionGenerica(Mensajes.Evento.Formulario.VALIDACIONES_NO_EXISTEN.get());
-//			}
-//
-//	        for (GrupoValidacion validacion : campo.getValidaciones()) {
-//
-//	            Object valorParametroActual = evento.getFormulario().getParametro(nombreCampo);
-//
-//	            if (VALIDACION.equals(validacion.getTipo())) {
-//	            	String resultadoValidacion = validarParametro(validacion.getValidacion(), valorParametroActual);
-//	            	if (valorParametroActual != null && resultadoValidacion != null && !valorParametroActual.equals(resultadoValidacion)) {
-//	            		evento.getFormulario().setValidacionExitosa(false);
-//	            		evento.getFormulario().setParametros(nombreCampo, resultadoValidacion);
-//	            	}
-//	            } else if (evento.getFormulario().isValidacionExitosa() && TRANSFORMACION.equals(validacion.getTipo())) {
-//	                evento.getFormulario().setParametrosTransformados(nombreCampo, transformarParametro(validacion.getValidacion(), valorParametroActual), validacion.getValidacion());
-//	            }
-//
-//	        }
-	    	
+
+	        String grupoValidacionCampo = campo.getGrupoValidacion();
+	        Transaccion datosGruposValidaciones = new Transaccion(GRUPO_VALIDACIONES.sentencia(), GRUPO_VALIDACIONES.nombre(), JERARQUÍA_CON_NOMBRES_DE_COLUMNAS, grupoValidacionCampo);
+	        campo.setValidaciones(Eventos.ejecutarTransaccion(datosGruposValidaciones));
+
+	        // Validar que sí existan las setValidaciones del grupo.
+	        if (!campo.poseeValidaciones()) throw new ExcepcionGenerica(Formulario.VALIDACIONES_NO_EXISTEN.get());
+
+			Object valorParametroActual = evento.getFormulario().getParametro(columnName);
+			campo.getValidaciones()
+			     .map(validacion -> validarParametro(validacion, valorParametroActual))
+			     .filter(resultadoValidacion -> !resultadoValidacion.equals(valorParametroActual))
+			     .peek(resultadoValidacion -> evento.getFormulario().setParametro(columnName, resultadoValidacion))
+			     .findFirst()
+				 .ifPresent(resultadoValidacion -> evento.getFormulario().setValidacionExitosa(false));
+
+			if (evento.getFormulario().isValidacionExitosa()) {
+				campo.getTransformaciones()
+					 .forEach(transformacion -> evento.getFormulario().setParametro(columnName, transformarParametro(transformacion, valorParametroActual)));
+			}
+
 	    }
 	    
 	}
@@ -234,24 +223,21 @@ public class Eventos implements Callable<ObjectNode> {
     // =========================================================================== //
 	
 	private class EjecucionTransacciones implements Runnable {
-	    
-	    private final Transaccion transaccion;
-	    
+
+		private final Transaccion transaccion;
+
 	    private EjecucionTransacciones(Transaccion transaccion) {
 	        this.transaccion = transaccion;
 	    }
-	
-	    /** 
-	     * @see java.util.concurrent.Callable#call()
-	     */
+
 	    @Override
 	    public void run() {
 	    	try {
 	    		ejecutarTransaccion();
-			} catch (RuntimeException e) {
+			} catch (Exception e) {
 				Throwable excepcionReal = e.getCause();
 				if (excepcionReal != null) {
-					throw (RuntimeException) excepcionReal;
+					throw new RuntimeException(excepcionReal);
 				} else {
 					throw e;
 				}
@@ -265,32 +251,22 @@ public class Eventos implements Callable<ObjectNode> {
 	        
 	        // Extraer los valores recibidos desde el cliente (navegador web, dispositivo móvil)
 	        // y guardarlos en una lista para enviarlos a la sentencia preparada
-//	        List<Object> valoresFiltrosSentencia = new ArrayList<>();
-//
-//	        for (String filtro : transaccion.getFiltrosSentencia()) {
-//
-//	        	evento.getFormulario().getCampos().get().forEach( campo -> {
-//	        		if (campo.getColumnName().equals(filtro)) {
-//	        			String valorFiltroSentencia = isNotBlank(campo.getValorPorDefecto()) ? campo.getValorPorDefecto() : evento.getFormulario().getParametro(campo.getColumnName());
-//	        			if (StringUtils.isBlank(valorFiltroSentencia)) {
-//	        				throw new ExcepcionGenerica(Mensajes.Evento.Transaccion.FILTRO_NO_EXISTE.get(filtro, transaccion.getNombre()));
-//	        			}
-//	        			valoresFiltrosSentencia.add(valorFiltroSentencia);
-//	        			//evento.getFormulario().removerCampo(campo);
-//	        		}
-//	            });
-//
-//	        }
-//
-//	        transaccion.setParametrosTransaccion(valoresFiltrosSentencia.toArray());
-//
-//			// Guardar los resultados de esta transacción dentro del resultado final de todos el evento
-//			JsonNode resultadoTransaccion = Eventos.ejecutarTransaccion(transaccion);
-//			if (evento.getResultadoFinal().size() == 0) {
-//				evento.setResultadoFinal(resultadoTransaccion);
-//			} else if (resultadoTransaccion.size() > 0) {
-//				poblarResultadoFinal(resultadoTransaccion);
-//			}
+			transaccion.setParametrosTransaccion(
+				transaccion.getFiltrosSentencia().stream()
+					.map(filtro -> evento.getFormulario().getCampos().get()
+							.filter(campo -> campo.getKey().equals(filtro))
+							.map(campo -> isNotBlank(campo.getValue().getValorPorDefecto()) ? campo.getValue().getValorPorDefecto()
+																							: evento.getFormulario().getParametro(campo.getKey()))
+							.findAny().get()
+					).toArray());
+
+			// Guardar los resultados de esta transacción dentro del resultado final de todos el evento
+			JsonNode resultadoTransaccion = Eventos.ejecutarTransaccion(transaccion);
+			if (evento.getResultadoFinal().size() == 0) {
+				evento.setResultadoFinal(resultadoTransaccion);
+			} else if (resultadoTransaccion.size() > 0) {
+				poblarResultadoFinal(resultadoTransaccion);
+			}
 
 	    }
 	    
