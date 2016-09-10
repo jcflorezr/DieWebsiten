@@ -102,7 +102,7 @@ public class Eventos implements Callable<ObjectNode> {
      *
      * @return
      */
-    private void ejecutarEvento() {
+    private void ejecutarEvento() throws Exception {
     	
     	Transaccion datosTransacciones = new Transaccion(TRANSACCIONES.sentencia(), TRANSACCIONES.nombre(), PLANO, evento.getInformacionEvento());
 
@@ -114,15 +114,9 @@ public class Eventos implements Callable<ObjectNode> {
 
 		ExecutorService grupoEjecucion = obtenerGrupoEjecucion();
 		try {
-			List<Future<Void>> l = new ArrayList<>();
-			for (Transaccion transaccion : evento.getTransacciones()) {
-				l.add(grupoEjecucion.submit(new EjecucionTransacciones(transaccion)));
-			}
-			for (Future<Void> f : l) f.get();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
+			List<Future<Void>> grupoTransacciones = new ArrayList<>();
+			for (Transaccion transaccion : evento.getTransacciones()) grupoTransacciones.add(grupoEjecucion.submit(new EjecucionTransacciones(transaccion)));
+			for (Future<Void> grupoTransaccion : grupoTransacciones) grupoTransaccion.get();
 		} finally {
 			if (grupoEjecucion != null) grupoEjecucion.shutdown();
 		}
@@ -133,10 +127,7 @@ public class Eventos implements Callable<ObjectNode> {
 		final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat(evento.getNombreEvento() + "-%d").setDaemon(true).build();
         return Executors.newFixedThreadPool(10, threadFactoryBuilder);
 	}
-    
-    /*
-     * Para consultas con resultado en jerarquía
-     */
+
     public static JsonNode ejecutarTransaccion(Transaccion transaccion) {
     	return FachadaEventos.ejecutarTransaccion(transaccion); 
     }

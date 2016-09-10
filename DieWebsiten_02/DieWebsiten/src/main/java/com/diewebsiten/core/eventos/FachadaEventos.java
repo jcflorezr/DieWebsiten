@@ -121,6 +121,7 @@ public class FachadaEventos {
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
 
 
+
             for (Future<ObjectNode> evento : grupoEventos) {
                 System.out.println(evento.get());
             }
