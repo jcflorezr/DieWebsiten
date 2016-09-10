@@ -34,7 +34,7 @@ public class FachadaEventos {
     	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("Eventos-%d").setDaemon(true).build();
         ExecutorService ejecucionEventos = Executors.newFixedThreadPool(10, threadFactoryBuilder);
         
-        try {
+        try (AlmacenamientoFabrica almacenamiento = new AlmacenamientoFabrica()) {
         	
         	iniciarLog();
 
@@ -114,48 +114,13 @@ public class FachadaEventos {
             
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
+//            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
 //            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
             grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
 
-//            System.out.println(
-////            grupoEventos.add(ejecucionEventos.submit(
-//                    new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null).call()
-////                    ));
-//            );
-//            System.out.println(
-////            grupoEventos.add(ejecucionEventos.submit(
-//                    new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros).call()
-////            ));
-//            );
-//            System.out.println(
-////            grupoEventos.add(ejecucionEventos.submit(
-//                    new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros).call()
-////            ));
-//            );
-//            System.out.println(
-////            grupoEventos.add(ejecucionEventos.submit(
-//                    new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null).call()
-////            ));
-//            );
-//            System.out.println(
-////            grupoEventos.add(ejecucionEventos.submit(
-//                    new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1).call()
-////            ));
-//            );
-//            System.out.println(
-////            grupoEventos.add(ejecucionEventos.submit(
-//                    new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1).call()
-////            ));
-//            );
-//            System.out.println(
-////            grupoEventos.add(ejecucionEventos.submit(
-//                    new Eventos("localhost:@:eventos", "ConsultarInfoTabla", parametros1).call()
-////            ));
-//            );
-            
+
             for (Future<ObjectNode> evento : grupoEventos) {
                 System.out.println(evento.get());
             }
@@ -181,9 +146,11 @@ public class FachadaEventos {
             System.out.println(Mensajes.ERROR.get());
             
         } finally {
-//        	ejecucionEventos.shutdown();
+        	ejecucionEventos.shutdown();
+
         	// Finalizar la conexión con la base de datos cassandra
-            AlmacenamientoFabrica.desactivarProveedoresAlmacenamiento();
+//        	desactivarProveedoresAlmacenamiento();
+
         }
         
     }

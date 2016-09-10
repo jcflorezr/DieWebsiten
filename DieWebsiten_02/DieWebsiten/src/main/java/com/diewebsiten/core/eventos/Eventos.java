@@ -9,18 +9,13 @@ import static com.diewebsiten.core.eventos.util.Mensajes.Evento.*;
 import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario.*;
 import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.transformarParametro;
 import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.validarParametro;
-import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 
-import com.diewebsiten.core.eventos.util.Mensajes;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import com.diewebsiten.core.eventos.dto.Campo.InformacionCampo;
@@ -42,9 +37,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 public class Eventos implements Callable<ObjectNode> {
     
     private Evento evento;
-    
-    private static final String EJECUTAR_TRANSACCIONES = "transacciones";
-    private static final String EJECUTAR_VALIDACIONES = "validaciones";
 
     Eventos(String url, String nombreEvento, String parametros) throws Exception {
         evento = new Evento(url, nombreEvento, parametros);
@@ -58,7 +50,7 @@ public class Eventos implements Callable<ObjectNode> {
 			if (validarEvento()) {
 				ejecutarEvento();
 			} else {
-				evento.getResultadoFinal().put("VAL_" + evento.getNombreEvento(), evento.getFormulario().getParametros());
+				evento.getResultadoFinal().putPOJO("VAL_" + evento.getNombreEvento(), evento.getFormulario().getParametros());
 			}
 			return evento.getResultadoFinal();
 		} catch (Exception e) {
@@ -92,10 +84,13 @@ public class Eventos implements Callable<ObjectNode> {
         	return true; // Si no se encontraron campos para la ejecución de este evento significa que no los necesita.
         }
 
-		evento.getFormulario().getCampos().get().forEach(campoFormulario ->
-				new ValidacionFormularios(campoFormulario.getKey(), campoFormulario.getValue()).run());
-
-//        ejecucionParalela(EJECUTAR_VALIDACIONES);
+        ExecutorService grupoEjecucion = obtenerGrupoEjecucion();
+        try {
+			evento.getFormulario().getCampos().get().forEach(campoFormulario ->
+					grupoEjecucion.execute(new ValidacionFormularios(campoFormulario.getKey(), campoFormulario.getValue())));
+		} finally {
+			if (grupoEjecucion != null) grupoEjecucion.shutdown();
+		}
 
         if (!evento.getFormulario().isValidacionExitosa()) return false;
 
@@ -117,37 +112,27 @@ public class Eventos implements Callable<ObjectNode> {
         // Validar que el evento existe.
         if (!evento.poseeTransacciones()) throw new ExcepcionGenerica(EVENTO_NO_EXISTE.get());
 
-//        ejecucionParalela(EJECUTAR_TRANSACCIONES);
-
-		for (Transaccion transaccion : evento.getTransacciones())
-					new EjecucionTransacciones(transaccion).run();
+		ExecutorService grupoEjecucion = obtenerGrupoEjecucion();
+		try {
+			List<Future<Void>> l = new ArrayList<>();
+			for (Transaccion transaccion : evento.getTransacciones()) {
+				l.add(grupoEjecucion.submit(new EjecucionTransacciones(transaccion)));
+			}
+			for (Future<Void> f : l) f.get();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		} finally {
+			if (grupoEjecucion != null) grupoEjecucion.shutdown();
+		}
 
     }
-    
-    /**
-     * 
-     * @param moduloAEjecutar
-     * @throws Exception
-     */
-//    private void ejecucionParalela(String moduloAEjecutar) {
-//
-//    	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat(evento.getNombreEvento() + "-%d").setDaemon(true).build();
-//        ExecutorService ejecucionParalelas = Executors.newFixedThreadPool(10, threadFactoryBuilder);
-//
-//        try {
-//            if (EJECUTAR_VALIDACIONES.equals(moduloAEjecutar)) {
-//            	evento.getFormulario().getCampos().get().forEach(campoFormulario ->
-//					ejecucionParalelas.execute(new ValidacionFormularios(campoFormulario.getKey(), campoFormulario.getValue())));
-//            } else if (EJECUTAR_TRANSACCIONES.equals(moduloAEjecutar)) {
-//            	for (Transaccion transaccion : evento.getTransacciones())
-//					ejecucionParalelas.execute(new EjecucionTransacciones(transaccion));
-//            }
-//
-//        } finally {
-//            if (ejecucionParalelas != null) ejecucionParalelas.shutdown();
-//        }
-//
-//    }
+
+    private ExecutorService obtenerGrupoEjecucion() {
+		final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat(evento.getNombreEvento() + "-%d").setDaemon(true).build();
+        return Executors.newFixedThreadPool(10, threadFactoryBuilder);
+	}
     
     /*
      * Para consultas con resultado en jerarquía
@@ -161,9 +146,7 @@ public class Eventos implements Callable<ObjectNode> {
     // =========================== FORMULARIOS =================================== //
     // =========================================================================== //
 	
-	private class ValidacionFormularios
-//			implements Runnable
-	{
+	private class ValidacionFormularios implements Runnable {
 
 		private final String columnName;
 	    private final InformacionCampo campo;
@@ -173,7 +156,7 @@ public class Eventos implements Callable<ObjectNode> {
 	        this.campo = campo;
 	    } 
 	    
-//	    @Override
+	    @Override
 	    public void run() {
 	    	try {			
 	    		procesarFormulario();
@@ -222,7 +205,7 @@ public class Eventos implements Callable<ObjectNode> {
     // ============================== TRANSACCIONES ============================== //
     // =========================================================================== //
 	
-	private class EjecucionTransacciones implements Runnable {
+	private class EjecucionTransacciones implements Callable<Void> {
 
 		private final Transaccion transaccion;
 
@@ -231,9 +214,10 @@ public class Eventos implements Callable<ObjectNode> {
 	    }
 
 	    @Override
-	    public void run() {
+	    public Void call() {
 	    	try {
 	    		ejecutarTransaccion();
+				return null;
 			} catch (Exception e) {
 				Throwable excepcionReal = e.getCause();
 				if (excepcionReal != null) {
@@ -248,11 +232,11 @@ public class Eventos implements Callable<ObjectNode> {
 		 *
 		 */
 	    private void ejecutarTransaccion() {
-	        
+
 	        // Extraer los valores recibidos desde el cliente (navegador web, dispositivo móvil)
 	        // y guardarlos en una lista para enviarlos a la sentencia preparada
 			transaccion.setParametrosTransaccion(
-				transaccion.getFiltrosSentencia().stream()
+				transaccion.getFiltrosSentencia().stream().parallel()
 					.map(filtro -> evento.getFormulario().getCampos().get()
 							.filter(campo -> campo.getKey().equals(filtro))
 							.map(campo -> isNotBlank(campo.getValue().getValorPorDefecto()) ? campo.getValue().getValorPorDefecto()

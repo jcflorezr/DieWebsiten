@@ -44,7 +44,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     private Function<String, ResultSet> obtenerResultSet = (sentencia) -> sesion.execute(sentencia);
     private BiFunction<SentenciaCassandra, Object[], ResultSet> obtenerResultSetParametros = (sentencia, parametros) -> sesion.execute(sentencia.getSentenciaPreparada().bind(parametros));
 
-    private static final String CASSANDRA_URL = "localhost";
+    private static final String CASSANDRA_URL = "127.0.0.1";
     private static final int CASSANDRA_PORT = 9042;
     private static final ObjectMapper MAPPER = new ObjectMapper();
     
@@ -141,7 +141,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
 		private Estructura(ResultSet resultadoEjecucion, SentenciaCassandra sentencia) {
 			this.resultadoEjecucion = resultadoEjecucion;
-			sentencia.enriquecerSentencia(sesion, resultadoEjecucion, sentencia);
+			synchronized (this) { sentencia.enriquecerSentencia(sesion, resultadoEjecucion, sentencia); }
 			this.sentencia = sentencia;
 		}
 

@@ -7,13 +7,19 @@ import java.util.Map.Entry;
 import com.diewebsiten.core.almacenamiento.dto.Conexion;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 
-public class AlmacenamientoFabrica {
+public class AlmacenamientoFabrica implements AutoCloseable {
 	
 	private static Map<MotoresAlmacenamiento, Conexion> instanciasBasesDeDatos = new EnumMap<>(MotoresAlmacenamiento.class);
 	private Object obj = new Object();
 
-	static {
-		instanciasBasesDeDatos.put(MotoresAlmacenamiento.CASSANDRA, ProveedorCassandra.inicializar());
+	public AlmacenamientoFabrica() {
+		if (instanciasBasesDeDatos.isEmpty()) {
+			synchronized (obj) {
+				if (instanciasBasesDeDatos.isEmpty()) {
+					instanciasBasesDeDatos.put(MotoresAlmacenamiento.CASSANDRA, ProveedorCassandra.inicializar());
+				}
+			}
+		}
 	}
 	
 	public static ProveedorAlmacenamiento obtenerProveedorAlmacenamiento(MotoresAlmacenamiento nombreBaseDeDatos) {
@@ -24,8 +30,8 @@ public class AlmacenamientoFabrica {
 		return infoConexion.getProveedorAlmacenamiento().orElseThrow(() -> infoConexion.getErrorConexion());
 	}
 
-
-	public static void desactivarProveedoresAlmacenamiento() {
+	@Override
+	public void close() {
 		for (Entry<MotoresAlmacenamiento, Conexion> motorAlmacenamiento : instanciasBasesDeDatos.entrySet()) {
 			switch (motorAlmacenamiento.getKey()) {
 				case CASSANDRA:

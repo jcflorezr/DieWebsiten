@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static com.diewebsiten.core.util.Transformaciones.stringToList;
@@ -105,7 +106,7 @@ public class Evento {
 
 	public void setTransacciones(JsonNode transacciones) {
 		this.transacciones = stringToList(transacciones.toString(), Transaccion.class);
-		if (this.transacciones != null) this.poseeTransacciones = true; // La transacción actual sí posee información
+		if (this.transacciones != null && !this.transacciones.isEmpty()) this.poseeTransacciones = true; // La transacción actual sí posee información
 	}
 	
 	public boolean poseeTransacciones() {
@@ -118,5 +119,21 @@ public class Evento {
 
     public void setResultadoFinal(JsonNode resultadoFinal) {
         this.resultadoFinal = (ObjectNode) resultadoFinal;
+    }
+
+
+    @Override
+    public String toString() {
+        return "Evento{" +
+                "nombreSitioWeb='" + nombreSitioWeb + '\'' +
+                ", nombrePagina='" + nombrePagina + '\'' +
+                ", nombreEvento='" + nombreEvento + '\'' +
+                ", idioma='" + idioma + '\'' +
+                ", informacionEvento=" + Arrays.toString(informacionEvento) +
+                ", formulario=" + formulario +
+                ", transacciones=" + transacciones +
+                ", poseeTransacciones=" + poseeTransacciones +
+                ", resultadoFinal=" + resultadoFinal +
+                '}';
     }
 }

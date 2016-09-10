@@ -153,7 +153,7 @@ public class SentenciaCassandra extends Sentencia {
 				.filter(llavePrimaria -> sentencia.getParametrosSentencia().get().noneMatch(parametro -> llavePrimaria.equals(parametro)))
 				.map(columnaIntermedia -> columnasResultado.get().filter(columna -> columna.equals(columnaIntermedia)).findFirst().get())
 				.collect(Collectors.toList()));
-		if (numColumnasResultado > 0 && numColumnasResultado == getNumeroColumnasIntermedias()) {
+		if (getNumeroColumnasIntermedias() > 0 && numColumnasResultado == getNumeroColumnasIntermedias()) {
 			columnasIntermedias.remove(getNumeroColumnasIntermedias() - 1);
 		}
 		// Columnas regulares

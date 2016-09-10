@@ -5,6 +5,7 @@ import com.diewebsiten.core.almacenamiento.dto.Sentencia;
 import com.diewebsiten.core.almacenamiento.dto.Sentencia.TiposResultado;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -77,5 +78,18 @@ public class Transaccion {
 
 	public void setParametrosTransaccion(Object[] parametrosTransaccion) {
 		this.parametrosTransaccion = parametrosTransaccion;
+	}
+
+
+	@Override
+	public String toString() {
+		return "Transaccion{" + "hashCode=" + this.hashCode() + "," +
+				"nombre='" + nombre + '\'' +
+				", motorAlmacenamiento=" + motorAlmacenamiento +
+				", sentencia='" + sentencia + '\'' +
+				", filtrosSentencia=" + filtrosSentencia +
+				", tipoResultado=" + tipoResultado +
+				", parametrosTransaccion=" + Arrays.toString(parametrosTransaccion) +
+				'}';
 	}
 }
