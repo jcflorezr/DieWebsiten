@@ -5,14 +5,16 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.diewebsiten.core.almacenamiento.dto.Conexion;
+import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.fasterxml.jackson.databind.JsonNode;
 
-public class AlmacenamientoFabrica implements AutoCloseable {
+public class Proveedores implements AutoCloseable {
 	
 	private static Map<MotoresAlmacenamiento, Conexion> instanciasBasesDeDatos = new EnumMap<>(MotoresAlmacenamiento.class);
 	private Object obj = new Object();
 
-	public AlmacenamientoFabrica() {
+	public Proveedores() {
 		if (instanciasBasesDeDatos.isEmpty()) {
 			synchronized (obj) {
 				if (instanciasBasesDeDatos.isEmpty()) {
@@ -21,8 +23,14 @@ public class AlmacenamientoFabrica implements AutoCloseable {
 			}
 		}
 	}
+
+	public static JsonNode ejecutarTransaccion(Transaccion transaccion) {
+		MotoresAlmacenamiento motorAlmacenamiento = transaccion.getMotorAlmacenamiento();
+		return obtenerProveedorAlmacenamiento(motorAlmacenamiento).ejecutarTransaccion(transaccion);
+
+	}
 	
-	public static ProveedorAlmacenamiento obtenerProveedorAlmacenamiento(MotoresAlmacenamiento nombreBaseDeDatos) {
+	private static ProveedorAlmacenamiento obtenerProveedorAlmacenamiento(MotoresAlmacenamiento nombreBaseDeDatos) {
 		if (nombreBaseDeDatos == null) {
 			throw new ExcepcionGenerica("El nombre del motor de almacenamiento a obtener no puede ser nulo");
 		}

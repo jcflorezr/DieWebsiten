@@ -7,8 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
-import com.diewebsiten.core.almacenamiento.AlmacenamientoFabrica;
-import com.diewebsiten.core.almacenamiento.ProveedorAlmacenamiento;
+import com.diewebsiten.core.almacenamiento.Proveedores;
 import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
@@ -17,14 +16,11 @@ import com.diewebsiten.core.util.Log;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 public class FachadaEventos {
 	
 	private static Log logger;
-    private static ProveedorAlmacenamiento proveedorAlmacenamiento;
-	
+
     public static void main(String[] args) throws ExcepcionGenerica {
     	new FachadaEventos().iniciarModuloEventos();
     }
@@ -34,7 +30,7 @@ public class FachadaEventos {
     	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("Eventos-%d").setDaemon(true).build();
         ExecutorService ejecucionEventos = Executors.newFixedThreadPool(10, threadFactoryBuilder);
         
-        try (AlmacenamientoFabrica almacenamiento = new AlmacenamientoFabrica()) {
+        try (Proveedores almacenamiento = new Proveedores()) {
         	
         	iniciarLog();
 
@@ -148,10 +144,6 @@ public class FachadaEventos {
             
         } finally {
         	ejecucionEventos.shutdown();
-
-        	// Finalizar la conexión con la base de datos cassandra
-//        	desactivarProveedoresAlmacenamiento();
-
         }
         
     }
@@ -160,10 +152,6 @@ public class FachadaEventos {
     	logger = Log.getInstance();
     }
     
-//    private static void desactivarProveedoresAlmacenamiento() {
-//    	AlmacenamientoFabrica.desactivarProveedoresAlmacenamiento();
-//	}
-    
     /**
      * 
      * @param transaccion
@@ -171,7 +159,7 @@ public class FachadaEventos {
      * @throws Exception
      */
     static JsonNode ejecutarTransaccion(Transaccion transaccion) {
-    	return AlmacenamientoFabrica.obtenerProveedorAlmacenamiento(transaccion.getMotorAlmacenamiento()).ejecutarTransaccion(transaccion);
+    	return Proveedores.ejecutarTransaccion(transaccion);
     }
     
 }

@@ -1,6 +1,6 @@
 package com.diewebsiten.core.eventos.dto;
 
-import com.diewebsiten.core.almacenamiento.AlmacenamientoFabrica.MotoresAlmacenamiento;
+import com.diewebsiten.core.almacenamiento.Proveedores.MotoresAlmacenamiento;
 import com.diewebsiten.core.almacenamiento.dto.Sentencia;
 import com.diewebsiten.core.almacenamiento.dto.Sentencia.TiposResultado;
 import com.fasterxml.jackson.annotation.JsonProperty;

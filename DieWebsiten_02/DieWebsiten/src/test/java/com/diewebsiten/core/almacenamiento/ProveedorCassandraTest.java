@@ -79,14 +79,14 @@ public class ProveedorCassandraTest {
 //                .setTipoResultado(JERARQUÍA);
 
 
-//        try(AlmacenamientoFabrica almacenamiento = new AlmacenamientoFabrica()) {
+//        try(Proveedores almacenamiento = new Proveedores()) {
 //
-//            System.out.println(AlmacenamientoFabrica.obtenerProveedorAlmacenamiento(t2.getMotorAlmacenamiento()).ejecutarTransaccion(t2));
-//            System.out.println(AlmacenamientoFabrica.obtenerProveedorAlmacenamiento(t3.getMotorAlmacenamiento()).ejecutarTransaccion(t3));
-//            System.out.println(AlmacenamientoFabrica.obtenerProveedorAlmacenamiento(t4.getMotorAlmacenamiento()).ejecutarTransaccion(t4));
+//            System.out.println(Proveedores.obtenerProveedorAlmacenamiento(t2.getMotorAlmacenamiento()).ejecutarTransaccion(t2));
+//            System.out.println(Proveedores.obtenerProveedorAlmacenamiento(t3.getMotorAlmacenamiento()).ejecutarTransaccion(t3));
+//            System.out.println(Proveedores.obtenerProveedorAlmacenamiento(t4.getMotorAlmacenamiento()).ejecutarTransaccion(t4));
 //            String json = "{\"tipo_transaccion\":[\"SELECT\",\"DELETE\",\"UPDATE\",\"INSERT\"]}";
-////            assertEquals(json,AlmacenamientoFabrica.obtenerProveedorAlmacenamiento(t.getMotorAlmacenamiento()).ejecutarTransaccion(t).toString());
-//            System.out.println(AlmacenamientoFabrica.obtenerProveedorAlmacenamiento(t.getMotorAlmacenamiento()).ejecutarTransaccion(t));
+////            assertEquals(json,Proveedores.obtenerProveedorAlmacenamiento(t.getMotorAlmacenamiento()).ejecutarTransaccion(t).toString());
+//            System.out.println(Proveedores.obtenerProveedorAlmacenamiento(t.getMotorAlmacenamiento()).ejecutarTransaccion(t));
 //        }
 
     }

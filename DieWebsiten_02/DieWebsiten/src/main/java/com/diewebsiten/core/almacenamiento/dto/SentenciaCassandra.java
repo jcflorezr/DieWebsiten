@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.diewebsiten.core.util.Transformaciones.stringToList;
+import static java.util.stream.Collectors.toList;
 
 public class SentenciaCassandra extends Sentencia {
 
@@ -102,7 +103,6 @@ public class SentenciaCassandra extends Sentencia {
 	}
 
 	/**
-	 * ESTE METODO DEBERIA ESTAR EN LA CLASE SentenciaCassandra
 	 * Tener sentencias preparadas con el fin de reusarlas
 	 * @param sentenciaCQL
 	 * @param nombreTransaccion
@@ -117,8 +117,7 @@ public class SentenciaCassandra extends Sentencia {
 					if (!sentencia.isPresent()) {
 						PreparedStatement sentenciaPreparada = sesion.prepare(sentenciaCQL);
 						List<String> parametrosSentencia = StreamSupport.stream(sentenciaPreparada.getVariables().spliterator(), false)
-								.map(Definition::getName)
-								.collect(Collectors.toList());
+								.map(Definition::getName).collect(toList());
 						sentencia = Optional.of(new SentenciaCassandra(sentenciaPreparada, parametrosSentencia));
 						Sentencia.setSentenciaPreparada(nombreTransaccion, sentencia.get());
 					}
@@ -144,7 +143,7 @@ public class SentenciaCassandra extends Sentencia {
 		Row llavesPrimarias = sesion.execute(sentenciaLlavesPrimarias.getSentenciaPreparada().bind(sentencia.getKeyspaceName().get(), sentencia.getColumnfamilyName().get())).one();
 		int numColumnasResultado = (int) columnasResultado.get().count();
 		if (numColumnasResultado == 1) {
-			sentencia.setColumnasRegulares(columnasResultado.get().collect(Collectors.toList()));
+			sentencia.setColumnasRegulares(columnasResultado.get().collect(toList()));
 		}
 		// Columnas intermedias
 		sentencia.setColumnasIntermedias(Stream.of(stringToList(llavesPrimarias.getString("key_aliases"), String.class),
@@ -152,14 +151,14 @@ public class SentenciaCassandra extends Sentencia {
 				.flatMap(List::stream)
 				.filter(llavePrimaria -> sentencia.getParametrosSentencia().get().noneMatch(parametro -> llavePrimaria.equals(parametro)))
 				.map(columnaIntermedia -> columnasResultado.get().filter(columna -> columna.equals(columnaIntermedia)).findFirst().get())
-				.collect(Collectors.toList()));
+				.collect(toList()));
 		if (getNumeroColumnasIntermedias() > 0 && numColumnasResultado == getNumeroColumnasIntermedias()) {
 			columnasIntermedias.remove(getNumeroColumnasIntermedias() - 1);
 		}
 		// Columnas regulares
 		sentencia.setColumnasRegulares(
 				columnasResultado.get().filter(columna -> sentencia.getColumnasIntermedias().get().noneMatch(columnaIntermedia -> columnaIntermedia.equals(columna)))
-						.collect(Collectors.toList()));
+						.collect(toList()));
 	}
 
 }
