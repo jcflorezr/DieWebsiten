@@ -1,8 +1,8 @@
 
 package com.diewebsiten.core.eventos;
 
-import static com.diewebsiten.core.almacenamiento.dto.Sentencia.TiposResultado.JERARQUÍA_CON_NOMBRES_DE_COLUMNAS;
-import static com.diewebsiten.core.almacenamiento.dto.Sentencia.TiposResultado.PLANO;
+import static com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia.TiposResultado.JERARQUÍA_CON_NOMBRES_DE_COLUMNAS;
+import static com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia.TiposResultado.PLANO;
 import static com.diewebsiten.core.almacenamiento.util.Sentencias.*;
 import static com.diewebsiten.core.eventos.util.Mensajes.*;
 import static com.diewebsiten.core.eventos.util.Mensajes.Evento.*;

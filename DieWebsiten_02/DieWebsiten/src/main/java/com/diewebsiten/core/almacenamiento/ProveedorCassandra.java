@@ -1,11 +1,13 @@
 package com.diewebsiten.core.almacenamiento;
 
-import static com.diewebsiten.core.almacenamiento.dto.Sentencia.TiposResultado;
+import static com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia.TiposResultado;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.diewebsiten.core.almacenamiento.dto.Conexion;
-import com.diewebsiten.core.almacenamiento.dto.SentenciaCassandra;
+import com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencias;
+import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.SentenciaCassandra;
+import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.SentenciasCassandra;
 import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -110,11 +112,13 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
     	try {
 
-    		// ESTE LLAMADO PODRIA SER MEDIANTE UNA FABRICA????
-    		SentenciaCassandra sentencia = new SentenciaCassandra().obtenerSentencia(sesion, sentenciaCQL, nombreTransaccion);
+			SentenciaCassandra sentencia = (SentenciaCassandra) Sentencias.obtenerSentencia(new SentenciasCassandra(sesion, transaccion));
 
-    		if (parametros.length != sentencia.getNumeroParametrosSentencia()) {
-    			throw new ExcepcionGenerica("La sentencia necesita " + sentencia.getNumeroParametrosSentencia() + " parámetros para ser ejecutada.");
+    		// ESTE LLAMADO PODRIA SER MEDIANTE UNA FABRICA????
+//    		SentenciaCassandra sentencia = new SentenciaCassandra().obtenerSentencia(sesion, sentenciaCQL, nombreTransaccion);
+
+    		if (parametros.length != sentencia.numParametrosSentencia()) {
+    			throw new ExcepcionGenerica("La sentencia necesita " + sentencia.numParametrosSentencia() + " parámetros para ser ejecutada.");
     		}
 
     		ResultSet resultadoEjecucion = isEmpty(parametros) ? obtenerResultSet.apply(sentenciaCQL)
@@ -141,7 +145,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
 		private Estructura(ResultSet resultadoEjecucion, SentenciaCassandra sentencia) {
 			this.resultadoEjecucion = resultadoEjecucion;
-			synchronized (this) { sentencia.enriquecerSentencia(sesion, resultadoEjecucion, sentencia); }
+//			synchronized (this) { sentencia.enriquecerSentencia(sesion, resultadoEjecucion, sentencia); }
 			this.sentencia = sentencia;
 		}
 

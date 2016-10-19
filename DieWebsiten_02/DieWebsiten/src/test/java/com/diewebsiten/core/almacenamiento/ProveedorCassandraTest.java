@@ -2,7 +2,7 @@ package com.diewebsiten.core.almacenamiento;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
-import com.diewebsiten.core.almacenamiento.dto.SentenciaCassandra;
+import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.SentenciaCassandra;
 import com.diewebsiten.core.eventos.dto.Transaccion;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,10 +13,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static com.diewebsiten.core.almacenamiento.dto.Sentencia.TiposResultado.JERARQUÍA;
-import static com.diewebsiten.core.almacenamiento.dto.Sentencia.TiposResultado.JERARQUÍA_CON_NOMBRES_DE_COLUMNAS;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -50,7 +46,7 @@ public class ProveedorCassandraTest {
 
     @Test
     public void transaccionExitosa() {
-//        when(transaccion.getSentencia()).thenReturn("sentencia");
+//        when(transaccion.getQueryString()).thenReturn("sentencia");
 //        when(transaccion.getNombre()).thenReturn("nombreSentencia");
 //        when(transaccion.getParametrosTransaccion()).thenReturn(new Object[]{});
 //        when(transaccion.getTipoResultado()).thenReturn(JERARQUÍA_CON_NOMBRES_DE_COLUMNAS);
