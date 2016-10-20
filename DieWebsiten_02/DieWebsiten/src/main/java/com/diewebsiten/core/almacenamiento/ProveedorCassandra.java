@@ -114,13 +114,30 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
 			SentenciaCassandra sentencia = (SentenciaCassandra) Sentencias.obtenerSentencia(new SentenciasCassandra(sesion, transaccion));
 
-    		// ESTE LLAMADO PODRIA SER MEDIANTE UNA FABRICA????
-//    		SentenciaCassandra sentencia = new SentenciaCassandra().obtenerSentencia(sesion, sentenciaCQL, nombreTransaccion);
-
     		if (parametros.length != sentencia.numParametrosSentencia()) {
     			throw new ExcepcionGenerica("La sentencia necesita " + sentencia.numParametrosSentencia() + " parámetros para ser ejecutada.");
     		}
 
+    		// TODO Aqui hay un error de concurrencia
+//			[SITIO WEB: 'localhost'. PÁGINA: 'eventos'. EVENTO: 'ConsultarInfoSitioWeb']
+//			[PARÁMETROS] --> {"sitioweb":"miradorhumadea.com","tipo":"SW","basededatos":"diewebsiten","tipotransaccion":"seLECT"}
+//			[EXCEPCIÓN]  --> com.diewebsiten.core.excepciones.ExcepcionGenerica
+//					[MENSAJE]    --> Error al ejecutar la sentencia CQL --> SELECT tipo, validacion FROM diewebsiten.grupos_de_validaciones WHERE grupovalidacion = ?;'. Parámetros: [null]. Mensaje original --> com.datastax.driver.core.exceptions.InvalidQueryException: Invalid null value for partition key part grupovalidacion
+//			at com.datastax.driver.core.exceptions.InvalidQueryException.copy(InvalidQueryException.java:50)
+//			at com.datastax.driver.core.DriverThrowables.propagateCause(DriverThrowables.java:37)
+//			at com.datastax.driver.core.DefaultResultSetFuture.getUninterruptibly(DefaultResultSetFuture.java:245)
+//			at com.datastax.driver.core.AbstractSession.execute(AbstractSession.java:63)
+//			at com.diewebsiten.core.almacenamiento.ProveedorCassandra.lambda$new$1(ProveedorCassandra.java:47)
+//			at com.diewebsiten.core.almacenamiento.ProveedorCassandra$$Lambda$2/433287555.apply(Unknown Source)
+//			at com.diewebsiten.core.almacenamiento.ProveedorCassandra.ejecutarTransaccion(ProveedorCassandra.java:125)
+//			at com.diewebsiten.core.almacenamiento.Proveedores.ejecutarTransaccion(Proveedores.java:29)
+//			at com.diewebsiten.core.eventos.FachadaEventos.ejecutarTransaccion(FachadaEventos.java:162)
+//			at com.diewebsiten.core.eventos.Eventos.ejecutarTransaccion(Eventos.java:136)
+//			at com.diewebsiten.core.eventos.Eventos$ValidacionFormularios.procesarFormulario(Eventos.java:176)
+//			at com.diewebsiten.core.eventos.Eventos$ValidacionFormularios.call(Eventos.java:157)
+//			at com.diewebsiten.core.eventos.Eventos$ValidacionFormularios.call(Eventos.java:144)
+			// Esto al parecer solo pasa cuando ya se ejecuta desde las transacciones de un evento
+			// sin embargo.. hay que crear unit tests antes de encontrar los errores y seguir refactorizando
     		ResultSet resultadoEjecucion = isEmpty(parametros) ? obtenerResultSet.apply(sentenciaCQL)
 															   : obtenerResultSetParametros.apply(sentencia, parametros);
 

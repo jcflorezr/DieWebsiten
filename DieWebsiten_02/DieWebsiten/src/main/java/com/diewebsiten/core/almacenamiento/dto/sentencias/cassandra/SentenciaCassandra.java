@@ -31,8 +31,8 @@ public class SentenciaCassandra extends Sentencia {
 	private PreparedStatement sentenciaPreparada;
 	private String keyspaceName;
 	private String columnfamilyName;
-	private List<String> columnasIntermedias;
-	private List<String> columnasRegulares;
+	private List<String> columnasIntermedias = new ArrayList<>();
+	private List<String> columnasRegulares = new ArrayList<>();
 
 	// Las siguientes propiedades solo se usa para extraer la informacion
 	// de la sentencia en caso de que 'sentenciaPreparada' no la contenga
@@ -57,10 +57,10 @@ public class SentenciaCassandra extends Sentencia {
 	}
 
 	private void init() {
-		super.setQueryString(sentenciaPreparada.getQueryString().trim().toUpperCase());
+		super.setQueryString(sentenciaPreparada.getQueryString().trim());
 		setKeyspaceName();
 		setColumnfamilyName();
-		setParametrosSentencia();
+		super.setParametrosSentencia(sentenciaPreparada);
 	}
 
 	public PreparedStatement getSentenciaPreparada() {
@@ -81,8 +81,9 @@ public class SentenciaCassandra extends Sentencia {
 	}
 
 	private void setColumnfamilyName() {
-		columnfamilyName = sentenciaPreparada.getVariables().getTable(0);
-		if (isBlank(columnfamilyName)) columnfamilyName = obtenerDatoDesdeSentencia(false, FROM, WHERE, PUNTO_Y_COMA, PUNTO);
+		columnfamilyName = sentenciaPreparada.getVariables().size() > 0
+										? sentenciaPreparada.getVariables().getTable(0)
+										: obtenerDatoDesdeSentencia(false, FROM, WHERE, PUNTO_Y_COMA, PUNTO);
 	}
 
 	public Supplier<Stream<String>> getColumnasIntermedias() {
@@ -127,11 +128,6 @@ public class SentenciaCassandra extends Sentencia {
 
 	public boolean unicaColumnaResultado() {
 		return columnasResultado.size() == 1;
-	}
-
-	private void setParametrosSentencia() {
-		Spliterator<Definition> parametrosSpliterator = sentenciaPreparada.getVariables().spliterator();
-		super.setParametrosSentencia(stream(parametrosSpliterator, false).map(Definition::getName));
 	}
 
 	private void setColumnasResultado() {

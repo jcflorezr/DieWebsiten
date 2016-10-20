@@ -71,7 +71,7 @@ public class Eventos implements Callable<ObjectNode> {
      * @return
      * @throws Exception
      */
-    private boolean validarEvento() {
+    private boolean validarEvento() throws Exception {
         	
     	Transaccion datosValidaciones = new Transaccion(VALIDACIONES_EVENTO.sentencia(), VALIDACIONES_EVENTO.nombre(), JERARQUÍA_CON_NOMBRES_DE_COLUMNAS, evento.getInformacionEvento());
         evento.getFormulario().setCampos(ejecutarTransaccion(datosValidaciones));
@@ -86,8 +86,12 @@ public class Eventos implements Callable<ObjectNode> {
 
         ExecutorService grupoEjecucion = obtenerGrupoEjecucion();
         try {
+        	List<Future<Void>> ejecucionValidaciones = new ArrayList<>();
 			evento.getFormulario().getCampos().get().forEach(campoFormulario ->
-					grupoEjecucion.execute(new ValidacionFormularios(campoFormulario.getKey(), campoFormulario.getValue())));
+					ejecucionValidaciones.add(grupoEjecucion.submit(new ValidacionFormularios(campoFormulario.getKey(), campoFormulario.getValue()))));
+			for (Future<Void> ejecucionValidacion : ejecucionValidaciones) {
+				ejecucionValidacion.get();
+			}
 		} finally {
 			if (grupoEjecucion != null) grupoEjecucion.shutdown();
 		}
@@ -137,7 +141,7 @@ public class Eventos implements Callable<ObjectNode> {
     // =========================== FORMULARIOS =================================== //
     // =========================================================================== //
 	
-	private class ValidacionFormularios implements Runnable {
+	private class ValidacionFormularios implements Callable<Void> {
 
 		private final String columnName;
 	    private final InformacionCampo campo;
@@ -148,9 +152,9 @@ public class Eventos implements Callable<ObjectNode> {
 	    } 
 	    
 	    @Override
-	    public void run() {
+	    public Void call() {
 	    	try {			
-	    		procesarFormulario();
+	    		return procesarFormulario();
 			} catch (Exception e) {
 				Throwable excepcionReal = e.getCause();
 				if (excepcionReal != null) {
@@ -165,7 +169,7 @@ public class Eventos implements Callable<ObjectNode> {
 	     * Recibir los valores de los parámetros de un formulario, luego obtener de
 	     * la base de datos la validación de cada parámetro y por último validar cada parámetro.
 	     */
-	    private void procesarFormulario() {
+	    private Void procesarFormulario() {
 
 	        String grupoValidacionCampo = campo.getGrupoValidacion();
 	        Transaccion datosGruposValidaciones = new Transaccion(GRUPO_VALIDACIONES.sentencia(), GRUPO_VALIDACIONES.nombre(), JERARQUÍA_CON_NOMBRES_DE_COLUMNAS, grupoValidacionCampo);
@@ -186,6 +190,8 @@ public class Eventos implements Callable<ObjectNode> {
 				campo.getTransformaciones()
 					 .forEach(transformacion -> evento.getFormulario().setParametro(columnName, transformarParametro(transformacion, valorParametroActual)));
 			}
+
+			return null;
 
 	    }
 	    
