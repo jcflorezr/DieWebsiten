@@ -2,7 +2,7 @@ package com.diewebsiten.core.almacenamiento;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
-import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.SentenciaCassandra;
+import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.Cassandra;
 import com.diewebsiten.core.eventos.dto.Transaccion;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,11 +13,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
-
 @RunWith(MockitoJUnitRunner.class)
 //@RunWith(PowerMockRunner.class)
-//@PrepareForTest({ProveedorCassandra.class, SentenciaCassandra.class})
+//@PrepareForTest({ProveedorCassandra.class, Cassandra.class})
 public class ProveedorCassandraTest {
 
     @Mock
@@ -28,12 +26,12 @@ public class ProveedorCassandraTest {
     private ResultSet resultadoEjecucion;
 
     @Mock
-    private SentenciaCassandra sentencia;
+    private Cassandra sentencia;
 
     @Mock
     private Function<String, ResultSet> obtenerResultSet;
     @Mock
-    private BiFunction<SentenciaCassandra, Object[], ResultSet> obtenerResultSetParametros;
+    private BiFunction<Cassandra, Object[], ResultSet> obtenerResultSetParametros;
 
     @InjectMocks
     private ProveedorCassandra proveedorCassandra;
@@ -50,8 +48,8 @@ public class ProveedorCassandraTest {
 //        when(transaccion.getNombre()).thenReturn("nombreSentencia");
 //        when(transaccion.getParametrosTransaccion()).thenReturn(new Object[]{});
 //        when(transaccion.getTipoResultado()).thenReturn(JERARQUÍA_CON_NOMBRES_DE_COLUMNAS);
-//        mockStatic(SentenciaCassandra.class);
-////        when(SentenciaCassandra.obtenerSentencia(any(Session.class), anyString(), anyString())).thenReturn(sentencia);
+//        mockStatic(Cassandra.class);
+////        when(Cassandra.obtenerSentencia(any(Session.class), anyString(), anyString())).thenReturn(sentencia);
 //
 //        // NO HE ENCONTRADO LA FORMA DE MOCKEAR EL Function Y EL BiFunction
 //        when(false ? obtenerResultSet.apply(anyString()) : obtenerResultSetParametros.apply(eq(sentencia), anyObject())).thenReturn(resultadoEjecucion);

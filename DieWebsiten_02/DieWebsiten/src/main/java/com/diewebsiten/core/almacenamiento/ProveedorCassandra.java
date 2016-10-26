@@ -1,13 +1,11 @@
 package com.diewebsiten.core.almacenamiento;
 
-import static com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia.TiposResultado;
-
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.diewebsiten.core.almacenamiento.dto.Conexion;
 import com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencias;
-import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.SentenciaCassandra;
-import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.SentenciasCassandra;
+import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.Cassandra;
+import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.CassandraFactory;
 import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,9 +21,12 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia.TiposResultado;
+import static com.diewebsiten.core.almacenamiento.util.Sentencias.LLAVES_PRIMARIAS;
 import static com.diewebsiten.core.util.Transformaciones.agruparValores;
 import static com.diewebsiten.core.util.Transformaciones.ponerObjeto;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -43,8 +44,9 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     private static Session sesion;
     private static Object obj = new Object();
 
-    private Function<String, ResultSet> obtenerResultSet = (sentencia) -> sesion.execute(sentencia);
-    private BiFunction<SentenciaCassandra, Object[], ResultSet> obtenerResultSetParametros = (sentencia, parametros) -> sesion.execute(sentencia.getSentenciaPreparada().bind(parametros));
+	public static Function<String, PreparedStatement> prepararSentencia = (queryString) -> sesion.prepare(queryString);
+    public static Function<String, ResultSet> obtenerResultSet = (sentencia) -> sesion.execute(sentencia);
+    public static BiFunction<Cassandra, Object[], ResultSet> obtenerResultSetParametros = (sentencia, parametros) -> sesion.execute(sentencia.getSentenciaPreparada().bind(parametros));
 
     private static final String CASSANDRA_URL = "127.0.0.1";
     private static final int CASSANDRA_PORT = 9042;
@@ -65,6 +67,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     			if (proveedorCassandra == null) {
 					try {
 						proveedorCassandra = new Conexion().setProveedorAlmacenamiento(new ProveedorCassandra());
+						Sentencias.obtenerSentencia(new CassandraFactory(LLAVES_PRIMARIAS.sentencia(), true));
 					} catch (Exception e) {
 						proveedorCassandra = new Conexion().setErrorConexion(e);
 					}
@@ -112,7 +115,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
     	try {
 
-			SentenciaCassandra sentencia = (SentenciaCassandra) Sentencias.obtenerSentencia(new SentenciasCassandra(sesion, transaccion));
+			Cassandra sentencia = (Cassandra) Sentencias.obtenerSentencia(new CassandraFactory(sentenciaCQL, false));
 
     		if (parametros.length != sentencia.numParametrosSentencia()) {
     			throw new ExcepcionGenerica("La sentencia necesita " + sentencia.numParametrosSentencia() + " parámetros para ser ejecutada.");
@@ -158,9 +161,9 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     	
     	private ObjectNode coleccionActual, resultado = MAPPER.createObjectNode();
     	private ResultSet resultadoEjecucion;
-    	private SentenciaCassandra sentencia;
+    	private Cassandra sentencia;
 
-		private Estructura(ResultSet resultadoEjecucion, SentenciaCassandra sentencia) {
+		private Estructura(ResultSet resultadoEjecucion, Cassandra sentencia) {
 			this.resultadoEjecucion = resultadoEjecucion;
 //			synchronized (this) { sentencia.enriquecerSentencia(sesion, resultadoEjecucion, sentencia); }
 			this.sentencia = sentencia;
@@ -229,7 +232,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     				return null;
     		}
     	}
-    	
+
     }
-    
+
 }

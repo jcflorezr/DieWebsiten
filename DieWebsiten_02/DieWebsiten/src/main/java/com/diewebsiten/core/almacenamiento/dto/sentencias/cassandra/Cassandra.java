@@ -1,24 +1,24 @@
 package com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra;
 
-import com.datastax.driver.core.*;
-import com.datastax.driver.core.ColumnDefinitions.Definition;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.Row;
 import com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static com.diewebsiten.core.almacenamiento.dto.sentencias.SentenciasFactory.guardarNuevaSentencia;
-import static com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.SentenciasCassandra.obtenerSentenciaExistente;
+import static com.diewebsiten.core.almacenamiento.ProveedorCassandra.obtenerResultSetParametros;
+import static com.diewebsiten.core.almacenamiento.ProveedorCassandra.prepararSentencia;
 import static com.diewebsiten.core.almacenamiento.util.Sentencias.LLAVES_PRIMARIAS;
 import static com.diewebsiten.core.util.Transformaciones.stringToList;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.StreamSupport.stream;
 import static org.apache.commons.lang.StringUtils.substringAfter;
 import static org.apache.commons.lang3.StringUtils.*;
 
-public class SentenciaCassandra extends Sentencia {
+public class Cassandra extends Sentencia {
 
 	private static final String FROM = "FROM";
 	private static final String WHERE = "WHERE";
@@ -36,18 +36,18 @@ public class SentenciaCassandra extends Sentencia {
 
 	// Las siguientes propiedades solo se usa para extraer la informacion
 	// de la sentencia en caso de que 'sentenciaPreparada' no la contenga
-	private Session sesion;
 	private List<String> columnasResultado;
 
-	SentenciaCassandra(PreparedStatement sentenciaPreparada) {
-		this.sentenciaPreparada = sentenciaPreparada;
-		init();
+	Cassandra(String queryString, boolean sentenciaSimple) {
+		this.sentenciaPreparada = prepararSentencia.apply(queryString);
+		super.setQueryString(sentenciaPreparada.getQueryString().trim());
+		if (!sentenciaSimple) complementarSentencia();
 	}
 
-	SentenciaCassandra(String queryString, Session sesion) {
-		this.sentenciaPreparada = sesion.prepare(queryString);
-		this.sesion = sesion;
-		init();
+	private void complementarSentencia() {
+		setKeyspaceName();
+		setColumnfamilyName();
+		super.setParametrosSentencia(sentenciaPreparada);
 		setColumnasResultado();
 		if (unicaColumnaResultado()) columnasRegulares = columnasResultado;
 		else {
@@ -56,12 +56,7 @@ public class SentenciaCassandra extends Sentencia {
 		}
 	}
 
-	private void init() {
-		super.setQueryString(sentenciaPreparada.getQueryString().trim());
-		setKeyspaceName();
-		setColumnfamilyName();
-		super.setParametrosSentencia(sentenciaPreparada);
-	}
+	// ====== GETTERS AND SETTERS ====== //
 
 	public PreparedStatement getSentenciaPreparada() {
 		return sentenciaPreparada;
@@ -91,8 +86,8 @@ public class SentenciaCassandra extends Sentencia {
 	}
 
 	private void setColumnasIntermedias() {
-		SentenciaCassandra sentenciaLlavesPrimarias = crearSentenciaSimple(LLAVES_PRIMARIAS.sentencia());
-		Row llavesPrimarias = sesion.execute(sentenciaLlavesPrimarias.getSentenciaPreparada().bind(getKeyspaceName(), getColumnfamilyName())).one();
+		Cassandra sentenciaLlavesPrimarias = new CassandraFactory().obtenerSentenciaCreada(LLAVES_PRIMARIAS.sentencia());
+		Row llavesPrimarias = obtenerResultSetParametros.apply(sentenciaLlavesPrimarias, new Object[]{getKeyspaceName(), getColumnfamilyName()}).one();
 		columnasIntermedias =
 		Stream.of(stringToList(llavesPrimarias.getString(KEY_ALIASES), String.class),
 				stringToList(llavesPrimarias.getString(COLUMN_ALIASES), String.class))
@@ -103,13 +98,6 @@ public class SentenciaCassandra extends Sentencia {
 		if (contieneSoloColumnasIntermedias()) columnasIntermedias.remove(getNumeroColumnasIntermedias() - 1);
 	}
 
-	private boolean contieneSoloColumnasIntermedias() {
-		return getNumeroColumnasIntermedias() > 0 && columnasResultado.size() == getNumeroColumnasIntermedias();
-	}
-
-	private int getNumeroColumnasIntermedias() {
-		return columnasIntermedias.size();
-	}
 
 	public Supplier<Stream<String>> getColumnasRegulares() {
 		return () -> columnasRegulares.stream();
@@ -120,6 +108,16 @@ public class SentenciaCassandra extends Sentencia {
 				.filter(columna -> getColumnasIntermedias().get().
 									noneMatch(columnaIntermedia -> columnaIntermedia.equals(columna)))
 				.collect(toList());
+	}
+
+	// ======== HELPERS ========= //
+
+	private boolean contieneSoloColumnasIntermedias() {
+		return getNumeroColumnasIntermedias() > 0 && columnasResultado.size() == getNumeroColumnasIntermedias();
+	}
+
+	private int getNumeroColumnasIntermedias() {
+		return columnasIntermedias.size();
 	}
 
 	public Supplier<Stream<String>> getColumnasResultado() {
@@ -145,15 +143,6 @@ public class SentenciaCassandra extends Sentencia {
 									? substringBetween(sentenciaCQL, separadores[0], separadores[2])
 									: substringAfter(sentenciaCQL, separadores[0]);
 		return (paraKeySpaceName ? substringBefore(dato, separadores[3]) : substringAfter(dato, separadores[3])).trim();
-	}
-
-	SentenciaCassandra crearSentenciaSimple(String queryString) {
-		SentenciaCassandra sentencia = (SentenciaCassandra) obtenerSentenciaExistente(queryString);
-		if (obtenerSentenciaExistente(queryString) == null) {
-			sentencia = new SentenciaCassandra(sesion.prepare(queryString));
-			guardarNuevaSentencia(sentencia);
-		}
-		return sentencia;
 	}
 
 }

@@ -7,18 +7,13 @@ public abstract class SentenciasFactory {
 
     private static Map<Integer, Sentencia> sentencias = new HashMap<>();
 
-    // Sentencias por defecto para los diferentes motores de bases de datos
-    static {
-
-    }
-
-    public static Sentencia obtenerSentenciaExistente(String queryString) {
+    protected static Sentencia obtenerSentenciaExistente(String queryString) {
         return sentencias.get(queryString.hashCode());
     }
 
-    public static void guardarNuevaSentencia(Sentencia sentenciaPreparada) {
-        int idSentencia = sentenciaPreparada.getQueryString().hashCode();
-        sentencias.put(idSentencia, sentenciaPreparada);
+    protected static void guardarNuevaSentencia(Sentencia sentencia) {
+        int idSentencia = sentencia.getQueryString().hashCode();
+        sentencias.put(idSentencia, sentencia);
     }
 
     protected abstract Sentencia crearSentencia();
