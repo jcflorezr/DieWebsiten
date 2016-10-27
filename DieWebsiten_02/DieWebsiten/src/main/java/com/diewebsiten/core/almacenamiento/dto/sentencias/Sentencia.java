@@ -37,9 +37,8 @@ public class Sentencia {
         return () -> parametrosSentencia.stream();
     }
 
-    public void setParametrosSentencia(PreparedStatement sentenciaPreparada) {
-        Spliterator<Definition> parametrosSpliterator = sentenciaPreparada.getVariables().spliterator();
-        this.parametrosSentencia = stream(parametrosSpliterator, false).map(Definition::getName).collect(toList());
+    public void setParametrosSentencia(List<String> parametrosSentencia) {
+        this.parametrosSentencia = parametrosSentencia;
     }
 
     public int numParametrosSentencia() {
