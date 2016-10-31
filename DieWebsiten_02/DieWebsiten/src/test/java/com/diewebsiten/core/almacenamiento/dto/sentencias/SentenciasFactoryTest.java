@@ -1,7 +1,6 @@
 package com.diewebsiten.core.almacenamiento.dto.sentencias;
 
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.stubbing.OngoingStubbing;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 
@@ -12,13 +11,10 @@ import static org.powermock.api.mockito.PowerMockito.when;
 @PrepareForTest(SentenciasFactory.class)
 public class SentenciasFactoryTest {
 
-    @Mock
-    Sentencia sentencia;
-
     @Test
     public OngoingStubbing<Sentencia> obtenerSentenciaTest() {
         mockStatic(SentenciasFactory.class);
-        return when(SentenciasFactory.obtenerSentenciaExistente(anyString())).thenReturn(sentencia);
+        return when(SentenciasFactory.obtenerSentenciaExistente(anyString()));
     }
 
 }

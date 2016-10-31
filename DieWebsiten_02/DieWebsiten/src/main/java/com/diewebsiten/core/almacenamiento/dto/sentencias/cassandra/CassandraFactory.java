@@ -1,19 +1,20 @@
 package com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra;
 
 import com.datastax.driver.core.ColumnDefinitions.Definition;
+import com.datastax.driver.core.Row;
 import com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia;
 import com.diewebsiten.core.almacenamiento.dto.sentencias.SentenciasFactory;
 
 import java.util.List;
-import java.util.Spliterator;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static com.diewebsiten.core.almacenamiento.ProveedorCassandra.obtenerResultSetParametros;
 import static com.diewebsiten.core.almacenamiento.ProveedorCassandra.prepararSentencia;
+import static com.diewebsiten.core.almacenamiento.util.Sentencias.LLAVES_PRIMARIAS;
+import static com.diewebsiten.core.util.Transformaciones.stringToList;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.StreamSupport.stream;
-import static org.apache.commons.lang.StringUtils.substringAfter;
 import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -37,12 +38,9 @@ public class CassandraFactory extends SentenciasFactory {
 
     private static Object obj = new Object();
 
-    CassandraFactory() {}
-
     public CassandraFactory(String queryString, boolean sentenciaSimple) {
         this.queryString = queryString;
         this.sentenciaSimple = sentenciaSimple;
-        cassandra = new Cassandra();
     }
 
     @Override
@@ -54,7 +52,8 @@ public class CassandraFactory extends SentenciasFactory {
                 if (sentencia == null) {
                     prepararSentencia();
                     if (!sentenciaSimple) complementarSentencia();
-                    guardarNuevaSentencia(sentencia);
+                    guardarNuevaSentencia(cassandra);
+                    sentencia = cassandra;
                 }
             }
         }
@@ -70,12 +69,12 @@ public class CassandraFactory extends SentenciasFactory {
     private void complementarSentencia() {
         guardarNombreBaseDeDatos();
         guardarNombreTabla();
-        guardarParametros();
+        guardarColumnasFiltro();
         guardarColumnasQuery();
         if (queryContieneUnicaColumna()) cassandra.setColumnasRegulares(columnasQuery);
         else {
-            setColumnasIntermedias();
-            setColumnasRegulares();
+            guardarColumnasIntermedias();
+            guardarColumnasRegulares();
         }
     }
 
@@ -92,12 +91,12 @@ public class CassandraFactory extends SentenciasFactory {
         cassandra.setColumnfamilyName(columnfamilyName);
     }
 
-    private void guardarParametros() {
-        Spliterator<Definition> parametrosSpliterator = cassandra.getSentenciaPreparada().getVariables().spliterator();
-        List<String> parametrosSentencia = stream(parametrosSpliterator, false)
+    private void guardarColumnasFiltro() {
+        List<Definition> filtrosSpliterator = cassandra.getSentenciaPreparada().getVariables().asList();
+        List<String> filtrosSentencia = filtrosSpliterator.stream()
                                             .map(Definition::getName)
                                             .collect(toList());
-        cassandra.setParametrosSentencia(parametrosSentencia);
+        cassandra.setFiltrosSentencia(filtrosSentencia);
     }
 
     private void guardarColumnasQuery() {
@@ -110,10 +109,29 @@ public class CassandraFactory extends SentenciasFactory {
         return () -> columnasQuery.stream();
     }
 
+    private void guardarColumnasIntermedias() {
+        Cassandra sentenciaLlavesPrimarias = (Cassandra) obtenerSentenciaExistente(LLAVES_PRIMARIAS.sentencia());
+        Object[] parametrosLlavesPrimarias = {cassandra.getKeyspaceName(), cassandra.getColumnfamilyName()};
+        Row llavesPrimarias = obtenerResultSetParametros.apply(sentenciaLlavesPrimarias, parametrosLlavesPrimarias).one();
+        List<String> columnasIntermedias =
+                Stream.of(stringToList(llavesPrimarias.getString(KEY_ALIASES), String.class),
+                          stringToList(llavesPrimarias.getString(COLUMN_ALIASES), String.class))
+                        .flatMap(List::stream)
+                        .filter(llavePrimaria -> cassandra.getFiltrosSentencia().get().noneMatch(parametro -> llavePrimaria.equals(parametro)))
+                        .map(columnaIntermedia -> getColumnasQuery().get().filter(columna -> columna.equals(columnaIntermedia)).findFirst().get())
+                        .collect(toList());
+        if (queryContieneSoloColumnasIntermedias(columnasIntermedias)) convertirUltimaColumnaARegular(columnasIntermedias);
+        cassandra.setColumnasIntermedias(columnasIntermedias);
+    }
 
-
-
-
+    private void guardarColumnasRegulares() {
+        List<String> columnasRegulares =
+            getColumnasQuery().get()
+                .filter(columna -> cassandra.getColumnasIntermedias().get().
+                        noneMatch(columnaIntermedia -> columnaIntermedia.equals(columna)))
+                .collect(toList());
+        cassandra.setColumnasRegulares(columnasRegulares);
+    }
 
     private String obtenerDatoDesdeSentencia(boolean paraKeySpaceName, String... separadores) {
         String dato = contains(queryString, separadores[1])
@@ -124,24 +142,17 @@ public class CassandraFactory extends SentenciasFactory {
         return (paraKeySpaceName ? substringBefore(dato, separadores[3]) : substringAfter(dato, separadores[3])).trim();
     }
 
-
-    public boolean queryContieneUnicaColumna() {
+    private boolean queryContieneUnicaColumna() {
         return columnasQuery.size() == 1;
     }
 
-
-    // ======== HELPERS ========= //
-
-    private boolean contieneSoloColumnasIntermedias() {
-        return getNumeroColumnasIntermedias() > 0 && columnasQuery.size() == getNumeroColumnasIntermedias();
+    private boolean queryContieneSoloColumnasIntermedias(List<String> columnasIntermedias) {
+        int numColumnasIntermedias = columnasIntermedias.size();
+        return numColumnasIntermedias > 0 && columnasQuery.size() == numColumnasIntermedias;
     }
 
-    private int getNumeroColumnasIntermedias() {
-        return columnasIntermedias.size();
-    }
-
-    static Cassandra obtenerSentenciaCreada(String queryString) {
-        return (Cassandra) obtenerSentenciaExistente(queryString);
+    private void convertirUltimaColumnaARegular(List<String> columnasIntermedias) {
+        columnasIntermedias.remove(columnasIntermedias.size() - 1);
     }
 
 }

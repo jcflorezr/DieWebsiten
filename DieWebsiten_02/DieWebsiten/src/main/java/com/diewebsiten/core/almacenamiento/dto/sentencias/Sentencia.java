@@ -1,21 +1,14 @@
 package com.diewebsiten.core.almacenamiento.dto.sentencias;
 
-import com.datastax.driver.core.ColumnDefinitions.Definition;
-import com.datastax.driver.core.PreparedStatement;
-
 import java.util.List;
-import java.util.Spliterator;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.StreamSupport.stream;
 
 public class Sentencia {
 
     private String nombre;
     private String queryString;
-    private List<String> parametrosSentencia;
+    private List<String> filtrosSentencia;
 
     public String getNombre() {
         return nombre;
@@ -33,16 +26,16 @@ public class Sentencia {
         this.queryString = queryString;
     }
 
-    public Supplier<Stream<String>> getParametrosSentencia() {
-        return () -> parametrosSentencia.stream();
+    public Supplier<Stream<String>> getFiltrosSentencia() {
+        return () -> filtrosSentencia.stream();
     }
 
-    public void setParametrosSentencia(List<String> parametrosSentencia) {
-        this.parametrosSentencia = parametrosSentencia;
+    public void setFiltrosSentencia(List<String> parametrosSentencia) {
+        this.filtrosSentencia = parametrosSentencia;
     }
 
     public int numParametrosSentencia() {
-        return parametrosSentencia.size();
+        return filtrosSentencia.size();
     }
 
     public enum TiposResultado {
