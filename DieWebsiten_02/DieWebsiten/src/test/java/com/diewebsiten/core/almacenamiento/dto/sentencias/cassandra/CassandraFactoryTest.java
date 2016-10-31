@@ -19,10 +19,12 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Spliterator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 import static org.apache.commons.lang3.StringUtils.*;
 import static org.junit.Assert.assertEquals;
@@ -38,6 +40,8 @@ public class CassandraFactoryTest {
     private static final String SENTENCIA_COMPLETA = "SELECT transaccion, motoralmacenamiento, sentencia, filtrossentencia, tiporesultado " +
                                                      "FROM diewebsiten.eventos " +
                                                      "WHERE sitioweb = ? AND pagina = ? AND evento = ?;";
+    private static final String SENTENCIA_UNICA_COLUMNA = "SELECT keyspaces FROM diewebsiten.sitiosweb WHERE sitioweb = ?;";
+    private static final String SENTENCIA_CON_COLUMNAS_PRIMARIAS = "SELECT tipo, validacion FROM diewebsiten.grupos_de_validaciones WHERE grupovalidacion = ?;";
     private static final int CONSTRUCTOR_CLASE_DEFINITION = 0;
     private static final String AND = "AND";
     private static final String FROM = "FROM";
@@ -68,37 +72,82 @@ public class CassandraFactoryTest {
 
     @Test
     public void crearSentenciaCompleta() throws Exception {
-
-        boolean sentenciaSimple = false;
-        inicializarSentencia(SENTENCIA_COMPLETA, sentenciaSimple);
-
-        mockearSentenciaExistente(null);
-        mockearSentenciaPreparada();
-        mockearNombreBaseDeDatosYNombreTabla(0, null);
-        mockearColumnasFiltro(SENTENCIA_COMPLETA);
-
-        String keyAliases = "[\"sitioweb\"]";
-        String columnAliases = "[\"pagina\", \"evento\", \"transaccion\"]";
-        mockearColumnasIntermediasYRegulares(keyAliases, columnAliases);
-
-        Cassandra sentenciaCassandra = (Cassandra) cassandraFactory.crearSentencia();
-        Cassandra sentenciaCassandraMock = crearObjetoSentenciaCassandra();
-        sentenciaCassandraMock.setQueryString(SENTENCIA_COMPLETA);
-        sentenciaCassandraMock.setKeyspaceName("diewebsiten");
-        sentenciaCassandraMock.setColumnfamilyName("eventos");
-        sentenciaCassandraMock.setFiltrosSentencia(asList("sitioweb", "pagina", "eventos"));
-        sentenciaCassandraMock.setColumnasIntermedias(asList("transaccion"));
-        sentenciaCassandraMock.setColumnasRegulares(asList("motoralmacenamiento", "sentencia", "filtrossentencia", "tiporesultado"));
-
-        assertEquals(sentenciaCassandraMock, sentenciaCassandra);
+        DatosSentencia datosSentencia = new DatosSentencia()
+                .queryString(SENTENCIA_COMPLETA)
+                .sentenciaSimple(false)
+                .sentenciaRetorno(null)
+                .numColumnDefinitions(0)
+                .keyAliases("[\"sitioweb\"]")
+                .columnAliases("[\"pagina\", \"evento\", \"transaccion\"]")
+                .keyspaceName("diewebsiten")
+                .columnFamilyName("eventos")
+                .filtrosSentencia(asList("sitioweb", "pagina", "evento"))
+                .columnasIntermedias(asList("transaccion"))
+                .columnasRegulares(asList("motoralmacenamiento", "sentencia", "filtrossentencia", "tiporesultado"));
+        probarSentencia(datosSentencia);
     }
 
-    // TODO: test con sentencia de unica columna
+    @Test
+    public void crearSentenciaConUnicaColumnaQuery() throws Exception {
+        DatosSentencia datosSentencia = new DatosSentencia()
+                .queryString(SENTENCIA_UNICA_COLUMNA)
+                .sentenciaSimple(false)
+                .sentenciaRetorno(null)
+                .numColumnDefinitions(1)
+                .keyAliases("[\"sitioweb\"]")
+                .columnAliases(null)
+                .keyspaceName("diewebsiten")
+                .columnFamilyName("sitiosweb")
+                .filtrosSentencia(asList("sitioweb"))
+                .columnasIntermedias(new ArrayList<>())
+                .columnasRegulares(asList("keyspaces"));
+        probarSentencia(datosSentencia);
+    }
+
+    @Test
+    public void crearSentenciaConSoloColumnasPrimarias() throws Exception {
+        DatosSentencia datosSentencia = new DatosSentencia()
+                .queryString(SENTENCIA_CON_COLUMNAS_PRIMARIAS)
+                .sentenciaSimple(false)
+                .sentenciaRetorno(null)
+                .numColumnDefinitions(1)
+                .keyAliases("[\"grupo\"]")
+                .columnAliases("[\"tipo\", \"validacion\"]")
+                .keyspaceName("diewebsiten")
+                .columnFamilyName("grupos_de_validaciones")
+                .filtrosSentencia(asList("grupovalidacion"))
+                .columnasIntermedias(asList("tipo", "validacion"))
+                .columnasRegulares(new ArrayList<>());
+        probarSentencia(datosSentencia);
+    }
+
     // TODO: test con sentencia que solo contenga columnas intermedias
     // TODO: test con sentencia existente
 
-    private void inicializarSentencia(String queryString, boolean sentenciaSimple) {
-        cassandraFactory = new CassandraFactory(queryString, sentenciaSimple);
+    private void probarSentencia(DatosSentencia datosSentencia) throws Exception {
+
+        String queryString = datosSentencia.getQueryString();
+        cassandraFactory = new CassandraFactory(queryString, datosSentencia.isSentenciaSimple());
+
+        mockearSentenciaExistente(datosSentencia.getSentenciaRetorno());
+        mockearSentenciaPreparada();
+        mockearNombreBaseDeDatosYNombreTabla(datosSentencia.getNumColumnDefinitions(), queryString);
+        mockearColumnasFiltro(queryString);
+
+        mockearColumnasIntermediasYRegulares(datosSentencia.getKeyAliases(), datosSentencia.getColumnAliases());
+
+        Cassandra sentenciaCassandra = (Cassandra) cassandraFactory.crearSentencia();
+
+        assertEquals(queryString, sentenciaCassandra.getQueryString());
+        assertEquals(datosSentencia.getKeyspaceName(), sentenciaCassandra.getKeyspaceName());
+        assertEquals(datosSentencia.getColumnFamilyName(), sentenciaCassandra.getColumnfamilyName());
+        List<String> filtrosSentencia = sentenciaCassandra.getFiltrosSentencia().get().collect(toList());
+        assertEquals(datosSentencia.getFiltrosSentencia(), filtrosSentencia);
+        List<String> columnasIntermedias = sentenciaCassandra.getColumnasIntermedias().get().collect(toList());
+        assertEquals(datosSentencia.getColumnasIntermedias(), columnasIntermedias);
+        List<String> columnasRegulares = sentenciaCassandra.getColumnasRegulares().get().collect(toList());
+        assertEquals(datosSentencia.getColumnasRegulares(), columnasRegulares);
+
     }
 
     private void mockearSentenciaExistente(Sentencia sentenciaRetorno) {
@@ -146,11 +195,121 @@ public class CassandraFactoryTest {
                 : contains(queryString, separadores[2])
                 ? substringBetween(queryString, separadores[0], separadores[2])
                 : substringAfter(queryString, separadores[0]);
-        return (substringBefore(dato, separadores[3])).trim();
+        return (substringAfter(dato, separadores[3])).trim();
     }
 
-    private Cassandra crearObjetoSentenciaCassandra() {
-        return new Cassandra();
+    private class DatosSentencia {
+
+        private String queryString;
+        private boolean sentenciaSimple;
+        private Sentencia sentenciaRetorno;
+        private int numColumnDefinitions;
+        private String keyAliases;
+        private String columnAliases;
+        private String keyspaceName;
+        private String columnFamilyName;
+        private List<String> filtrosSentencia;
+        private List<String> columnasIntermedias;
+        private List<String> columnasRegulares;
+
+        public String getQueryString() {
+            return queryString;
+        }
+
+        public DatosSentencia queryString(String queryString) {
+            this.queryString = queryString;
+            return this;
+        }
+
+        public boolean isSentenciaSimple() {
+            return sentenciaSimple;
+        }
+
+        public DatosSentencia sentenciaSimple(boolean sentenciaSimple) {
+            this.sentenciaSimple = sentenciaSimple;
+            return this;
+        }
+
+        public Sentencia getSentenciaRetorno() {
+            return sentenciaRetorno;
+        }
+
+        public DatosSentencia sentenciaRetorno(Sentencia sentenciaRetorno) {
+            this.sentenciaRetorno = sentenciaRetorno;
+            return this;
+        }
+
+        public int getNumColumnDefinitions() {
+            return numColumnDefinitions;
+        }
+
+        public DatosSentencia numColumnDefinitions(int numColumnDefinitions) {
+            this.numColumnDefinitions = numColumnDefinitions;
+            return this;
+        }
+
+        public String getKeyAliases() {
+            return keyAliases;
+        }
+
+        public DatosSentencia keyAliases(String keyAliases) {
+            this.keyAliases = keyAliases;
+            return this;
+        }
+
+        public String getColumnAliases() {
+            return columnAliases;
+        }
+
+        public DatosSentencia columnAliases(String columnAliases) {
+            this.columnAliases = columnAliases;
+            return this;
+        }
+
+        public String getKeyspaceName() {
+            return keyspaceName;
+        }
+
+        public DatosSentencia keyspaceName(String keyspaceName) {
+            this.keyspaceName = keyspaceName;
+            return this;
+        }
+
+        public String getColumnFamilyName() {
+            return columnFamilyName;
+        }
+
+        public DatosSentencia columnFamilyName(String columnFamilyName) {
+            this.columnFamilyName = columnFamilyName;
+            return this;
+        }
+
+        public List<String> getFiltrosSentencia() {
+            return filtrosSentencia;
+        }
+
+        public DatosSentencia filtrosSentencia(List<String> filtrosSentencia) {
+            this.filtrosSentencia = filtrosSentencia;
+            return this;
+        }
+
+        public List<String> getColumnasIntermedias() {
+            return columnasIntermedias;
+        }
+
+        public DatosSentencia columnasIntermedias(List<String> columnasIntermedias) {
+            this.columnasIntermedias = columnasIntermedias;
+            return this;
+        }
+
+        public List<String> getColumnasRegulares() {
+            return columnasRegulares;
+        }
+
+        public DatosSentencia columnasRegulares(List<String> columnasRegulares) {
+            this.columnasRegulares = columnasRegulares;
+            return this;
+        }
     }
 
 }
