@@ -19,7 +19,6 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Spliterator;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -30,6 +29,7 @@ import static org.apache.commons.lang3.StringUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
 
@@ -41,7 +41,9 @@ public class CassandraFactoryTest {
                                                      "FROM diewebsiten.eventos " +
                                                      "WHERE sitioweb = ? AND pagina = ? AND evento = ?;";
     private static final String SENTENCIA_UNICA_COLUMNA = "SELECT keyspaces FROM diewebsiten.sitiosweb WHERE sitioweb = ?;";
-    private static final String SENTENCIA_CON_COLUMNAS_PRIMARIAS = "SELECT tipo, validacion FROM diewebsiten.grupos_de_validaciones WHERE grupovalidacion = ?;";
+    private static final String SENTENCIA_CON_SOLO_COLUMNAS_PRIMARIAS = "SELECT tipo, validacion FROM diewebsiten.grupos_de_validaciones WHERE grupovalidacion = ?;";
+    private static final String SENTENCIA_SIN_FILTROS = "SELECT tipo_transaccion FROM diewebsiten.tipos_de_transacciones;";
+    private static final String SENTENCIA_LLAVES_PRIMARIAS = "SELECT key_aliases, column_aliases FROM system.schema_columnfamilies WHERE keyspace_name = ? AND columnfamily_name = ?;";
     private static final int CONSTRUCTOR_CLASE_DEFINITION = 0;
     private static final String AND = "AND";
     private static final String FROM = "FROM";
@@ -107,22 +109,74 @@ public class CassandraFactoryTest {
     @Test
     public void crearSentenciaConSoloColumnasPrimarias() throws Exception {
         DatosSentencia datosSentencia = new DatosSentencia()
-                .queryString(SENTENCIA_CON_COLUMNAS_PRIMARIAS)
+                .queryString(SENTENCIA_CON_SOLO_COLUMNAS_PRIMARIAS)
                 .sentenciaSimple(false)
                 .sentenciaRetorno(null)
                 .numColumnDefinitions(1)
-                .keyAliases("[\"grupo\"]")
+                .keyAliases("[\"grupovalidacion\"]")
                 .columnAliases("[\"tipo\", \"validacion\"]")
                 .keyspaceName("diewebsiten")
                 .columnFamilyName("grupos_de_validaciones")
                 .filtrosSentencia(asList("grupovalidacion"))
-                .columnasIntermedias(asList("tipo", "validacion"))
+                .columnasIntermedias(asList("tipo"))
+                .columnasRegulares(asList("validacion"));
+        probarSentencia(datosSentencia);
+    }
+
+    @Test
+    public void crearSentenciaSinFiltros() throws Exception {
+        DatosSentencia datosSentencia = new DatosSentencia()
+                .queryString(SENTENCIA_SIN_FILTROS)
+                .sentenciaSimple(false)
+                .sentenciaRetorno(null)
+                .numColumnDefinitions(1)
+                .keyAliases("[\"tipo_transaccion\"]")
+                .columnAliases(null)
+                .keyspaceName("diewebsiten")
+                .columnFamilyName("tipos_de_transacciones")
+                .filtrosSentencia(new ArrayList<>())
+                .columnasIntermedias(new ArrayList<>())
+                .columnasRegulares(asList("tipo_transaccion"));
+        probarSentencia(datosSentencia);
+    }
+
+    @Test
+    public void crearSentenciaSinPuntoYComa() throws Exception {
+        DatosSentencia datosSentencia = new DatosSentencia()
+                .queryString(chop(SENTENCIA_SIN_FILTROS))
+                .sentenciaSimple(false)
+                .sentenciaRetorno(null)
+                .numColumnDefinitions(1)
+                .keyAliases("[\"tipo_transaccion\"]")
+                .columnAliases(null)
+                .keyspaceName("diewebsiten")
+                .columnFamilyName("tipos_de_transacciones")
+                .filtrosSentencia(new ArrayList<>())
+                .columnasIntermedias(new ArrayList<>())
+                .columnasRegulares(asList("tipo_transaccion"));
+        probarSentencia(datosSentencia);
+    }
+
+    @Test
+    public void crearSentenciaSimple() throws Exception {
+//        "SELECT key_aliases, column_aliases FROM system.schema_columnfamilies WHERE keyspace_name = ? AND columnfamily_name = ?;"
+        DatosSentencia datosSentencia = new DatosSentencia()
+                .queryString(SENTENCIA_LLAVES_PRIMARIAS)
+                .sentenciaSimple(true)
+                .sentenciaRetorno(null)
+                .numColumnDefinitions(0)
+                .keyAliases(null)
+                .columnAliases(null)
+                .keyspaceName(null)
+                .columnFamilyName(null)
+                .filtrosSentencia(new ArrayList<>())
+                .columnasIntermedias(new ArrayList<>())
                 .columnasRegulares(new ArrayList<>());
         probarSentencia(datosSentencia);
     }
 
-    // TODO: test con sentencia que solo contenga columnas intermedias
     // TODO: test con sentencia existente
+    // TODO: test con sentencia simple
 
     private void probarSentencia(DatosSentencia datosSentencia) throws Exception {
 

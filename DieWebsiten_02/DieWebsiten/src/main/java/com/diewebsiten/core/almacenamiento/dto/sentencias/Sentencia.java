@@ -1,5 +1,6 @@
 package com.diewebsiten.core.almacenamiento.dto.sentencias;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -8,7 +9,7 @@ public class Sentencia {
 
     private String nombre;
     private String queryString;
-    private List<String> filtrosSentencia;
+    private List<String> filtrosSentencia = new ArrayList<>();
 
     public String getNombre() {
         return nombre;

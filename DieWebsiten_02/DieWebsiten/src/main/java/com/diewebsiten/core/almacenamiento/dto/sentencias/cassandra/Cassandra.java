@@ -61,29 +61,4 @@ public class Cassandra extends Sentencia {
 		this.columnasRegulares = columnasRegulares;
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-
-		Cassandra cassandra = (Cassandra) o;
-
-		if (keyspaceName != null ? !keyspaceName.equals(cassandra.keyspaceName) : cassandra.keyspaceName != null)
-			return false;
-		if (columnfamilyName != null ? !columnfamilyName.equals(cassandra.columnfamilyName) : cassandra.columnfamilyName != null)
-			return false;
-		if (columnasIntermedias != null ? !columnasIntermedias.equals(cassandra.columnasIntermedias) : cassandra.columnasIntermedias != null)
-			return false;
-		return columnasRegulares != null ? columnasRegulares.equals(cassandra.columnasRegulares) : cassandra.columnasRegulares == null;
-
-	}
-
-	@Override
-	public int hashCode() {
-		int result = keyspaceName != null ? keyspaceName.hashCode() : 0;
-		result = 31 * result + (columnfamilyName != null ? columnfamilyName.hashCode() : 0);
-		result = 31 * result + (columnasIntermedias != null ? columnasIntermedias.hashCode() : 0);
-		result = 31 * result + (columnasRegulares != null ? columnasRegulares.hashCode() : 0);
-		return result;
-	}
 }
