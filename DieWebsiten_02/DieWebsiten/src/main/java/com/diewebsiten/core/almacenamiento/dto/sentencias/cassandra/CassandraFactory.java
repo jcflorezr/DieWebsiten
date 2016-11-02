@@ -31,6 +31,7 @@ public class CassandraFactory extends SentenciasFactory {
     private String queryString;
     private boolean sentenciaSimple;
     private Cassandra cassandra;
+    private Separadores separadores;
 
     // Las siguientes propiedades solo se usa para extraer la informacion
     // de la sentencia en caso de que 'sentenciaPreparada' no la contenga
@@ -80,14 +81,14 @@ public class CassandraFactory extends SentenciasFactory {
 
     private void guardarNombreBaseDeDatos() {
         String keyspaceName = firstNonNull(cassandra.getSentenciaPreparada().getQueryKeyspace(),
-                obtenerDatoDesdeSentencia(true, FROM, WHERE, PUNTO_Y_COMA, PUNTO));
+                obtenerDatoDesdeSentencia(true));
         cassandra.setKeyspaceName(keyspaceName);
     }
 
     private void guardarNombreTabla() {
         String columnfamilyName = cassandra.getSentenciaPreparada().getVariables().size() > 0
                                     ? cassandra.getSentenciaPreparada().getVariables().getTable(0)
-                                    : obtenerDatoDesdeSentencia(false, FROM, WHERE, PUNTO_Y_COMA, PUNTO);
+                                    : obtenerDatoDesdeSentencia(false);
         cassandra.setColumnfamilyName(columnfamilyName);
     }
 
@@ -133,13 +134,14 @@ public class CassandraFactory extends SentenciasFactory {
         cassandra.setColumnasRegulares(columnasRegulares);
     }
 
-    private String obtenerDatoDesdeSentencia(boolean paraKeySpaceName, String... separadores) {
-        String dato = contains(queryString, separadores[1])
-                ? substringBetween(queryString, separadores[0], separadores[1])
-                : contains(queryString, separadores[2])
-                ? substringBetween(queryString, separadores[0], separadores[2])
-                : substringAfter(queryString, separadores[0]);
-        return (paraKeySpaceName ? substringBefore(dato, separadores[3]) : substringAfter(dato, separadores[3])).trim();
+    private String obtenerDatoDesdeSentencia(boolean paraKeySpaceName) {
+        separadores = new Separadores();
+        String dato = contains(queryString, separadores.getWhere())
+                ? substringBetween(queryString, separadores.getFrom(), separadores.getWhere())
+                : contains(queryString, separadores.getPuntoYComa())
+                ? substringBetween(queryString, separadores.getFrom(), separadores.getPuntoYComa())
+                : substringAfter(queryString, separadores.getFrom());
+        return (paraKeySpaceName ? substringBefore(dato, separadores.getPunto()) : substringAfter(dato, separadores.getPunto()).trim());
     }
 
     private boolean queryContieneUnicaColumna() {
@@ -153,6 +155,35 @@ public class CassandraFactory extends SentenciasFactory {
 
     private void convertirUltimaColumnaARegular(List<String> columnasIntermedias) {
         columnasIntermedias.remove(columnasIntermedias.size() - 1);
+    }
+
+    private class Separadores {
+
+        private final String from = "FROM";
+        private final String where = "WHERE";
+        private final String coma = ",";
+        private final String puntoYComa = ";";
+        private final String punto = ".";
+
+        public String getFrom() {
+            return from;
+        }
+
+        public String getWhere() {
+            return where;
+        }
+
+        public String getComa() {
+            return coma;
+        }
+
+        public String getPuntoYComa() {
+            return puntoYComa;
+        }
+
+        public String getPunto() {
+            return punto;
+        }
     }
 
 }
