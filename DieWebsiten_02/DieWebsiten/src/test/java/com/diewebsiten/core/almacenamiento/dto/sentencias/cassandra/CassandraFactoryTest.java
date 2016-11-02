@@ -175,9 +175,6 @@ public class CassandraFactoryTest {
         probarSentencia(datosSentencia);
     }
 
-    // TODO: test con sentencia existente
-    // TODO: test con sentencia simple
-
     private void probarSentencia(DatosSentencia datosSentencia) throws Exception {
 
         String queryString = datosSentencia.getQueryString();
