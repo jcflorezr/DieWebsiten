@@ -20,11 +20,6 @@ import static org.apache.commons.lang3.StringUtils.*;
 
 public class CassandraFactory extends SentenciasFactory {
 
-    private static final String FROM = "FROM";
-    private static final String WHERE = "WHERE";
-    private static final String COMA = ",";
-    private static final String PUNTO_Y_COMA = ";";
-    private static final String PUNTO = ".";
     private static final String KEY_ALIASES = "key_aliases";
     private static final String COLUMN_ALIASES = "column_aliases";
 
@@ -42,6 +37,7 @@ public class CassandraFactory extends SentenciasFactory {
     public CassandraFactory(String queryString, boolean sentenciaSimple) {
         this.queryString = queryString;
         this.sentenciaSimple = sentenciaSimple;
+        separadores = new Separadores();
     }
 
     @Override
@@ -101,7 +97,7 @@ public class CassandraFactory extends SentenciasFactory {
     }
 
     private void guardarColumnasQuery() {
-        columnasQuery = asList(substringBetween(queryString, SPACE, FROM).split(COMA)).stream()
+        columnasQuery = asList(substringBetween(queryString, SPACE, separadores.getFrom()).split(separadores.getComa())).stream()
                                     .map(columna -> columna.trim())
                                     .collect(toList());
     }
@@ -135,13 +131,12 @@ public class CassandraFactory extends SentenciasFactory {
     }
 
     private String obtenerDatoDesdeSentencia(boolean paraKeySpaceName) {
-        separadores = new Separadores();
         String dato = contains(queryString, separadores.getWhere())
                 ? substringBetween(queryString, separadores.getFrom(), separadores.getWhere())
                 : contains(queryString, separadores.getPuntoYComa())
                 ? substringBetween(queryString, separadores.getFrom(), separadores.getPuntoYComa())
                 : substringAfter(queryString, separadores.getFrom());
-        return (paraKeySpaceName ? substringBefore(dato, separadores.getPunto()) : substringAfter(dato, separadores.getPunto()).trim());
+        return (paraKeySpaceName ? substringBefore(dato, separadores.getPunto()) : substringAfter(dato, separadores.getPunto())).trim();
     }
 
     private boolean queryContieneUnicaColumna() {
