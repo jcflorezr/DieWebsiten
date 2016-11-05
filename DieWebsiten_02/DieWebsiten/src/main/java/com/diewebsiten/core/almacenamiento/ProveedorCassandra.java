@@ -2,7 +2,7 @@ package com.diewebsiten.core.almacenamiento;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
-import com.diewebsiten.core.almacenamiento.dto.Conexion;
+import com.datastax.driver.core.exceptions.DriverException;
 import com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencias;
 import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.Cassandra;
 import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.CassandraFactory;
@@ -38,11 +38,8 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
  */
 public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
-    private static volatile Conexion proveedorCassandra;
-
     private static Optional<Cluster> cluster;
     private static Session sesion;
-    private static Object obj = new Object();
 
 	public static Function<String, PreparedStatement> prepararSentencia = (queryString) -> sesion.prepare(queryString);
     public static Function<String, ResultSet> obtenerResultSet = (sentencia) -> sesion.execute(sentencia);
@@ -51,58 +48,27 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     private static final String CASSANDRA_URL = "127.0.0.1";
     private static final int CASSANDRA_PORT = 9042;
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    
-    
-    private ProveedorCassandra() {
-    	conectar();
-    }
-    
-    /*
-     * Unica instancia de la clase ProveedorCassandra.
-     */
-    static Conexion inicializar() {
-    	
-    	if (proveedorCassandra == null) {
-    		synchronized(obj) {
-    			if (proveedorCassandra == null) {
-					try {
-						proveedorCassandra = new Conexion().setProveedorAlmacenamiento(new ProveedorCassandra());
-						Sentencias.obtenerSentencia(new CassandraFactory(LLAVES_PRIMARIAS.sentencia(), true));
-					} catch (Exception e) {
-						proveedorCassandra = new Conexion().setErrorConexion(e);
-					}
-    			}
-    		}
-    	}
-    	
-    	return proveedorCassandra;
-    }
 
-    /**
-     * Establecer una conexión con el motor de base de datos.
-     * 
-     * 1. Establecer los parámetros de conexión al motor de base de datos.
-     * 2. Crear una sesión de conexión a la base de datos.
-     */
-	private static void conectar() {
-		// USAR UN TRY-WITH-RESOURCES AQUI PARA VER SI SÍ FUNCIONA
-		cluster = Optional.ofNullable(Cluster.builder().addContactPoint(CASSANDRA_URL).withPort(CASSANDRA_PORT).build());
-		sesion = cluster.get().connect();
+	ProveedorCassandra(){}
+
+	@Override
+	void conectar() {
+		try {
+			cluster = Optional.ofNullable(Cluster.builder().addContactPoint(CASSANDRA_URL).withPort(CASSANDRA_PORT).build());
+			sesion = cluster.get().connect();
+			Sentencias.obtenerSentencia(new CassandraFactory(LLAVES_PRIMARIAS.sentencia(), true));
+		} catch (DriverException e) {
+			throw new ExcepcionGenerica(e);
+		}
     }
     
-    /**
-     * Cerrar la conexión con el motor de base de datos.
-     */
 	@Override
 	void desconectar() {
 		cluster.ifPresent(Cluster::close);
     }
 	
-	/**
-     * 
-     */
     @Override
-    public JsonNode ejecutarTransaccion(Transaccion transaccion) throws ExcepcionGenerica {
+	JsonNode ejecutarTransaccion(Transaccion transaccion) throws ExcepcionGenerica {
 
 		String nombreTransaccion = transaccion.getNombre();
 		String sentenciaCQL = transaccion.getSentencia();

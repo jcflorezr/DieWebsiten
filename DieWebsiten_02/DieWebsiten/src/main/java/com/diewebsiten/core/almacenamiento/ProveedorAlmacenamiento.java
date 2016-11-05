@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public abstract class ProveedorAlmacenamiento {
 
-	public abstract JsonNode ejecutarTransaccion(Transaccion transaccion);
+	abstract void conectar();
 
 	abstract void desconectar();
+
+	abstract JsonNode ejecutarTransaccion(Transaccion transaccion);
 
 }
