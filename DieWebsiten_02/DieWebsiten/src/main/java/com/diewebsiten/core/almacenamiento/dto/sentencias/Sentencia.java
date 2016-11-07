@@ -39,8 +39,4 @@ public class Sentencia {
         return filtrosSentencia.size();
     }
 
-    public enum TiposResultado {
-        PLANO, JERARQUÍA, JERARQUÍA_CON_NOMBRES_DE_COLUMNAS
-    }
-
 }

@@ -1,4 +1,4 @@
-package com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra;
+package com.diewebsiten.core.almacenamiento.dto.sentencias.columnares.cassandra;
 
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.Row;
@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static com.diewebsiten.core.almacenamiento.ProveedorCassandra.obtenerResultSetParametros;
+import static com.diewebsiten.core.almacenamiento.ProveedorCassandra.obtenerResultSet;
 import static com.diewebsiten.core.almacenamiento.ProveedorCassandra.prepararSentencia;
 import static com.diewebsiten.core.almacenamiento.util.Sentencias.LLAVES_PRIMARIAS;
 import static com.diewebsiten.core.util.Transformaciones.stringToList;
@@ -109,7 +109,7 @@ public class CassandraFactory extends SentenciasFactory {
     private void guardarColumnasIntermedias() {
         Cassandra sentenciaLlavesPrimarias = (Cassandra) obtenerSentenciaExistente(LLAVES_PRIMARIAS.sentencia());
         Object[] parametrosLlavesPrimarias = {cassandra.getKeyspaceName(), cassandra.getColumnfamilyName()};
-        Row llavesPrimarias = obtenerResultSetParametros.apply(sentenciaLlavesPrimarias, parametrosLlavesPrimarias).one();
+        Row llavesPrimarias = obtenerResultSet(sentenciaLlavesPrimarias, parametrosLlavesPrimarias).one();
         List<String> columnasIntermedias =
                 Stream.of(stringToList(llavesPrimarias.getString(KEY_ALIASES), String.class),
                           stringToList(llavesPrimarias.getString(COLUMN_ALIASES), String.class))
@@ -124,7 +124,7 @@ public class CassandraFactory extends SentenciasFactory {
     private void guardarColumnasRegulares() {
         List<String> columnasRegulares =
             getColumnasQuery().get()
-                .filter(columna -> cassandra.getColumnasIntermedias().get().
+                .filter(columna -> cassandra.getColumnasIntermedias().stream().
                         noneMatch(columnaIntermedia -> columnaIntermedia.equals(columna)))
                 .collect(toList());
         cassandra.setColumnasRegulares(columnasRegulares);

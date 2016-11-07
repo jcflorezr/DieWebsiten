@@ -1,23 +1,6 @@
 
 package com.diewebsiten.core.eventos;
 
-import static com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia.TiposResultado.JERARQUÍA_CON_NOMBRES_DE_COLUMNAS;
-import static com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia.TiposResultado.PLANO;
-import static com.diewebsiten.core.almacenamiento.util.Sentencias.*;
-import static com.diewebsiten.core.eventos.util.Mensajes.*;
-import static com.diewebsiten.core.eventos.util.Mensajes.Evento.*;
-import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario.*;
-import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.transformarParametro;
-import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.validarParametro;
-import static org.apache.commons.lang.StringUtils.isNotBlank;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.*;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import com.diewebsiten.core.eventos.dto.Campo.InformacionCampo;
 import com.diewebsiten.core.eventos.dto.Evento;
 import com.diewebsiten.core.eventos.dto.Transaccion;
@@ -25,7 +8,23 @@ import com.diewebsiten.core.eventos.util.LogEventos;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.*;
+
+import static com.diewebsiten.core.almacenamiento.util.Sentencias.*;
+import static com.diewebsiten.core.eventos.util.Mensajes.ERROR;
+import static com.diewebsiten.core.eventos.util.Mensajes.Evento.EVENTO_NO_EXISTE;
+import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario;
+import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario.CAMPOS_FORMULARIO_NO_EXISTEN;
+import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario.PARAMETROS_FORMULARIO_NO_EXISTEN;
+import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.transformarParametro;
+import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.validarParametro;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 
 /**
@@ -35,8 +34,10 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  * @author Juan Camilo Flórez Román (www.diewebstien.com).
  */
 public class Eventos implements Callable<ObjectNode> {
-    
-    private Evento evento;
+
+	private static final String JERARQUÍA_CON_NOMBRES_DE_COLUMNAS = "JERARQUÍA_CON_NOMBRES_DE_COLUMNAS";
+	private static final String PLANO = "PLANO";
+	private Evento evento;
 
     Eventos(String url, String nombreEvento, String parametros) throws Exception {
         evento = new Evento(url, nombreEvento, parametros);

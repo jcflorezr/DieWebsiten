@@ -1,4 +1,4 @@
-package com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra;
+package com.diewebsiten.core.almacenamiento.dto.sentencias.columnares.cassandra;
 
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
@@ -29,7 +29,6 @@ import static org.apache.commons.lang3.StringUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
 
@@ -234,7 +233,7 @@ public class CassandraFactoryTest {
     }
 
     private void mockearColumnasIntermediasYRegulares(String keyAliases, String columnAliases) {
-        when(ProveedorCassandra.obtenerResultSetParametros.apply(anyObject(), anyObject())).thenReturn(resultSet);
+        when(ProveedorCassandra.obtenerResultSet(anyObject(), anyObject())).thenReturn(resultSet);
         when(resultSet.one()).thenReturn(row);
         when(row.getString(KEY_ALIASES)).thenReturn(firstNonNull(keyAliases, new ArrayList<>()).toString());
         when(row.getString(COLUMN_ALIASES)).thenReturn(firstNonNull(columnAliases, new ArrayList<>()).toString());

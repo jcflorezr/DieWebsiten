@@ -1,14 +1,13 @@
-package com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra;
+package com.diewebsiten.core.almacenamiento.dto.sentencias.columnares.cassandra;
 
 import com.datastax.driver.core.PreparedStatement;
-import com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia;
+import com.diewebsiten.core.almacenamiento.dto.sentencias.columnares.SentenciaColumnar;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 
-public class Cassandra extends Sentencia {
+public class Cassandra extends SentenciaColumnar {
 
 	private PreparedStatement sentenciaPreparada;
 	private String keyspaceName;
@@ -45,16 +44,18 @@ public class Cassandra extends Sentencia {
 		this.columnfamilyName = columnfamilyName;
 	}
 
-	public Supplier<Stream<String>> getColumnasIntermedias() {
-		return () -> columnasIntermedias.stream();
+	@Override
+	public List<String> getColumnasIntermedias() {
+		return Collections.unmodifiableList(columnasIntermedias);
 	}
 
 	void setColumnasIntermedias(List<String> columnasIntermedias) {
 		this.columnasIntermedias = columnasIntermedias;
 	}
 
-	public Supplier<Stream<String>> getColumnasRegulares() {
-		return () -> columnasRegulares.stream();
+	@Override
+	public List<String> getColumnasRegulares() {
+		return Collections.unmodifiableList(columnasRegulares);
 	}
 
 	void setColumnasRegulares(List<String> columnasRegulares) {

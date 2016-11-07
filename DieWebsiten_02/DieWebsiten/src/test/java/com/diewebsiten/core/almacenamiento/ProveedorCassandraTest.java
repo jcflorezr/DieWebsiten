@@ -2,7 +2,7 @@ package com.diewebsiten.core.almacenamiento;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
-import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.Cassandra;
+import com.diewebsiten.core.almacenamiento.dto.sentencias.columnares.cassandra.Cassandra;
 import com.diewebsiten.core.eventos.dto.Transaccion;
 import org.junit.Test;
 import org.junit.runner.RunWith;

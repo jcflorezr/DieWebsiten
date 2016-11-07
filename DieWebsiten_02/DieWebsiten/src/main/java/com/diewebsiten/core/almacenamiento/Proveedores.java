@@ -17,9 +17,6 @@ public class Proveedores implements AutoCloseable {
 	}
 
 	private static ProveedorAlmacenamiento obtenerProveedorAlmacenamiento(MotoresAlmacenamiento nombreBaseDeDatos) {
-		if (nombreBaseDeDatos == null) {
-			throw new ExcepcionGenerica("El nombre del motor de almacenamiento a obtener no puede ser nulo");
-		}
 		ProveedorAlmacenamiento proveedorAlmacenamiento = instanciasBasesDeDatos.get(nombreBaseDeDatos);
 		if (proveedorAlmacenamiento == null) {
 			synchronized (obj) {
@@ -46,9 +43,11 @@ public class Proveedores implements AutoCloseable {
 	}
 
 	public static JsonNode ejecutarTransaccion(Transaccion transaccion) {
-		MotoresAlmacenamiento motorAlmacenamiento = transaccion.getMotorAlmacenamiento();
-		return obtenerProveedorAlmacenamiento(motorAlmacenamiento).ejecutarTransaccion(transaccion);
-
+		MotoresAlmacenamiento nombreBaseDeDatos = transaccion.getMotorAlmacenamiento();
+		if (nombreBaseDeDatos == null) {
+			throw new ExcepcionGenerica("El nombre del motor de almacenamiento a obtener no puede ser nulo");
+		}
+		return obtenerProveedorAlmacenamiento(nombreBaseDeDatos).ejecutarTransaccion(transaccion);
 	}
 
 	@Override

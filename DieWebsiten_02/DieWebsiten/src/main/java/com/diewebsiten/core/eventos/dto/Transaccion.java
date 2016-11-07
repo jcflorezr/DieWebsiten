@@ -1,8 +1,6 @@
 package com.diewebsiten.core.eventos.dto;
 
 import com.diewebsiten.core.almacenamiento.Proveedores.MotoresAlmacenamiento;
-import com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia;
-import com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia.TiposResultado;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
@@ -15,12 +13,12 @@ public class Transaccion {
 	private MotoresAlmacenamiento motorAlmacenamiento;
 	private String sentencia;
 	private List<String> filtrosSentencia;
-	private TiposResultado tipoResultado;
+	private String tipoResultado;
 	private Object[] parametrosTransaccion;
 
 	public Transaccion() {}
 
-	public Transaccion(String sentencia, String nombre, TiposResultado tipoResultado, Object... parametrosTransaccion) {
+	public Transaccion(String sentencia, String nombre, String tipoResultado, Object... parametrosTransaccion) {
 		this.nombre = nombre;
 		this.parametrosTransaccion = parametrosTransaccion;
 		this.sentencia = sentencia;
@@ -64,11 +62,11 @@ public class Transaccion {
 	}
 
 	@JsonProperty("tiporesultado")
-	public Sentencia.TiposResultado getTipoResultado() {
+	public String getTipoResultado() {
 		return tipoResultado;
 	}
 
-	public void setTipoResultado(Sentencia.TiposResultado tipoResultado) {
+	public void setTipoResultado(String tipoResultado) {
 		this.tipoResultado = tipoResultado;
 	}
 
@@ -79,7 +77,6 @@ public class Transaccion {
 	public void setParametrosTransaccion(Object[] parametrosTransaccion) {
 		this.parametrosTransaccion = parametrosTransaccion;
 	}
-
 
 	@Override
 	public String toString() {

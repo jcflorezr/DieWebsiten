@@ -4,28 +4,23 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.exceptions.DriverException;
 import com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencias;
-import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.Cassandra;
-import com.diewebsiten.core.almacenamiento.dto.sentencias.cassandra.CassandraFactory;
+import com.diewebsiten.core.almacenamiento.dto.sentencias.columnares.cassandra.Cassandra;
+import com.diewebsiten.core.almacenamiento.dto.sentencias.columnares.cassandra.CassandraFactory;
 import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Throwables;
+import com.google.common.reflect.TypeToken;
 
+import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-import static com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencia.TiposResultado;
+import static com.diewebsiten.core.almacenamiento.ResultadoTransaccion.*;
+import static com.diewebsiten.core.almacenamiento.ResultadoTransaccion.TiposResultado.PLANO;
 import static com.diewebsiten.core.almacenamiento.util.Sentencias.LLAVES_PRIMARIAS;
-import static com.diewebsiten.core.util.Transformaciones.agruparValores;
-import static com.diewebsiten.core.util.Transformaciones.ponerObjeto;
-import static java.util.stream.Collectors.toList;
+import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -42,12 +37,11 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     private static Session sesion;
 
 	public static Function<String, PreparedStatement> prepararSentencia = (queryString) -> sesion.prepare(queryString);
-    public static Function<String, ResultSet> obtenerResultSet = (sentencia) -> sesion.execute(sentencia);
-    public static BiFunction<Cassandra, Object[], ResultSet> obtenerResultSetParametros = (sentencia, parametros) -> sesion.execute(sentencia.getSentenciaPreparada().bind(parametros));
 
     private static final String CASSANDRA_URL = "127.0.0.1";
     private static final int CASSANDRA_PORT = 9042;
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+	private static final List<String> TIPOS_NUMERICOS = asList("Integer","Long","Float","Double","BigDecimal","BigInteger");
+
 
 	ProveedorCassandra(){}
 
@@ -73,7 +67,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 		String nombreTransaccion = transaccion.getNombre();
 		String sentenciaCQL = transaccion.getSentencia();
     	Object[] parametros = Optional.ofNullable(transaccion.getParametrosTransaccion()).orElse(new Object[]{});
-    	TiposResultado tipoResultado = transaccion.getTipoResultado();
+    	TiposResultado tipoResultado = obtenerTipoResultado(transaccion.getTipoResultado());
 
     	if (isBlank(nombreTransaccion)) {
     		throw new ExcepcionGenerica("El nombre de la sentencia no puede venir vacío.");
@@ -81,7 +75,8 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
     	try {
 
-			Cassandra sentencia = (Cassandra) Sentencias.obtenerSentencia(new CassandraFactory(sentenciaCQL, false));
+			boolean esSentenciaSimple = tipoResultado == PLANO ? true : false;
+			Cassandra sentencia = (Cassandra) Sentencias.obtenerSentencia(new CassandraFactory(sentenciaCQL, esSentenciaSimple));
 
     		if (parametros.length != sentencia.numParametrosSentencia()) {
     			throw new ExcepcionGenerica("La sentencia necesita " + sentencia.numParametrosSentencia() + " parámetros para ser ejecutada.");
@@ -107,98 +102,50 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 //			at com.diewebsiten.core.eventos.Eventos$ValidacionFormularios.call(Eventos.java:144)
 			// Esto al parecer solo pasa cuando ya se ejecuta desde las transacciones de un evento
 			// sin embargo.. hay que crear unit tests antes de encontrar los errores y seguir refactorizando
-    		ResultSet resultadoEjecucion = isEmpty(parametros) ? obtenerResultSet.apply(sentenciaCQL)
-															   : obtenerResultSetParametros.apply(sentencia, parametros);
+
+    		ResultSet resultadoEjecucion = obtenerResultSet(sentencia, parametros);
 
     		if (resultadoEjecucion.isExhausted()) {
-    			if (TiposResultado.PLANO.equals(tipoResultado)) return MAPPER.createArrayNode();
-    			else return MAPPER.createObjectNode();
+    			return (tipoResultado == PLANO) ? arrayNodeVacio() : objectNodeVacio();
     		}
 
-			return new Estructura(resultadoEjecucion, sentencia).obtenerResultado(tipoResultado);
+			Stream<Map<String, Object>> resultadoTransformado = transformarResultadoEjecucion(resultadoEjecucion);
+			return new ResultadoTransaccion(resultadoTransformado, sentencia, tipoResultado).obtenerResultado();
 
 		} catch (Throwable e) {
 			// ES NECESARIO IMPRIMIR LOS PARAMETROS??? PUESTO QUE YA SE IMPRIMIRÁN DESDE LOS EVENTOS
-			throw new ExcepcionGenerica("Error al ejecutar la sentencia CQL --> " + sentenciaCQL + "'. Parámetros: " + (parametros != null ? Arrays.asList(parametros).toString() : "{}") + ". Mensaje original --> " + Throwables.getStackTraceAsString(e));
+			throw new ExcepcionGenerica("Error al ejecutar la sentencia CQL --> " + sentenciaCQL + "'. Parámetros: " + (parametros != null ? asList(parametros).toString() : "{}") + ". Mensaje original --> " + Throwables.getStackTraceAsString(e));
 		}
     }
 
-    private class Estructura {
-    	
-    	private ObjectNode coleccionActual, resultado = MAPPER.createObjectNode();
-    	private ResultSet resultadoEjecucion;
-    	private Cassandra sentencia;
+	public static ResultSet obtenerResultSet(Cassandra sentencia, Object[] parametros) {
+		return isEmpty(parametros) ? sesion.execute(sentencia.getQueryString())
+				: sesion.execute(sentencia.getSentenciaPreparada().bind(parametros));
+	}
 
-		private Estructura(ResultSet resultadoEjecucion, Cassandra sentencia) {
-			this.resultadoEjecucion = resultadoEjecucion;
-//			synchronized (this) { sentencia.enriquecerSentencia(sesion, resultadoEjecucion, sentencia); }
-			this.sentencia = sentencia;
+	private Stream<Map<String, Object>> transformarResultadoEjecucion(ResultSet resultadoEjecucion) {
+		return resultadoEjecucion.all().stream()
+				.map(fila -> fila.getColumnDefinitions().asList().stream()
+						.collect(toMap(Definition::getName, columna -> obtenerValorColumnaActual(fila, columna)))
+				);
+	}
+
+	private Object obtenerValorColumnaActual(Row fila, Definition columnaActual) {
+		ByteBuffer byteBuffer = fila.getBytesUnsafe(columnaActual.getName());
+		TypeCodec tipoValor = new CodecRegistry().codecFor(columnaActual.getType());
+		Optional valorColumnaActual = Optional.of(tipoValor.deserialize(byteBuffer, ProtocolVersion.NEWEST_SUPPORTED));
+		return valorColumnaActual.orElseGet(() -> obtenerValorVacio(columnaActual.getType(), tipoValor.getJavaType()));
+	}
+
+	private Object obtenerValorVacio(DataType cassandraType, TypeToken javaType) {
+		String tipoColumna = javaType.getRawType().getSimpleName();
+		if (cassandraType.isCollection()) {
+			return "List".equals(tipoColumna) ? new ArrayList<>() : new HashMap();
+		} else {
+			if ("String".equals(tipoColumna)) return "";
+			if (TIPOS_NUMERICOS.contains(tipoColumna)) return 0;
+			return null;
 		}
-
-		private Supplier<Stream<Map<String, Object>>> transformarResultadoEjecucion() {
-			Supplier<Stream<Row>> filasStream = () -> StreamSupport.stream(resultadoEjecucion.spliterator(), false);
-			Function<Row, Stream<Definition>> columnasStream = (fila) -> StreamSupport.stream(fila.getColumnDefinitions().spliterator(), false);
-			return () -> filasStream.get().parallel().map(fila -> columnasStream.apply(fila)
-										  			 .collect(toMap(Definition::getName, columna -> obtenerValorColumnaActual(fila, columna))));
-		}
-
-		private JsonNode obtenerResultado(TiposResultado tipoResultado) {
-			switch (tipoResultado) {
-				case PLANO: return obtenerResultadoPlano();
-				case JERARQUÍA: return obtenerResultadoConJerarquia(false);
-				case JERARQUÍA_CON_NOMBRES_DE_COLUMNAS: return obtenerResultadoConJerarquia(true);
-				default: throw new ExcepcionGenerica("El tipo de resultado: '" + tipoResultado + "', no es válido.");
-			}
-		}
-
-        private ArrayNode obtenerResultadoPlano() {
-			List<Map<String, Object>> resultSet = transformarResultadoEjecucion().get().collect(toList());
-			return MAPPER.convertValue(resultSet, ArrayNode.class);
-        }
-
-    	private ObjectNode obtenerResultadoConJerarquia (boolean incluirNombresColumnasPrimarias) {
-			Supplier<Stream<Map<String, Object>>> resultSet = transformarResultadoEjecucion();
-    		coleccionActual = resultado;
-			resultSet.get().parallel().forEach(fila -> {
-				sentencia.getColumnasIntermedias().get()
-						.forEach(columnaIntermedia -> {
-							if (incluirNombresColumnasPrimarias) coleccionActual = ponerObjeto.apply(coleccionActual, columnaIntermedia);
-							coleccionActual = ponerObjeto.apply(coleccionActual, fila.get(columnaIntermedia).toString());
-						});
-				sentencia.getColumnasRegulares().get()
-						.forEach(columnaRegular -> agruparValores(coleccionActual, columnaRegular, MAPPER.valueToTree(fila.get(columnaRegular))));
-				coleccionActual = resultado;
-			});
-    		return resultado;
-    	}
-    	
-    	private Object obtenerValorColumnaActual(Row fila, Definition columnaActual) {
-			return Optional.ofNullable(fila.getBytesUnsafe(columnaActual.getName()))
-    					   .map(buffer -> new CodecRegistry().codecFor(columnaActual.getType()).deserialize(buffer, ProtocolVersion.NEWEST_SUPPORTED))
-    					   .orElse(obtenerValorVacio(columnaActual));
-    	}
-    	
-    	/**
-    	 * Si el valor de la columna actual es nulo se guardará como valor un "valor vacío"
-    	 * dependiendo del tipo de variable al que pertenezca la columna actual
-    	 *
-    	 * @param columnaActual
-    	 * @return
-    	 */
-    	private Object obtenerValorVacio(ColumnDefinitions.Definition columnaActual) {
-    		String tipoColumna = new CodecRegistry().codecFor(columnaActual.getType()).getJavaType().getRawType().getSimpleName();
-    		if (columnaActual.getType().isCollection()) {
-    			return "List".equals(tipoColumna) ? new ArrayList<String>() : new HashMap<>();
-    		} else {    							
-    			if ("String".equals(tipoColumna))
-    				return "";
-    			else if ("Integer,Long,Float,Double,BigDecimal,BigInteger".indexOf(tipoColumna) > -1)
-    				return 0;
-    			else
-    				return null;
-    		}
-    	}
-
-    }
+	}
 
 }
