@@ -6,7 +6,10 @@ import java.util.List;
 
 public abstract class SentenciaColumnar extends Sentencia {
 
-    public abstract List<String> getColumnasIntermedias();
+    protected List<String> columnasPrimarias;
+    protected List<String> columnasRegulares;
+
+    public abstract List<String> getColumnasPrimarias();
 
     public abstract List<String> getColumnasRegulares();
 

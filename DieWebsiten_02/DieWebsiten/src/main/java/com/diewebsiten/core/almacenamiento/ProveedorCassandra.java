@@ -23,7 +23,6 @@ import static com.diewebsiten.core.almacenamiento.util.Sentencias.LLAVES_PRIMARI
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.ArrayUtils.isEmpty;
-import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * Administrar las conexiones y transacciones que se realizan al
@@ -62,16 +61,12 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     }
 	
     @Override
-	JsonNode ejecutarTransaccion(Transaccion transaccion) throws ExcepcionGenerica {
+	JsonNode ejecutarTransaccion(Transaccion transaccion) {
 
 		String nombreTransaccion = transaccion.getNombre();
 		String sentenciaCQL = transaccion.getSentencia();
     	Object[] parametros = Optional.ofNullable(transaccion.getParametrosTransaccion()).orElse(new Object[]{});
     	TiposResultado tipoResultado = obtenerTipoResultado(transaccion.getTipoResultado());
-
-    	if (isBlank(nombreTransaccion)) {
-    		throw new ExcepcionGenerica("El nombre de la sentencia no puede venir vacío.");
-    	}
 
     	try {
 

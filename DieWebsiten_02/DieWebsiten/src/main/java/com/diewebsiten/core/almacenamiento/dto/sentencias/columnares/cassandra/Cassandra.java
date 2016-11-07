@@ -12,11 +12,9 @@ public class Cassandra extends SentenciaColumnar {
 	private PreparedStatement sentenciaPreparada;
 	private String keyspaceName;
 	private String columnfamilyName;
-	private List<String> columnasIntermedias;
-	private List<String> columnasRegulares;
 
 	Cassandra() {
-		columnasIntermedias = new ArrayList<>();
+		columnasPrimarias = new ArrayList<>();
 		columnasRegulares = new ArrayList<>();
 	}
 
@@ -45,12 +43,12 @@ public class Cassandra extends SentenciaColumnar {
 	}
 
 	@Override
-	public List<String> getColumnasIntermedias() {
-		return Collections.unmodifiableList(columnasIntermedias);
+	public List<String> getColumnasPrimarias() {
+		return Collections.unmodifiableList(columnasPrimarias);
 	}
 
 	void setColumnasIntermedias(List<String> columnasIntermedias) {
-		this.columnasIntermedias = columnasIntermedias;
+		this.columnasPrimarias = columnasIntermedias;
 	}
 
 	@Override

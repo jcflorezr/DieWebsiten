@@ -1,0 +1,16 @@
+{
+  "localhost": {
+    "eventos": {
+      "ConsultarInfoTabla": {
+        "consultarInfoTabla": {
+          "motoralmacenamiento": "CASSANDRA",
+          "descripcion": "Breve descripción"
+        },
+        "consultarValidacionesColumnas": {
+          "motoralmacenamiento": "CASSANDRA",
+          "descripcion": "Breve descripción"
+        }
+      }
+    }
+  }
+}

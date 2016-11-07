@@ -124,7 +124,7 @@ public class CassandraFactory extends SentenciasFactory {
     private void guardarColumnasRegulares() {
         List<String> columnasRegulares =
             getColumnasQuery().get()
-                .filter(columna -> cassandra.getColumnasIntermedias().stream().
+                .filter(columna -> cassandra.getColumnasPrimarias().stream().
                         noneMatch(columnaIntermedia -> columnaIntermedia.equals(columna)))
                 .collect(toList());
         cassandra.setColumnasRegulares(columnasRegulares);

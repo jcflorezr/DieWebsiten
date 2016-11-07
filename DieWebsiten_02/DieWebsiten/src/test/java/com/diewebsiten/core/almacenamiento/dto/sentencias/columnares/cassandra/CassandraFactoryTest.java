@@ -193,9 +193,9 @@ public class CassandraFactoryTest {
         assertEquals(datosSentencia.getColumnFamilyName(), sentenciaCassandra.getColumnfamilyName());
         List<String> filtrosSentencia = sentenciaCassandra.getFiltrosSentencia().get().collect(toList());
         assertEquals(datosSentencia.getFiltrosSentencia(), filtrosSentencia);
-        List<String> columnasIntermedias = sentenciaCassandra.getColumnasIntermedias().get().collect(toList());
+        List<String> columnasIntermedias = sentenciaCassandra.getColumnasPrimarias().stream().collect(toList());
         assertEquals(datosSentencia.getColumnasIntermedias(), columnasIntermedias);
-        List<String> columnasRegulares = sentenciaCassandra.getColumnasRegulares().get().collect(toList());
+        List<String> columnasRegulares = sentenciaCassandra.getColumnasRegulares().stream().collect(toList());
         assertEquals(datosSentencia.getColumnasRegulares(), columnasRegulares);
 
     }

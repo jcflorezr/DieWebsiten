@@ -20,7 +20,6 @@ public class ResultadoTransaccion {
     private Stream<Map<String, Object>> resultSet;
     private SentenciaColumnar sentencia;
     private TiposResultado tipoResultado;
-    private List<String> columnasPrimarias;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private ObjectNode coleccionActual, resultado = MAPPER.createObjectNode();
@@ -29,15 +28,13 @@ public class ResultadoTransaccion {
         this.resultSet = resultSet;
         this.sentencia = sentencia;
         this.tipoResultado = tipoResultado;
-        this.columnasPrimarias = sentencia.getColumnasIntermedias();
     }
 
     public JsonNode obtenerResultado() {
         switch (tipoResultado) {
-            case PLANO: return obtenerResultadoPlano();
-            case JERARQUÍA: return obtenerResultadoConJerarquia(false);
-            case JERARQUÍA_CON_NOMBRES_DE_COLUMNAS: return obtenerResultadoConJerarquia(true);
-            default: throw new ExcepcionGenerica("El tipo de resultado: '" + tipoResultado + "', no es válido.");
+            default: return obtenerResultadoPlano();
+            case JERARQUÍA: return obtenerResultadoEnJerarquia(false);
+            case JERARQUÍA_CON_NOMBRES_DE_COLUMNAS: return obtenerResultadoEnJerarquia(true);
         }
     }
 
@@ -46,7 +43,7 @@ public class ResultadoTransaccion {
         return MAPPER.convertValue(resultSetList, ArrayNode.class);
     }
 
-    private ObjectNode obtenerResultadoConJerarquia (boolean incluirNombresColumnasPrimarias) {
+    private ObjectNode obtenerResultadoEnJerarquia(boolean incluirNombresColumnasPrimarias) {
         coleccionActual = resultado;
         resultSet.forEach(fila -> {
             categorizarColumnasPrimarias(fila, incluirNombresColumnasPrimarias);
@@ -56,10 +53,10 @@ public class ResultadoTransaccion {
     }
 
     private void categorizarColumnasPrimarias(Map<String, Object> fila, boolean incluirNombresColumnasPrimarias) {
-        sentencia.getColumnasIntermedias().stream()
+        sentencia.getColumnasPrimarias().stream()
             .forEach(columnaIntermedia -> {
-                if (incluirNombresColumnasPrimarias) coleccionActual = ponerObjeto.apply(coleccionActual, columnaIntermedia);
-                coleccionActual = ponerObjeto.apply(coleccionActual, fila.get(columnaIntermedia).toString());
+                if (incluirNombresColumnasPrimarias) coleccionActual = ponerObjeto(coleccionActual, columnaIntermedia);
+                coleccionActual = ponerObjeto(coleccionActual, fila.get(columnaIntermedia).toString());
             });
     }
 

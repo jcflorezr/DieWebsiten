@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.EnumMap;
 import java.util.Map;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 public class Proveedores implements AutoCloseable {
 	
 	private static Map<MotoresAlmacenamiento, ProveedorAlmacenamiento> instanciasBasesDeDatos = new EnumMap<>(MotoresAlmacenamiento.class);
@@ -46,6 +48,9 @@ public class Proveedores implements AutoCloseable {
 		MotoresAlmacenamiento nombreBaseDeDatos = transaccion.getMotorAlmacenamiento();
 		if (nombreBaseDeDatos == null) {
 			throw new ExcepcionGenerica("El nombre del motor de almacenamiento a obtener no puede ser nulo");
+		}
+		if (isBlank(transaccion.getSentencia())) {
+			throw new ExcepcionGenerica("No hay ninguna sentencia a ejecutar");
 		}
 		return obtenerProveedorAlmacenamiento(nombreBaseDeDatos).ejecutarTransaccion(transaccion);
 	}

@@ -1,7 +1,13 @@
 
 package com.diewebsiten.core.util;
 
-import static org.apache.commons.lang3.StringUtils.*;
+import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import org.apache.commons.lang3.text.WordUtils;
 
 import java.io.IOException;
 import java.security.MessageDigest;
@@ -11,33 +17,17 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
-import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-import org.apache.commons.lang3.text.WordUtils;
+import static org.apache.commons.lang3.StringUtils.*;
 
-import com.google.gson.JsonObject;
-
-/**
- *
- * @author juancamiloroman
- */
 public class Transformaciones {
 
-
-    private static final ObjectMapper mapper = new ObjectMapper();
-    private static final TypeFactory typeFactory = mapper.getTypeFactory();
-
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final TypeFactory typeFactory = MAPPER.getTypeFactory();
 
     public static <T> List<T> stringToList(String stringAConvertir, Class<T> tipoDeLista) {
         try {
-            return mapper.readValue(stringAConvertir, typeFactory.constructCollectionType(List.class, tipoDeLista));
+            return MAPPER.readValue(stringAConvertir, typeFactory.constructCollectionType(List.class, tipoDeLista));
         } catch (IOException e) {
             throw new ExcepcionGenerica("no se pudo deserializar el String: " + stringAConvertir + " a una lista de tipo: " + tipoDeLista);
         }
@@ -45,16 +35,17 @@ public class Transformaciones {
 
     public static <K, V> Map<K, V> jsonToMap(JsonNode jsonAConvertir, Class<K> tipoDeLlave, Class<V> tipoDeValor) {
         try {
-            return mapper.readValue(jsonAConvertir.toString(), typeFactory.constructMapType(Map.class, tipoDeLlave, tipoDeValor));
+            return MAPPER.readValue(jsonAConvertir.toString(), typeFactory.constructMapType(Map.class, tipoDeLlave, tipoDeValor));
         } catch (IOException e) {
             throw new ExcepcionGenerica("no se pudo deserializar el String: " + jsonAConvertir.toString() + " a un map de tipo: " + tipoDeLlave + "," + tipoDeValor
             + "MOTIVO: " + e.getMessage());
         }
     }
 
-    public static BiFunction<ObjectNode, String, ObjectNode> ponerObjeto = (coleccion, nombrePropiedad) ->
-            (ObjectNode) Optional.ofNullable(coleccion.get(nombrePropiedad))
-            .orElseGet(() -> coleccion.putObject(nombrePropiedad));
+    public static ObjectNode ponerObjeto (ObjectNode coleccion, String nombrePropiedad) {
+        return (ObjectNode) Optional.ofNullable(coleccion.get(nombrePropiedad))
+                .orElseGet(() -> coleccion.putObject(nombrePropiedad));
+    }
 
     public static void agruparValores(ObjectNode coleccion, String nombrePropiedad, JsonNode valorPropiedad) {
         JsonNode valorExistente = coleccion.get(nombrePropiedad);
@@ -62,7 +53,7 @@ public class Transformaciones {
             if (valorExistente.isArray()) {
                 ((ArrayNode)valorExistente).add(valorPropiedad);
             } else {
-                coleccion.set(nombrePropiedad, mapper.createArrayNode().add(valorExistente).add(valorPropiedad));
+                coleccion.set(nombrePropiedad, MAPPER.createArrayNode().add(valorExistente).add(valorPropiedad));
             }
         } else {
             coleccion.set(nombrePropiedad, valorPropiedad);

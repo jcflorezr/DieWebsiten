@@ -1,0 +1,24 @@
+{
+  "sitioweb": {
+    "localhost": {
+      "pagina": {
+        "eventos": {
+          "evento": {
+            "ConsultarInfoTabla": {
+              "transaccion": {
+                "consultarInfoTabla": {
+                  "motoralmacenamiento": "CASSANDRA",
+                  "descripcion": "Breve descripción"
+                },
+                "consultarValidacionesColumnas": {
+                  "motoralmacenamiento": "CASSANDRA",
+                  "descripcion": "Breve descripción"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
