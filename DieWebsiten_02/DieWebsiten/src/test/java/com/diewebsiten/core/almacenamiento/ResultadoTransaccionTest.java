@@ -27,8 +27,8 @@ public class ResultadoTransaccionTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    List<Map<String, Object>> resultSetList = new ArrayList<>();
-    SentenciaColumnar sentencia;
+    private List<Map<String, Object>> resultSetList = new ArrayList<>();
+    private SentenciaColumnar sentencia;
 
     @Before
     public void setUp() throws Exception {

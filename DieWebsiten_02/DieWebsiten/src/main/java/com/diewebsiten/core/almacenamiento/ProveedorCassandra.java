@@ -3,7 +3,6 @@ package com.diewebsiten.core.almacenamiento;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.exceptions.DriverException;
-import com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencias;
 import com.diewebsiten.core.almacenamiento.dto.sentencias.columnares.cassandra.Cassandra;
 import com.diewebsiten.core.almacenamiento.dto.sentencias.columnares.cassandra.CassandraFactory;
 import com.diewebsiten.core.eventos.dto.Transaccion;
@@ -19,6 +18,7 @@ import java.util.stream.Stream;
 
 import static com.diewebsiten.core.almacenamiento.ResultadoTransaccion.*;
 import static com.diewebsiten.core.almacenamiento.ResultadoTransaccion.TiposResultado.PLANO;
+import static com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencias.obtenerSentencia;
 import static com.diewebsiten.core.almacenamiento.util.Sentencias.LLAVES_PRIMARIAS;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toMap;
@@ -41,7 +41,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     private static final int CASSANDRA_PORT = 9042;
 	private static final List<String> TIPOS_NUMERICOS = asList("Integer","Long","Float","Double","BigDecimal","BigInteger");
 
-
 	ProveedorCassandra(){}
 
 	@Override
@@ -49,7 +48,9 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 		try {
 			cluster = Optional.ofNullable(Cluster.builder().addContactPoint(CASSANDRA_URL).withPort(CASSANDRA_PORT).build());
 			sesion = cluster.get().connect();
-			Sentencias.obtenerSentencia(new CassandraFactory(LLAVES_PRIMARIAS.sentencia(), true));
+            // Inicializar la sentencia de LLaves Primarias para obtener las llaves primarias de las
+            // sentencias que se ejecutaran en las futuras transacciones
+			obtenerSentencia(new CassandraFactory(LLAVES_PRIMARIAS.sentencia(), true));
 		} catch (DriverException e) {
 			throw new ExcepcionGenerica(e);
 		}
@@ -63,7 +64,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     @Override
 	JsonNode ejecutarTransaccion(Transaccion transaccion) {
 
-		String nombreTransaccion = transaccion.getNombre();
 		String sentenciaCQL = transaccion.getSentencia();
     	Object[] parametros = Optional.ofNullable(transaccion.getParametrosTransaccion()).orElse(new Object[]{});
     	TiposResultado tipoResultado = obtenerTipoResultado(transaccion.getTipoResultado());
@@ -71,7 +71,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     	try {
 
 			boolean esSentenciaSimple = tipoResultado == PLANO ? true : false;
-			Cassandra sentencia = (Cassandra) Sentencias.obtenerSentencia(new CassandraFactory(sentenciaCQL, esSentenciaSimple));
+			Cassandra sentencia = (Cassandra) obtenerSentencia(new CassandraFactory(sentenciaCQL, esSentenciaSimple));
 
     		if (parametros.length != sentencia.numParametrosSentencia()) {
     			throw new ExcepcionGenerica("La sentencia necesita " + sentencia.numParametrosSentencia() + " parámetros para ser ejecutada.");
@@ -115,7 +115,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 
 	public static ResultSet obtenerResultSet(Cassandra sentencia, Object[] parametros) {
 		return isEmpty(parametros) ? sesion.execute(sentencia.getQueryString())
-				: sesion.execute(sentencia.getSentenciaPreparada().bind(parametros));
+                                   : sesion.execute(sentencia.getSentenciaPreparada().bind(parametros));
 	}
 
 	private Stream<Map<String, Object>> transformarResultadoEjecucion(ResultSet resultadoEjecucion) {
@@ -128,7 +128,7 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 	private Object obtenerValorColumnaActual(Row fila, Definition columnaActual) {
 		ByteBuffer byteBuffer = fila.getBytesUnsafe(columnaActual.getName());
 		TypeCodec tipoValor = new CodecRegistry().codecFor(columnaActual.getType());
-		Optional valorColumnaActual = Optional.of(tipoValor.deserialize(byteBuffer, ProtocolVersion.NEWEST_SUPPORTED));
+		Optional valorColumnaActual = Optional.ofNullable(tipoValor.deserialize(byteBuffer, ProtocolVersion.NEWEST_SUPPORTED));
 		return valorColumnaActual.orElseGet(() -> obtenerValorVacio(columnaActual.getType(), tipoValor.getJavaType()));
 	}
 

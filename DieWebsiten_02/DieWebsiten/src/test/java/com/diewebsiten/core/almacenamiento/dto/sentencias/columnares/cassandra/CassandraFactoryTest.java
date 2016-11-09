@@ -220,14 +220,14 @@ public class CassandraFactoryTest {
 
     private void mockearColumnasFiltro(String queryString) throws Exception {
         queryString = removeEnd(substringAfter(queryString, WHERE), PUNTO_Y_COMA);
-        Constructor<Definition> constructor = (Constructor<Definition>) Definition.class.getDeclaredConstructors()[CONSTRUCTOR_CLASE_DEFINITION];
-        constructor.setAccessible(true);
         List<Definition> defs = new ArrayList<>();
+        Constructor<Definition> definitionConstructor = (Constructor<Definition>) Definition.class.getDeclaredConstructors()[CONSTRUCTOR_CLASE_DEFINITION];
+        definitionConstructor.setAccessible(true);
         String[] nombresColumnasFiltro = split(queryString, PARAMETRO);
         for(String nombreColumnaFiltro : nombresColumnasFiltro) {
             nombreColumnaFiltro = remove(remove(nombreColumnaFiltro, AND), IGUAL).trim();
-            Definition def = constructor.newInstance(null, null, nombreColumnaFiltro, null);
-            defs.add(def);
+
+            defs.add(definitionConstructor.newInstance(null, null, nombreColumnaFiltro, null));
         }
         when(columnDefinitions.asList()).thenReturn(defs);
     }
