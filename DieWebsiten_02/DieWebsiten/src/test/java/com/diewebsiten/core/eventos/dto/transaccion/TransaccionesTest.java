@@ -162,10 +162,13 @@ public class TransaccionesTest {
 
     private void inicializarTransaccionesDesdeLaBaseDeDatos() {
         transaccionesDesdeLaBaseDeDatos.put(LLAVES_PRIMARIAS + "consultarTiposTransacciones", "transacciones_desde_base_de_datos/transaccion_sin_filtros/llavesPrimariasTransaccionSinFiltros.json");
+        transaccionesDesdeLaBaseDeDatos.put(LLAVES_PRIMARIAS + "consultarTiposTransaccionesSinPuntoYComa", "transacciones_desde_base_de_datos/transaccion_sin_filtros/llavesPrimariasTransaccionSinFiltros.json");
         transaccionesDesdeLaBaseDeDatos.put(LLAVES_PRIMARIAS + "sentenciaGrupoValidaciones", "transacciones_desde_base_de_datos/transaccion_solo_columnas_primarias/llavesPrimariasTransaccionSoloColumnasPrimarias.json");
         transaccionesDesdeLaBaseDeDatos.put(RESULTADO_TRANSACCION + "consultarTiposTransacciones", "transacciones_desde_base_de_datos/transaccion_sin_filtros/resultadoTransaccionSinFiltros.json");
+        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_TRANSACCION + "consultarTiposTransaccionesSinPuntoYComa", "transacciones_desde_base_de_datos/transaccion_sin_filtros/resultadoTransaccionSinFiltros.json");
         transaccionesDesdeLaBaseDeDatos.put(RESULTADO_TRANSACCION + "sentenciaGrupoValidaciones", "transacciones_desde_base_de_datos/transaccion_solo_columnas_primarias/resultadoTransaccionSoloColumnasPrimarias.json");
         transaccionesDesdeLaBaseDeDatos.put(RESULTADO_ESPERADO + "consultarTiposTransacciones", "transacciones_desde_base_de_datos/transaccion_sin_filtros/resultadoEsperadoEnJerarquia.json");
+        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_ESPERADO + "consultarTiposTransaccionesSinPuntoYComa", "transacciones_desde_base_de_datos/transaccion_sin_filtros/resultadoEsperadoPlano.json");
         transaccionesDesdeLaBaseDeDatos.put(RESULTADO_ESPERADO + "sentenciaGrupoValidaciones", "transacciones_desde_base_de_datos/transaccion_solo_columnas_primarias/resultadoEsperadoEnJerarquiaConNombres.json");
     }
     

@@ -1,0 +1,14 @@
+[
+  {
+    "tipo_transaccion": "SELECT"
+  },
+  {
+    "tipo_transaccion": "INSERT"
+  },
+  {
+    "tipo_transaccion": "UPDATE"
+  },
+  {
+    "tipo_transaccion": "DELETE"
+  }
+]
