@@ -1,0 +1,8 @@
+[
+  {
+    "transaccion": "consultarTiposTransacciones",
+    "motoralmacenamiento": "INVÁLIDO",
+    "sentencia": "SELECT tipo_transaccion FROM diewebsiten.tipos_de_transacciones;",
+    "tiporesultado": "JERARQUÍA_CON_NOMBRES_DE_COLUMNAS"
+  }
+]

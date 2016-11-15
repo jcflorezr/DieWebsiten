@@ -1,0 +1,8 @@
+[
+  {
+    "transaccion": "sentenciaGrupoValidaciones",
+    "motoralmacenamiento": "CASSANDRA",
+    "sentencia": "SELECT tipo, validacion FROM diewebsiten.grupos_de_validaciones WHERE grupovalidacion = ?;",
+    "tiporesultado": "JERARQUÍA_CON_NOMBRES_DE_COLUMNAS"
+  }
+]

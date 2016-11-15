@@ -1,0 +1,8 @@
+{
+  "tipo_transaccion": [
+    "SELECT",
+    "INSERT",
+    "UPDATE",
+    "DELETE"
+  ]
+}

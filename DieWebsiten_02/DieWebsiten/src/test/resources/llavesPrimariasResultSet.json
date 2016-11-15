@@ -1,0 +1,6 @@
+[
+  {
+    "key_aliases": "[\"sitioweb\"]",
+    "column_aliases": "[\"pagina\", \"evento\", \"transaccion\"]"
+  }
+]

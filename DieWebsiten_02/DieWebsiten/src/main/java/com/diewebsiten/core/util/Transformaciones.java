@@ -2,6 +2,7 @@
 package com.diewebsiten.core.util;
 
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -9,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.apache.commons.lang3.text.WordUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -25,21 +27,63 @@ public class Transformaciones {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final TypeFactory typeFactory = MAPPER.getTypeFactory();
 
-    public static <T> List<T> stringToList(String stringAConvertir, Class<T> tipoDeLista) {
+    public static ObjectNode newJsonObject() {
+        return MAPPER.createObjectNode();
+    }
+
+    public static <T> List<T> stringToList(String listString, Class<T> tipoDeLista) {
         try {
-            return MAPPER.readValue(stringAConvertir, typeFactory.constructCollectionType(List.class, tipoDeLista));
+            return MAPPER.readValue(listString, typeFactory.constructCollectionType(List.class, tipoDeLista));
         } catch (IOException e) {
-            throw new ExcepcionGenerica("no se pudo deserializar el String: " + stringAConvertir + " a una lista de tipo: " + tipoDeLista);
+            throw new ExcepcionGenerica("no se pudo deserializar el String: " + listString + " a una lista de tipo: " + tipoDeLista + ". MOTIVO: " + e.getMessage());
         }
     }
 
-    public static <K, V> Map<K, V> jsonToMap(JsonNode jsonAConvertir, Class<K> tipoDeLlave, Class<V> tipoDeValor) {
+    public static <T> List<T> objectToList(Object objeto, Class<T> tipoDeLista) {
+        return MAPPER.convertValue(objeto, typeFactory.constructCollectionType(List.class, tipoDeLista));
+    }
+
+    public static ObjectNode stringToJsonObject(String jsonString) {
         try {
-            return MAPPER.readValue(jsonAConvertir.toString(), typeFactory.constructMapType(Map.class, tipoDeLlave, tipoDeValor));
+            return (ObjectNode) MAPPER.readTree(jsonString);
         } catch (IOException e) {
-            throw new ExcepcionGenerica("no se pudo deserializar el String: " + jsonAConvertir.toString() + " a un map de tipo: " + tipoDeLlave + "," + tipoDeValor
-            + "MOTIVO: " + e.getMessage());
+            throw new ExcepcionGenerica("no se pudo convertir el String: " + jsonString + " a una JsonObject. MOTIVO: " + e.getMessage());
         }
+    }
+
+    public static <T> ArrayNode listToJsonArray(List<T> lista) {
+        return MAPPER.convertValue(lista, ArrayNode.class);
+    }
+
+    public static <T> T jsonToObject(File json, Class<T> tipoDeObjeto) {
+        try {
+            return MAPPER.readValue(json, tipoDeObjeto);
+        } catch (IOException e) {
+            throw new ExcepcionGenerica("no se pudo deserializar el String: " + json.getPath() + " a un objeto de tipo: " + tipoDeObjeto
+                    + ". MOTIVO: " + e.getMessage());
+        }
+    }
+
+    public static <T> T jsonToObject(JsonNode json, Class<T> tipoDeObjeto) {
+        try {
+            return MAPPER.treeToValue(json, tipoDeObjeto);
+        } catch (JsonProcessingException e) {
+            throw new ExcepcionGenerica("no se pudo deserializar el String: " + json.toString() + " a un objeto de tipo: " + tipoDeObjeto
+                    + ". MOTIVO: " + e.getMessage());
+        }
+    }
+
+    public static <K, V> Map<K, V> jsonToMap(JsonNode json, Class<K> tipoDeLlave, Class<V> tipoDeValor) {
+        try {
+            return MAPPER.readValue(json.toString(), typeFactory.constructMapType(Map.class, tipoDeLlave, tipoDeValor));
+        } catch (IOException e) {
+            throw new ExcepcionGenerica("no se pudo deserializar el String: " + json.toString() + " a un map de tipo: " + tipoDeLlave + "," + tipoDeValor
+            + ". MOTIVO: " + e.getMessage());
+        }
+    }
+
+    public static JsonNode objectToValue(Object objeto) {
+        return MAPPER.valueToTree(objeto);
     }
 
     public static ObjectNode ponerObjeto (ObjectNode coleccion, String nombrePropiedad) {
@@ -87,6 +131,13 @@ public class Transformaciones {
         
         return valor;
         
+    }
+
+    public static String removerCaracteres(String cadena, String... caracteres) {
+        for (String caracter : caracteres) {
+            cadena = remove(cadena, caracter);
+        }
+        return cadena;
     }
     
     /**

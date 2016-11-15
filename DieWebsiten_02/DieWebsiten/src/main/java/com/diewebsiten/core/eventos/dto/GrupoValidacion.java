@@ -1,14 +1,12 @@
 package com.diewebsiten.core.eventos.dto;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public class GrupoValidacion {
+import static com.diewebsiten.core.util.Transformaciones.objectToList;
 
-	private static final ObjectMapper mapper = new ObjectMapper();
+public class GrupoValidacion {
 
 	private Map<String, Validacion> tipo;
 
@@ -30,7 +28,7 @@ public class GrupoValidacion {
 
 		public void setValidacion(Object validacion) {
 			if (validacion instanceof String) this.validacion = Arrays.asList((String) validacion);
-			else this.validacion = mapper.convertValue(validacion, List.class);
+			else this.validacion = objectToList(validacion, String.class);
 		}
 
 	}

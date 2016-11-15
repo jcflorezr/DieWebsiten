@@ -3,7 +3,9 @@ package com.diewebsiten.core.eventos;
 
 import com.diewebsiten.core.eventos.dto.Campo.InformacionCampo;
 import com.diewebsiten.core.eventos.dto.Evento;
-import com.diewebsiten.core.eventos.dto.Transaccion;
+import com.diewebsiten.core.eventos.dto.transaccion.Transaccion;
+import com.diewebsiten.core.eventos.dto.transaccion.Transacciones;
+import com.diewebsiten.core.eventos.dto.transaccion.columnar.Cassandra;
 import com.diewebsiten.core.eventos.util.LogEventos;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
@@ -17,6 +19,7 @@ import java.util.Optional;
 import java.util.concurrent.*;
 
 import static com.diewebsiten.core.almacenamiento.util.Sentencias.*;
+import static com.diewebsiten.core.eventos.dto.transaccion.Transacciones.nuevaTransaccionCassandra;
 import static com.diewebsiten.core.eventos.util.Mensajes.ERROR;
 import static com.diewebsiten.core.eventos.util.Mensajes.Evento.EVENTO_NO_EXISTE;
 import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario;
@@ -24,7 +27,7 @@ import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario.CAMPO
 import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario.PARAMETROS_FORMULARIO_NO_EXISTEN;
 import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.transformarParametro;
 import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.validarParametro;
-import static org.apache.commons.lang.StringUtils.isNotBlank;
+import static com.google.common.base.Objects.firstNonNull;
 
 
 /**
@@ -35,8 +38,6 @@ import static org.apache.commons.lang.StringUtils.isNotBlank;
  */
 public class Eventos implements Callable<ObjectNode> {
 
-	private static final String JERARQUÍA_CON_NOMBRES_DE_COLUMNAS = "JERARQUÍA_CON_NOMBRES_DE_COLUMNAS";
-	private static final String PLANO = "PLANO";
 	private Evento evento;
 
     Eventos(String url, String nombreEvento, String parametros) throws Exception {
@@ -73,9 +74,9 @@ public class Eventos implements Callable<ObjectNode> {
      * @throws Exception
      */
     private boolean validarEvento() throws Exception {
-        	
-    	Transaccion datosValidaciones = new Transaccion(VALIDACIONES_EVENTO.sentencia(), VALIDACIONES_EVENTO.nombre(), JERARQUÍA_CON_NOMBRES_DE_COLUMNAS, evento.getInformacionEvento());
-        evento.getFormulario().setCampos(ejecutarTransaccion(datosValidaciones));
+
+		Cassandra transaccion = nuevaTransaccionCassandra(VALIDACIONES_EVENTO.sentencia(), evento.getInformacionEvento());
+        evento.getFormulario().setCampos(transaccion.enJerarquiaConNombres());
         
         if (!evento.getFormulario().poseeCampos() && evento.getFormulario().poseeParametros()) {
             throw new ExcepcionGenerica(CAMPOS_FORMULARIO_NO_EXISTEN.get());
@@ -108,13 +109,10 @@ public class Eventos implements Callable<ObjectNode> {
      * @return
      */
     private void ejecutarEvento() throws Exception {
-    	
-    	Transaccion datosTransacciones = new Transaccion(TRANSACCIONES.sentencia(), TRANSACCIONES.nombre(), PLANO, evento.getInformacionEvento());
 
-        // Obtener la información de las transacciones que se ejecutarán en el evento actual.
-    	evento.setTransacciones(ejecutarTransaccion(datosTransacciones));
+		Cassandra transaccionCassandra = nuevaTransaccionCassandra(TRANSACCIONES.sentencia(), evento.getInformacionEvento());
+		evento.setTransacciones(transaccionCassandra.plana());
 
-        // Validar que el evento existe.
         if (!evento.poseeTransacciones()) throw new ExcepcionGenerica(EVENTO_NO_EXISTE.get());
 
 		ExecutorService grupoEjecucion = obtenerGrupoEjecucion();
@@ -132,10 +130,6 @@ public class Eventos implements Callable<ObjectNode> {
 		final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat(evento.getNombreEvento() + "-%d").setDaemon(true).build();
         return Executors.newFixedThreadPool(10, threadFactoryBuilder);
 	}
-
-    public static JsonNode ejecutarTransaccion(Transaccion transaccion) {
-    	return FachadaEventos.ejecutarTransaccion(transaccion); 
-    }
     
     
     // =========================================================================== //
@@ -172,9 +166,8 @@ public class Eventos implements Callable<ObjectNode> {
 	     */
 	    private Void procesarFormulario() {
 
-	        String grupoValidacionCampo = campo.getGrupoValidacion();
-	        Transaccion datosGruposValidaciones = new Transaccion(GRUPO_VALIDACIONES.sentencia(), GRUPO_VALIDACIONES.nombre(), JERARQUÍA_CON_NOMBRES_DE_COLUMNAS, grupoValidacionCampo);
-	        campo.setValidaciones(Eventos.ejecutarTransaccion(datosGruposValidaciones));
+			Cassandra transaccion = nuevaTransaccionCassandra(GRUPO_VALIDACIONES.sentencia(), campo.getGrupoValidacion());
+			campo.setValidaciones(transaccion.enJerarquiaConNombres());
 
 	        // Validar que sí existan las setValidaciones del grupo.
 	        if (!campo.poseeValidaciones()) throw new ExcepcionGenerica(Formulario.VALIDACIONES_NO_EXISTEN.get());
@@ -233,17 +226,17 @@ public class Eventos implements Callable<ObjectNode> {
 
 	        // Extraer los valores recibidos desde el cliente (navegador web, dispositivo móvil)
 	        // y guardarlos en una lista para enviarlos a la sentencia preparada
-			transaccion.setParametrosTransaccion(
+			transaccion.setParametros(
 				transaccion.getFiltrosSentencia().stream().parallel()
 					.map(filtro -> evento.getFormulario().getCampos().get()
 							.filter(campo -> campo.getKey().equals(filtro))
-							.map(campo -> isNotBlank(campo.getValue().getValorPorDefecto()) ? campo.getValue().getValorPorDefecto()
-																							: evento.getFormulario().getParametro(campo.getKey()))
+							.map(campo -> firstNonNull(campo.getValue().getValorPorDefecto(),
+													   evento.getFormulario().getParametro(campo.getKey())))
 							.findAny().get()
 					).toArray());
 
 			// Guardar los resultados de esta transacción dentro del resultado final de todos el evento
-			JsonNode resultadoTransaccion = Eventos.ejecutarTransaccion(transaccion);
+			JsonNode resultadoTransaccion = new Transacciones(transaccion).obtenerResultado();
 			if (evento.getResultadoFinal().size() == 0) {
 				evento.setResultadoFinal(resultadoTransaccion);
 			} else if (resultadoTransaccion.size() > 0) {

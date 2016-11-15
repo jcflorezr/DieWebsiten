@@ -1,0 +1,34 @@
+[
+  {
+    "pagina": "eventos",
+    "evento": "ConsultarInfoTabla",
+    "transaccion": "consultarInfoTabla",
+    "motoralmacenamiento": "CASSANDRA",
+    "sentencia": "SELECT key_aliases, column_aliases FROM system.schema_columnfamilies WHERE keyspace_name = ? AND columnfamily_name = ?;",
+    "tiporesultado": "JERARQUÍA_CON_NOMBRES_DE_COLUMNAS"
+  },
+  {
+    "pagina": "eventos",
+    "evento": "ConsultarInfoTabla",
+    "transaccion": "consultarValidacionesColumnas",
+    "motoralmacenamiento": "CASSANDRA",
+    "sentencia": "SELECT column_name, grupo_validacion FROM diewebsiten.columnas WHERE keyspace_name = ? AND columnfamily_name = ?;",
+    "tiporesultado": "JERARQUÍA"
+  },
+  {
+    "pagina": "eventos",
+    "evento": "ConsultarInfoTabla",
+    "transaccion": "consultarTiposColumnas",
+    "motoralmacenamiento": "CASSANDRA",
+    "sentencia": "SELECT column_name, type FROM system.schema_columns WHERE keyspace_name = ? AND columnfamily_name = ?;",
+    "tiporesultado": "PLANO"
+  },
+  {
+    "pagina": "eventos",
+    "evento": "ConsultarInfoTabla",
+    "transaccion": "consultarTiposTransacciones",
+    "motoralmacenamiento": "CASSANDRA",
+    "sentencia": "SELECT tipo_transaccion FROM diewebsiten.tipos_de_transacciones;",
+    "tiporesultado": "JERARQUÍA_CON_NOMBRES_DE_COLUMNAS"
+  }
+]

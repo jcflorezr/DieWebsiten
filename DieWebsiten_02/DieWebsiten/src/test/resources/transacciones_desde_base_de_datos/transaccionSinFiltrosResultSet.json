@@ -1,0 +1,8 @@
+[
+  {
+    "transaccion": "consultarTiposTransacciones",
+    "motoralmacenamiento": "CASSANDRA",
+    "sentencia": "SELECT tipo_transaccion FROM diewebsiten.tipos_de_transacciones;",
+    "tiporesultado": "JERARQUÍA"
+  }
+]

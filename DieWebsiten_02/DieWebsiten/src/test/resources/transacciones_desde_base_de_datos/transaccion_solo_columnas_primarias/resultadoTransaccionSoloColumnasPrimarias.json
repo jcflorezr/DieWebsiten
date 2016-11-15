@@ -1,0 +1,10 @@
+[
+  {
+    "tipo": "Validación",
+    "validacion": "V_ALFANUMERICO_SIN_ESPACIOS"
+  },
+  {
+    "tipo": "Transformación",
+    "validacion": "T_CIFRADO"
+  }
+]

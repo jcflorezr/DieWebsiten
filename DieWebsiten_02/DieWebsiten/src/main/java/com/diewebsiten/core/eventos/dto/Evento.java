@@ -1,18 +1,23 @@
 package com.diewebsiten.core.eventos.dto;
 
+import com.diewebsiten.core.eventos.dto.transaccion.Transaccion;
 import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static com.diewebsiten.core.util.Transformaciones.stringToList;
+import static com.diewebsiten.core.eventos.dto.transaccion.Transacciones.TIPOS_TRANSACCIONES;
+import static com.diewebsiten.core.util.Transformaciones.jsonToObject;
+import static com.diewebsiten.core.util.Transformaciones.newJsonObject;
+import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.*;
 
 public class Evento {
+
+    private static final String MOTOR_ALMACENAMIENTO = "motoralmacenamiento";
 
     private final String nombreSitioWeb;
     private final String nombrePagina;
@@ -72,7 +77,7 @@ public class Evento {
         this.formulario.setValidacionExitosa(true);
 
         // Inicializar el objeto JSON que va a contener el resultado de la ejecución del evento.
-        this.resultadoFinal = new ObjectMapper().createObjectNode();
+        this.resultadoFinal = newJsonObject();
 
     }
     
@@ -104,9 +109,14 @@ public class Evento {
 		return transacciones;
 	}
 
-	public void setTransacciones(JsonNode transacciones) {
-		this.transacciones = stringToList(transacciones.toString(), Transaccion.class);
-		if (this.transacciones != null && !this.transacciones.isEmpty()) this.poseeTransacciones = true; // La transacción actual sí posee información
+	public void setTransacciones(JsonNode transaccionesJson) {
+        transaccionesJson.forEach(transaccionJson -> {
+            String nombreMotorAlmacenamiento = transaccionJson.get(MOTOR_ALMACENAMIENTO).asText();
+            Class<Transaccion> transaccionClass = TIPOS_TRANSACCIONES.getOrDefault(nombreMotorAlmacenamiento, Transaccion.class);
+            Transaccion transaccion = jsonToObject(transaccionJson, transaccionClass);
+            transacciones.add(transaccion);
+        });
+		if (isNotEmpty(transacciones)) poseeTransacciones = true; // La transacción actual sí posee información
 	}
 	
 	public boolean poseeTransacciones() {

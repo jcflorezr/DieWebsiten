@@ -1,21 +1,19 @@
 package com.diewebsiten.core.eventos;
 
+import com.diewebsiten.core.almacenamiento.Proveedores;
+import com.diewebsiten.core.eventos.util.Mensajes;
+import com.diewebsiten.core.excepciones.ExcepcionDeLog;
+import com.diewebsiten.core.excepciones.ExcepcionGenerica;
+import com.diewebsiten.core.util.Log;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
-
-import com.diewebsiten.core.almacenamiento.Proveedores;
-import com.diewebsiten.core.eventos.dto.Transaccion;
-import com.diewebsiten.core.eventos.util.Mensajes;
-import com.diewebsiten.core.excepciones.ExcepcionDeLog;
-import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.diewebsiten.core.util.Log;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 public class FachadaEventos {
 	
@@ -150,16 +148,6 @@ public class FachadaEventos {
     
     private static void iniciarLog() throws ExcepcionDeLog {
     	logger = Log.getInstance();
-    }
-    
-    /**
-     * 
-     * @param transaccion
-     * @return
-     * @throws Exception
-     */
-    static JsonNode ejecutarTransaccion(Transaccion transaccion) {
-    	return Proveedores.ejecutarTransaccion(transaccion);
     }
     
 }

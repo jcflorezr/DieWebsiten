@@ -1,18 +1,16 @@
 package com.diewebsiten.core.eventos.dto;
 
 import com.diewebsiten.core.eventos.dto.GrupoValidacion.Validacion;
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.istack.NotNull;
 
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static com.diewebsiten.core.util.Transformaciones.jsonToObject;
+
 public class Campo {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final String VALIDACION = "Validación";
     private static final String TRANSFORMACION = "Transformación";
 
@@ -69,7 +67,7 @@ public class Campo {
         // ==============================================================================
 
         public void setValidaciones(JsonNode grupoValidaciones) {
-            validaciones = MAPPER.convertValue(grupoValidaciones, GrupoValidacion.class);
+            validaciones = jsonToObject(grupoValidaciones, GrupoValidacion.class);
             if (validaciones.getTipo() != null && !validaciones.getTipo().isEmpty()) this.poseeValidaciones = true; // El campo sí posee setValidaciones
         }
 

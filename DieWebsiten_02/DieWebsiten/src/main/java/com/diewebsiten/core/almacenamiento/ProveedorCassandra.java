@@ -3,23 +3,16 @@ package com.diewebsiten.core.almacenamiento;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.exceptions.DriverException;
-import com.diewebsiten.core.almacenamiento.dto.sentencias.columnares.cassandra.Cassandra;
-import com.diewebsiten.core.almacenamiento.dto.sentencias.columnares.cassandra.CassandraFactory;
-import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Throwables;
 import com.google.common.reflect.TypeToken;
 
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static com.diewebsiten.core.almacenamiento.ResultadoTransaccion.*;
-import static com.diewebsiten.core.almacenamiento.ResultadoTransaccion.TiposResultado.PLANO;
-import static com.diewebsiten.core.almacenamiento.dto.sentencias.Sentencias.obtenerSentencia;
-import static com.diewebsiten.core.almacenamiento.util.Sentencias.LLAVES_PRIMARIAS;
+import static com.diewebsiten.core.almacenamiento.Proveedores.guardarNuevaSentencia;
+import static com.diewebsiten.core.almacenamiento.Proveedores.obtenerSentenciaExistente;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.ArrayUtils.isEmpty;
@@ -35,8 +28,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     private static Optional<Cluster> cluster;
     private static Session sesion;
 
-	public static Function<String, PreparedStatement> prepararSentencia = (queryString) -> sesion.prepare(queryString);
-
     private static final String CASSANDRA_URL = "127.0.0.1";
     private static final int CASSANDRA_PORT = 9042;
 	private static final List<String> TIPOS_NUMERICOS = asList("Integer","Long","Float","Double","BigDecimal","BigInteger");
@@ -48,9 +39,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 		try {
 			cluster = Optional.ofNullable(Cluster.builder().addContactPoint(CASSANDRA_URL).withPort(CASSANDRA_PORT).build());
 			sesion = cluster.get().connect();
-            // Inicializar la sentencia de LLaves Primarias para obtener las llaves primarias de las
-            // sentencias que se ejecutaran en las futuras transacciones
-			obtenerSentencia(new CassandraFactory(LLAVES_PRIMARIAS.sentencia(), true));
 		} catch (DriverException e) {
 			throw new ExcepcionGenerica(e);
 		}
@@ -62,20 +50,18 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     }
 	
     @Override
-	JsonNode ejecutarTransaccion(Transaccion transaccion) {
+	Supplier<Stream<Map<String, Object>>> ejecutarTransaccion(String sentencia, Object[] parametros) {
 
-		String sentenciaCQL = transaccion.getSentencia();
-    	Object[] parametros = Optional.ofNullable(transaccion.getParametrosTransaccion()).orElse(new Object[]{});
-    	TiposResultado tipoResultado = obtenerTipoResultado(transaccion.getTipoResultado());
+    	parametros = Optional.ofNullable(parametros).orElse(new Object[]{});
 
-    	try {
+//    	try {
 
-			boolean esSentenciaSimple = tipoResultado == PLANO ? true : false;
-			Cassandra sentencia = (Cassandra) obtenerSentencia(new CassandraFactory(sentenciaCQL, esSentenciaSimple));
+//			boolean esSentenciaSimple = tipoResultado == PLANO ? true : false;
 
-    		if (parametros.length != sentencia.numParametrosSentencia()) {
-    			throw new ExcepcionGenerica("La sentencia necesita " + sentencia.numParametrosSentencia() + " parámetros para ser ejecutada.");
-    		}
+
+
+
+
 
     		// TODO Aqui hay un error de concurrencia
 //			[SITIO WEB: 'localhost'. PÁGINA: 'eventos'. EVENTO: 'ConsultarInfoSitioWeb']
@@ -98,24 +84,43 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 			// Esto al parecer solo pasa cuando ya se ejecuta desde las transacciones de un evento
 			// sin embargo.. hay que crear unit tests antes de encontrar los errores y seguir refactorizando
 
-    		ResultSet resultadoEjecucion = obtenerResultSet(sentencia, parametros);
+		PreparedStatement sentenciaPreparada = prepararSentencia(sentencia);
+		int numFiltrosSentencia = sentenciaPreparada.getVariables().size();
 
-    		if (resultadoEjecucion.isExhausted()) {
-    			return (tipoResultado == PLANO) ? arrayNodeVacio() : objectNodeVacio();
-    		}
-
-			Stream<Map<String, Object>> resultadoTransformado = transformarResultadoEjecucion(resultadoEjecucion);
-			return new ResultadoTransaccion(resultadoTransformado, sentencia, tipoResultado).obtenerResultado();
-
-		} catch (Throwable e) {
-			// ES NECESARIO IMPRIMIR LOS PARAMETROS??? PUESTO QUE YA SE IMPRIMIRÁN DESDE LOS EVENTOS
-			throw new ExcepcionGenerica("Error al ejecutar la sentencia CQL --> " + sentenciaCQL + "'. Parámetros: " + (parametros != null ? asList(parametros).toString() : "{}") + ". Mensaje original --> " + Throwables.getStackTraceAsString(e));
+		if (parametros.length != numFiltrosSentencia) {
+			throw new ExcepcionGenerica("La sentencia necesita " + numFiltrosSentencia + " parámetros para ser ejecutada.");
 		}
+
+		ResultSet resultadoEjecucion = obtenerResultSet(sentenciaPreparada, parametros);
+		return () -> resultadoEjecucion.isExhausted() ? Stream.empty() : transformarResultadoEjecucion(resultadoEjecucion);
+
+
+
+//			return new ResultadoTransaccion(resultadoTransformado, sentencia, tipoResultado).obtenerResultado();
+
+
+
+
+
+
+//		} catch (Throwable e) {
+//			// ES NECESARIO IMPRIMIR LOS PARAMETROS??? PUESTO QUE YA SE IMPRIMIRÁN DESDE LOS EVENTOS
+//			throw new ExcepcionGenerica("Error al ejecutar la sentencia CQL --> " + sentenciaCQL + "'. Parámetros: " + (parametros != null ? asList(parametros).toString() : "{}") + ". Mensaje original --> " + Throwables.getStackTraceAsString(e));
+//		}
     }
 
-	public static ResultSet obtenerResultSet(Cassandra sentencia, Object[] parametros) {
-		return isEmpty(parametros) ? sesion.execute(sentencia.getQueryString())
-                                   : sesion.execute(sentencia.getSentenciaPreparada().bind(parametros));
+    private PreparedStatement prepararSentencia(String sentencia) {
+		PreparedStatement sentenciaPreparada = (PreparedStatement) obtenerSentenciaExistente(sentencia);
+		if (sentenciaPreparada == null) {
+			sentenciaPreparada = sesion.prepare(sentencia);
+			guardarNuevaSentencia(sentencia, sentenciaPreparada);
+		}
+		return sentenciaPreparada;
+	}
+
+	private ResultSet obtenerResultSet(PreparedStatement sentenciaPreparada, Object[] parametros) {
+		return isEmpty(parametros) ? sesion.execute(sentenciaPreparada.getQueryString())
+                                   : sesion.execute(sentenciaPreparada.bind(parametros));
 	}
 
 	private Stream<Map<String, Object>> transformarResultadoEjecucion(ResultSet resultadoEjecucion) {

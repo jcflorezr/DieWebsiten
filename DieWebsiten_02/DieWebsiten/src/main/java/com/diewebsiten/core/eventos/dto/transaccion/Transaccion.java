@@ -1,7 +1,8 @@
-package com.diewebsiten.core.eventos.dto;
+package com.diewebsiten.core.eventos.dto.transaccion;
 
-import com.diewebsiten.core.almacenamiento.Proveedores.MotoresAlmacenamiento;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.Arrays;
 import java.util.List;
@@ -9,21 +10,35 @@ import java.util.List;
 
 public class Transaccion {
 
-	private String nombre;
-	private MotoresAlmacenamiento motorAlmacenamiento;
 	private String sentencia;
-	private List<String> filtrosSentencia;
+	private Object[] parametros;
+	private String motorAlmacenamiento;
 	private String tipoResultado;
-	private Object[] parametrosTransaccion;
+	private String nombre;
+	private List<String> filtrosSentencia;
 
-	public Transaccion() {}
+	public Transaccion(){}
 
-	public Transaccion(String sentencia, String nombre, String tipoResultado, Object... parametrosTransaccion) {
-		this.nombre = nombre;
-		this.parametrosTransaccion = parametrosTransaccion;
+	protected Transaccion(String sentencia, String motorAlmacenamiento, Object... parametros) {
 		this.sentencia = sentencia;
-		this.tipoResultado = tipoResultado;
-		this.motorAlmacenamiento = MotoresAlmacenamiento.CASSANDRA;
+		this.motorAlmacenamiento = motorAlmacenamiento;
+		this.parametros = parametros;
+	}
+
+	public String getSentencia() {
+		return sentencia;
+	}
+
+	public void setSentencia(String sentencia) {
+		this.sentencia = sentencia;
+	}
+
+	public Object[] getParametros() {
+		return parametros;
+	}
+
+	public void setParametros(Object[] parametros) {
+		this.parametros = parametros;
 	}
 
 	@JsonProperty("transaccion")
@@ -36,20 +51,12 @@ public class Transaccion {
 	}
 
 	@JsonProperty("motoralmacenamiento")
-	public MotoresAlmacenamiento getMotorAlmacenamiento() {
+	public String getMotorAlmacenamiento() {
 		return motorAlmacenamiento;
 	}
 
-	public void setMotorAlmacenamiento(MotoresAlmacenamiento motorAlmacenamiento) {
+	public void setMotorAlmacenamiento(String motorAlmacenamiento) {
 		this.motorAlmacenamiento = motorAlmacenamiento;
-	}
-
-	public String getSentencia() {
-		return sentencia;
-	}
-
-	public void setSentencia(String sentencia) {
-		this.sentencia = sentencia;
 	}
 
 	@JsonProperty("filtrossentencia")
@@ -70,23 +77,23 @@ public class Transaccion {
 		this.tipoResultado = tipoResultado;
 	}
 
-	public Object[] getParametrosTransaccion() {
-		return parametrosTransaccion;
+	public JsonNode plana() {
+		return new Transacciones(this).plano();
 	}
 
-	public void setParametrosTransaccion(Object[] parametrosTransaccion) {
-		this.parametrosTransaccion = parametrosTransaccion;
+	public ObjectNode conUnicaFila() {
+		return (ObjectNode) plana().get(0);
 	}
 
 	@Override
 	public String toString() {
-		return "Transaccion{" + "hashCode=" + this.hashCode() + "," +
-				"nombre='" + nombre + '\'' +
+		return "Transaccion{" + "hashCode=" + this.hashCode() +
+				", nombre='" + nombre + '\'' +
 				", motorAlmacenamiento=" + motorAlmacenamiento +
 				", sentencia='" + sentencia + '\'' +
 				", filtrosSentencia=" + filtrosSentencia +
 				", tipoResultado=" + tipoResultado +
-				", parametrosTransaccion=" + Arrays.toString(parametrosTransaccion) +
+				", parametrosTransaccion=" + Arrays.toString(parametros) +
 				'}';
 	}
 }

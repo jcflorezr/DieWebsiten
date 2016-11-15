@@ -1,7 +1,8 @@
 package com.diewebsiten.core.almacenamiento;
 
-import com.diewebsiten.core.eventos.dto.Transaccion;
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public abstract class ProveedorAlmacenamiento {
 
@@ -9,6 +10,6 @@ public abstract class ProveedorAlmacenamiento {
 
 	abstract void desconectar();
 
-	abstract JsonNode ejecutarTransaccion(Transaccion transaccion);
+	abstract Supplier<Stream<Map<String, Object>>> ejecutarTransaccion(String sentencia, Object [] parametros);
 
 }

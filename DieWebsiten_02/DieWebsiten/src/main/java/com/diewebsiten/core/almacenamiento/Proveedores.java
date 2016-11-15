@@ -1,17 +1,19 @@
 package com.diewebsiten.core.almacenamiento;
 
-import com.diewebsiten.core.eventos.dto.Transaccion;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
-import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 public class Proveedores implements AutoCloseable {
 	
 	private static Map<MotoresAlmacenamiento, ProveedorAlmacenamiento> instanciasBasesDeDatos = new EnumMap<>(MotoresAlmacenamiento.class);
+	private static Map<Integer, Object> sentencias = new HashMap<>();
 	private static Object obj = new Object();
 
 	public Proveedores() {
@@ -44,15 +46,11 @@ public class Proveedores implements AutoCloseable {
 		}
 	}
 
-	public static JsonNode ejecutarTransaccion(Transaccion transaccion) {
-		MotoresAlmacenamiento nombreBaseDeDatos = transaccion.getMotorAlmacenamiento();
-		if (nombreBaseDeDatos == null) {
-			throw new ExcepcionGenerica("El nombre del motor de almacenamiento a obtener no puede ser nulo");
-		}
-		if (isBlank(transaccion.getSentencia())) {
-			throw new ExcepcionGenerica("No hay ninguna sentencia a ejecutar");
-		}
-		return obtenerProveedorAlmacenamiento(nombreBaseDeDatos).ejecutarTransaccion(transaccion);
+	public static Supplier<Stream<Map<String, Object>>> ejecutarTransaccion(String nombreBaseDeDatos, String sentencia, Object[] parametros) {
+		MotoresAlmacenamiento motorAlmacenamiento = MotoresAlmacenamiento.valueOf(nombreBaseDeDatos);
+		if (motorAlmacenamiento == null) throw new ExcepcionGenerica("El motor de almacenamiento '" + nombreBaseDeDatos + "' no está soportado");
+		if (isBlank(sentencia)) throw new ExcepcionGenerica("No hay ninguna sentencia a ejecutar");
+		return obtenerProveedorAlmacenamiento(motorAlmacenamiento).ejecutarTransaccion(sentencia, parametros);
 	}
 
 	@Override
@@ -60,8 +58,17 @@ public class Proveedores implements AutoCloseable {
 		instanciasBasesDeDatos.values().forEach(proveedorAlmacenamiento -> proveedorAlmacenamiento.desconectar());
 		instanciasBasesDeDatos = null;
 	}
+
+	static Object obtenerSentenciaExistente(String sentencia) {
+		return sentencias.get(sentencia.hashCode());
+	}
+
+	static void guardarNuevaSentencia(String sentencia, Object sentenciaPreparada) {
+		int idSentencia = sentencia.hashCode();
+		sentencias.put(idSentencia, sentencia);
+	}
 	
-	public enum MotoresAlmacenamiento {
+	private enum MotoresAlmacenamiento {
 		CASSANDRA, MYSQL
 	}
 }
