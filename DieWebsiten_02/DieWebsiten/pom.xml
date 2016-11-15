@@ -168,7 +168,7 @@
 				<version>2.19.1</version>
 				<configuration>
 					<excludes>
-						<exclude>com.diewebsiten.core.eventos.dto.transaccion.Transaccion.java</exclude>
+						<exclude>**/com/diewebsiten/core/eventos/dto/transaccion/Transaccion.java</exclude>
 					</excludes>
 				</configuration>
 			</plugin>

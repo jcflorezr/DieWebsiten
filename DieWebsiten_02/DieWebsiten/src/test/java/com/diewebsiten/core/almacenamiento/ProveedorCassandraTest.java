@@ -1,95 +1,119 @@
 package com.diewebsiten.core.almacenamiento;
 
-//@RunWith(PowerMockRunner.class)
-//@PrepareForTest({Sentencias.class, CassandraFactory.class, ProveedorCassandra.class})
+import com.datastax.driver.core.*;
+import com.datastax.driver.core.ColumnDefinitions.Definition;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+
+import java.lang.reflect.Constructor;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import static org.mockito.Matchers.anyString;
+import static org.powermock.api.mockito.PowerMockito.when;
+
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({ProveedorCassandra.class})
+@PowerMockIgnore("javax.management.*")
 public class ProveedorCassandraTest {
 
-//    private Transaccion transaccion;
-//    private ProveedorCassandra proveedorCassandra;
-//
-//    private static final ObjectMapper MAPPER = new ObjectMapper();
-//    private ObjectNode objetoVacio = MAPPER.createObjectNode();
-//    private ArrayNode arrayVacio = MAPPER.createArrayNode();
-//
-//    @Mock
-//    private Cassandra cassandra;
-//    @Mock
-//    private CassandraFactory cassandraFactory;
-//    @Mock
-//    private ResultSet resultadoEjecucion;
-//    @Mock
-//    private Row fila;
-//    @Mock
-//    private ByteBuffer byteBuffer;
-//
-//    private List<Row> resultadoEjecucionList = new ArrayList<>();
-//
-//    @Before
-//    public void setUp() throws Exception {
-//        transaccion = new Transaccion();
-//        transaccion.setSentencia("s");
-//
-//        Constructor<ProveedorCassandra> proveedorCassandraConstructor = ProveedorCassandra.class.getDeclaredConstructor(new Class[0]);
-//        proveedorCassandraConstructor.setAccessible(true);
-//        proveedorCassandra = proveedorCassandraConstructor.newInstance();
-//
-//        whenNew(CassandraFactory.class).withArguments(anyObject(), anyBoolean()).thenReturn(cassandraFactory);
-//
-//        mockStatic(Sentencias.class);
-//        when(Sentencias.obtenerSentencia(cassandraFactory)).thenReturn(cassandra);
-//
+    private ProveedorCassandra proveedorCassandra;
+
+    @Mock
+    private Optional<Cluster> clusterOptional;
+    @Mock
+    private Cluster cluster;
+    @Mock
+    private Session sesion;
+    @Mock
+    private PreparedStatement sentenciaPreparada;
+    @Mock
+    private ResultSet resultadoEjecucion;
+    @Mock
+    private Row fila;
+    @Mock
+    private ByteBuffer byteBuffer;
+
+    private List<Row> resultadoEjecucionList = new ArrayList<>();
+
+    private String sentencia = "";
+    private Object[] parametros = {""};
+
+    @Before
+    public void setUp() throws Exception {
+
+        Constructor<ProveedorCassandra> proveedorCassandraConstructor = ProveedorCassandra.class.getDeclaredConstructor(new Class[0]);
+        proveedorCassandraConstructor.setAccessible(true);
+        proveedorCassandra = proveedorCassandraConstructor.newInstance();
+
+        // TODO voy aqui
+        when(clusterOptional.get()).thenReturn(cluster);
+        when(cluster.connect()).thenReturn(sesion);
+        proveedorCassandra.conectar();
+
+        when(sesion.prepare(sentencia)).thenReturn(sentenciaPreparada);
+        when(sesion.execute(sentencia, parametros)).thenReturn(resultadoEjecucion);
+
+
+
 //        mockStatic(ProveedorCassandra.class);
 //        when(ProveedorCassandra.obtenerResultSet(anyObject(), anyObject())).thenReturn(resultadoEjecucion);
-//
-//    }
-//
-//    @Test
-//    public void ejecutarTransaccion() throws Exception {
-//
-//
-//        crearTransaccion("JERARQUÍA", null);
-//
-//        /** Column Definitions **/
-//        Constructor<Definition> c = (Constructor<Definition>) Definition.class.getDeclaredConstructors()[0];
-//        c.setAccessible(true);
-////
-////
-////        Constructor<DataType> d1 = DataType.class.getDeclaredConstructor(DataType.Name.class);
-////        d1.setAccessible(true);
-////
-////
-//        Constructor<DataType.NativeType> d = (Constructor<DataType.NativeType>) DataType.NativeType.class.getDeclaredConstructors()[0];
-//        d.setAccessible(true);
+
+    }
+
+    @Test
+    public void ejecutarTransaccion() throws Exception {
+
+
+
+        /** Column Definitions **/
+        Constructor<Definition> c = (Constructor<Definition>) Definition.class.getDeclaredConstructors()[0];
+        c.setAccessible(true);
 //
 //
+//        Constructor<DataType> d1 = DataType.class.getDeclaredConstructor(DataType.Name.class);
+//        d1.setAccessible(true);
 //
 //
-//
-//        Definition[] defs = {
-//                c.newInstance(null, null, "name1", d.newInstance(DataType.Name.VARCHAR, null)),
-//                c.newInstance(null, null, "name2", d.newInstance(DataType.Name.VARCHAR, null)),
-//                c.newInstance(null, null, "name3", d.newInstance(DataType.Name.VARCHAR, null))
-//        };
-//
-//        Constructor<ColumnDefinitions> c2 = (Constructor<ColumnDefinitions>) ColumnDefinitions.class.getDeclaredConstructors()[0];
-//        c2.setAccessible(true);
-//
-//
-//        when(fila.getColumnDefinitions()).thenReturn(c2.newInstance(defs, null));
-//        when(fila.getBytesUnsafe(anyString())).thenReturn(byteBuffer);
-//
-//        resultadoEjecucionList.add(fila);
-//
-//        when(resultadoEjecucion.all()).thenReturn(resultadoEjecucionList);
-//
-////        Optional valorColumnaActual = Optional.ofNullable(tipoValor.deserialize(byteBuffer, ProtocolVersion.NEWEST_SUPPORTED));
-//
-//
-//        proveedorCassandra.ejecutarTransaccion(transaccion);
-//
-//
-//    }
-//
+        Constructor<DataType.NativeType> d = (Constructor<DataType.NativeType>) DataType.NativeType.class.getDeclaredConstructors()[0];
+        d.setAccessible(true);
+
+
+
+
+
+        Definition[] defs = {
+                c.newInstance(null, null, "name1", d.newInstance(DataType.Name.VARCHAR, null)),
+                c.newInstance(null, null, "name2", d.newInstance(DataType.Name.VARCHAR, null)),
+                c.newInstance(null, null, "name3", d.newInstance(DataType.Name.VARCHAR, null))
+        };
+
+        Constructor<ColumnDefinitions> c2 = (Constructor<ColumnDefinitions>) ColumnDefinitions.class.getDeclaredConstructors()[0];
+        c2.setAccessible(true);
+
+
+        when(fila.getColumnDefinitions()).thenReturn(c2.newInstance(defs, null));
+        when(fila.getBytesUnsafe(anyString())).thenReturn(byteBuffer);
+
+        resultadoEjecucionList.add(fila);
+
+        when(resultadoEjecucion.all()).thenReturn(resultadoEjecucionList);
+
+//        Optional valorColumnaActual = Optional.ofNullable(tipoValor.deserialize(byteBuffer, ProtocolVersion.NEWEST_SUPPORTED));
+
+
+        proveedorCassandra.ejecutarTransaccion(sentencia, parametros);
+
+
+    }
+
 //    @Test
 //    public void ejecutarTransaccionConResultadoVacio() {
 //        crearTransaccion("PLANO", null);
