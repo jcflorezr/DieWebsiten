@@ -16,16 +16,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ProveedorCassandra.class})
+@PrepareForTest({Cluster.class})
 @PowerMockIgnore("javax.management.*")
 public class ProveedorCassandraTest {
 
     private ProveedorCassandra proveedorCassandra;
 
+    @Mock
+    private Cluster.Builder builder;
     @Mock
     private Optional<Cluster> clusterOptional;
     @Mock
@@ -34,6 +38,8 @@ public class ProveedorCassandraTest {
     private Session sesion;
     @Mock
     private PreparedStatement sentenciaPreparada;
+    @Mock
+    ColumnDefinitions columnDefinitions;
     @Mock
     private ResultSet resultadoEjecucion;
     @Mock
@@ -53,13 +59,25 @@ public class ProveedorCassandraTest {
         proveedorCassandraConstructor.setAccessible(true);
         proveedorCassandra = proveedorCassandraConstructor.newInstance();
 
-        // TODO voy aqui
-        when(clusterOptional.get()).thenReturn(cluster);
+        mockStatic(Cluster.class);
+        when(Cluster.builder()).thenReturn(builder);
+        when(builder.addContactPoint(anyString())).thenReturn(builder);
+        when(builder.withPort(anyInt())).thenReturn(builder);
+        when(builder.build()).thenReturn(cluster);
+
         when(cluster.connect()).thenReturn(sesion);
+
         proveedorCassandra.conectar();
 
         when(sesion.prepare(sentencia)).thenReturn(sentenciaPreparada);
+        when(sentenciaPreparada.getVariables()).thenReturn(columnDefinitions);
+        when(columnDefinitions.size()).thenReturn(parametros.length);
+
+
+
         when(sesion.execute(sentencia, parametros)).thenReturn(resultadoEjecucion);
+
+
 
 
 
@@ -108,6 +126,9 @@ public class ProveedorCassandraTest {
 
 //        Optional valorColumnaActual = Optional.ofNullable(tipoValor.deserialize(byteBuffer, ProtocolVersion.NEWEST_SUPPORTED));
 
+
+        // TODO voy aqui
+        // hay que mockear un resultSet con datos de verdad
 
         proveedorCassandra.ejecutarTransaccion(sentencia, parametros);
 
