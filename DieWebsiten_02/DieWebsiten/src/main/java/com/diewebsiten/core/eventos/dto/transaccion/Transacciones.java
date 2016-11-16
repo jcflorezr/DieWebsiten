@@ -112,7 +112,6 @@ public class Transacciones {
 
     private void prepararTransaccionColumnar() {
         try {
-            // TODO 1. que pasa cuando se crea una transaccion dinamicamente desde la base de datos??? ya no seria TransaccionColumnar
             TransaccionColumnar transaccionColumnar = (TransaccionColumnar) transaccion;
             transaccionColumnar.complementarSentencia();
         } catch (ClassCastException e) {

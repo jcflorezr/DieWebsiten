@@ -92,7 +92,11 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 		}
 
 		ResultSet resultadoEjecucion = obtenerResultSet(sentenciaPreparada, parametros);
-		return () -> resultadoEjecucion.isExhausted() ? Stream.empty() : transformarResultadoEjecucion(resultadoEjecucion);
+		Stream<Map<String, Object>> resultadoFinal = resultadoEjecucion.isExhausted() ? Stream.empty()
+																					  : transformarResultadoEjecucion(resultadoEjecucion);
+		return () -> resultadoFinal;
+
+
 
 
 
@@ -119,12 +123,15 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 	}
 
 	private ResultSet obtenerResultSet(PreparedStatement sentenciaPreparada, Object[] parametros) {
-		return isEmpty(parametros) ? sesion.execute(sentenciaPreparada.getQueryString())
+		ResultSet resultSet = isEmpty(parametros)
+				? sesion.execute(sentenciaPreparada.getQueryString())
                                    : sesion.execute(sentenciaPreparada.bind(parametros));
+		return resultSet;
 	}
 
 	private Stream<Map<String, Object>> transformarResultadoEjecucion(ResultSet resultadoEjecucion) {
-		return resultadoEjecucion.all().stream()
+		List<Row> resultadoEjecucionList = resultadoEjecucion.all();
+		return resultadoEjecucionList.stream()
 				.map(fila -> fila.getColumnDefinitions().asList().stream()
 						.collect(toMap(Definition::getName, columna -> obtenerValorColumnaActual(fila, columna)))
 				);

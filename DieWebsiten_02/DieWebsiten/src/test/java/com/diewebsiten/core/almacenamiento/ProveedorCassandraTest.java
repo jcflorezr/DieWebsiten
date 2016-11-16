@@ -11,6 +11,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,8 @@ public class ProveedorCassandraTest {
     @Mock
     private PreparedStatement sentenciaPreparada;
     @Mock
+    private BoundStatement boundStatement;
+    @Mock
     ColumnDefinitions columnDefinitions;
     @Mock
     private ResultSet resultadoEjecucion;
@@ -54,43 +57,32 @@ public class ProveedorCassandraTest {
 
     @Before
     public void setUp() throws Exception {
-
         Constructor<ProveedorCassandra> proveedorCassandraConstructor = ProveedorCassandra.class.getDeclaredConstructor(new Class[0]);
         proveedorCassandraConstructor.setAccessible(true);
         proveedorCassandra = proveedorCassandraConstructor.newInstance();
+        mockearClusterYSesion();
+    }
 
+    private void mockearClusterYSesion() {
+        // Cluster
         mockStatic(Cluster.class);
         when(Cluster.builder()).thenReturn(builder);
         when(builder.addContactPoint(anyString())).thenReturn(builder);
         when(builder.withPort(anyInt())).thenReturn(builder);
         when(builder.build()).thenReturn(cluster);
-
+        // Sesión
         when(cluster.connect()).thenReturn(sesion);
-
+        // Conectar
         proveedorCassandra.conectar();
-
-        when(sesion.prepare(sentencia)).thenReturn(sentenciaPreparada);
-        when(sentenciaPreparada.getVariables()).thenReturn(columnDefinitions);
-        when(columnDefinitions.size()).thenReturn(parametros.length);
-
-
-
-        when(sesion.execute(sentencia, parametros)).thenReturn(resultadoEjecucion);
-
-
-
-
-
-//        mockStatic(ProveedorCassandra.class);
-//        when(ProveedorCassandra.obtenerResultSet(anyObject(), anyObject())).thenReturn(resultadoEjecucion);
-
     }
 
-    @Test
-    public void ejecutarTransaccion() throws Exception {
+    private void mockearSentenciaPreparada(int numFiltrosSentencia) {
+        when(sesion.prepare(sentencia)).thenReturn(sentenciaPreparada);
+        when(sentenciaPreparada.getVariables()).thenReturn(columnDefinitions);
+        when(columnDefinitions.size()).thenReturn(numFiltrosSentencia);
+    }
 
-
-
+    private void mockearResultSet() throws Exception {
         /** Column Definitions **/
         Constructor<Definition> c = (Constructor<Definition>) Definition.class.getDeclaredConstructors()[0];
         c.setAccessible(true);
@@ -117,19 +109,32 @@ public class ProveedorCassandraTest {
         c2.setAccessible(true);
 
 
-        when(fila.getColumnDefinitions()).thenReturn(c2.newInstance(defs, null));
-        when(fila.getBytesUnsafe(anyString())).thenReturn(byteBuffer);
+
 
         resultadoEjecucionList.add(fila);
 
         when(resultadoEjecucion.all()).thenReturn(resultadoEjecucionList);
+
+        // TODO hay que mockear estas dos variables bien
+        when(fila.getColumnDefinitions()).thenReturn(c2.newInstance(defs, null));
+        when(fila.getBytesUnsafe(anyString())).thenReturn(byteBuffer);
+
+        when(sentenciaPreparada.bind(parametros)).thenReturn(boundStatement);
+        when(sesion.execute(boundStatement)).thenReturn(resultadoEjecucion);
+
+//        when(resultadoEjecucion.isExhausted()).thenReturn(false);
 
 //        Optional valorColumnaActual = Optional.ofNullable(tipoValor.deserialize(byteBuffer, ProtocolVersion.NEWEST_SUPPORTED));
 
 
         // TODO voy aqui
         // hay que mockear un resultSet con datos de verdad
+    }
 
+    @Test
+    public void ejecutarTransaccion() throws Exception {
+        mockearSentenciaPreparada(parametros.length);
+        mockearResultSet();
         proveedorCassandra.ejecutarTransaccion(sentencia, parametros);
 
 

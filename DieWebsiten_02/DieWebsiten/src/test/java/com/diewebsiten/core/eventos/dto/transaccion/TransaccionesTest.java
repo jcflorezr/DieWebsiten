@@ -127,8 +127,6 @@ public class TransaccionesTest {
         return new Transacciones(transaccion).obtenerResultado();
     }
 
-    // TODO El POJO Transaccion.java debería ser excluido de los test unit cases porque no hay lógica en él (POR AHORA)
-
 
     private Supplier<Stream<Map<String,Object>>> crearResultSetPrueba(String nombreArchivo) {
         JsonNode resultSetPrueba = obtenerResultadoDesdeArchivo(nombreArchivo);
