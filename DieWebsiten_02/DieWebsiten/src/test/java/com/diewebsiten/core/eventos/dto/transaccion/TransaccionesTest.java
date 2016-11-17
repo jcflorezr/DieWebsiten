@@ -44,6 +44,11 @@ public class TransaccionesTest {
     private static final String RESULTADO_TRANSACCION = "RT";
     private static final String RESULTADO_ESPERADO = "RE";
 
+    private static final String RUTA_RAIZ_EVENTOS = "com/diewebsiten/core/eventos/";
+    private static final String RUTA_TRANSACCION = "dto/transaccion/";
+    private static final String RUTA_TRANSACCION_SIN_FILTROS = RUTA_RAIZ_EVENTOS + RUTA_TRANSACCION + "transacciones_desde_base_de_datos/transaccion_sin_filtros/";
+    private static final String RUTA_TRANSACCION_SOLO_COLUMNAS_PRIMARIAS = RUTA_RAIZ_EVENTOS + RUTA_TRANSACCION + "transacciones_desde_base_de_datos/transaccion_solo_columnas_primarias/";
+
     private OngoingStubbing<Supplier<Stream<Map<String, Object>>>> ejecutarTransaccionStubbing;
     private Cassandra transaccionCassandra;
 
@@ -57,33 +62,33 @@ public class TransaccionesTest {
 
     @Test
     public void transaccionCassandraConResultadoPlano() {
-        ejecutarTransaccionStubbing.thenReturn(crearResultSetPrueba("transaccionesEventoResultSet.json"));
-        JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo("transaccionesEventoResultSet.json");
+        ejecutarTransaccionStubbing.thenReturn(crearResultSetPrueba("com/diewebsiten/core/eventos/dto/transaccion/transaccionesEventoResultSet.json"));
+        JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo("com/diewebsiten/core/eventos/dto/transaccion/transaccionesEventoResultSet.json");
         JsonNode resultadoActual = transaccionCassandra.plana();
         assertEquals(resultadoEsperado, resultadoActual);
     }
 
     @Test
     public void transaccionCassandraConResultadoEnJerarquia() {
-        ejecutarTransaccionStubbing.thenReturn(crearResultSetPrueba("llavesPrimariasResultSet.json"),
-                                               crearResultSetPrueba("transaccionesEventoResultSet.json"));
-        JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo("resultadoTransaccionesEventoEnJerarquia.json");
+        ejecutarTransaccionStubbing.thenReturn(crearResultSetPrueba("com/diewebsiten/core/eventos/dto/transaccion/llavesPrimariasResultSet.json"),
+                                               crearResultSetPrueba("com/diewebsiten/core/eventos/dto/transaccion/transaccionesEventoResultSet.json"));
+        JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo("com/diewebsiten/core/eventos/dto/transaccion/resultadoTransaccionesEventoEnJerarquia.json");
         JsonNode resultadoActual = transaccionCassandra.enJerarquia();
         assertEquals(resultadoEsperado, resultadoActual);
     }
 
     @Test
     public void transaccionCassandraConResultadoEnJerarquiaConNombres() {
-        ejecutarTransaccionStubbing.thenReturn(crearResultSetPrueba("llavesPrimariasResultSet.json"),
-                                               crearResultSetPrueba("transaccionesEventoResultSet.json"));
-        JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo("resultadoTransaccionesEventoEnJerarquiaConNombres.json");
+        ejecutarTransaccionStubbing.thenReturn(crearResultSetPrueba("com/diewebsiten/core/eventos/dto/transaccion/llavesPrimariasResultSet.json"),
+                                               crearResultSetPrueba("com/diewebsiten/core/eventos/dto/transaccion/transaccionesEventoResultSet.json"));
+        JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo("com/diewebsiten/core/eventos/dto/transaccion/resultadoTransaccionesEventoEnJerarquiaConNombres.json");
         JsonNode resultadoActual = transaccionCassandra.enJerarquiaConNombres();
         assertEquals(resultadoEsperado, resultadoActual);
     }
 
     @Test
     public void transaccionConSoloColumnasPrimarias() {
-        List<Transaccion> transacciones = obtenerTransaccionesDesdeLaBaseDeDatos("transacciones_desde_base_de_datos/transaccionSoloColumnasPrimariasResultSet.json");
+        List<Transaccion> transacciones = obtenerTransaccionesDesdeLaBaseDeDatos("com/diewebsiten/core/eventos/dto/transaccion/transacciones_desde_base_de_datos/transaccionSoloColumnasPrimariasResultSet.json");
         transacciones.forEach(transaccion -> {
             JsonNode resultadoActual = obtenerResultado(transaccion);
             JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo(obtenerNombreArchivoTransaccion(transaccion.getNombre(), RESULTADO_ESPERADO));
@@ -93,7 +98,7 @@ public class TransaccionesTest {
 
     @Test
     public void transaccionSinFiltros() {
-        List<Transaccion> transacciones = obtenerTransaccionesDesdeLaBaseDeDatos("transacciones_desde_base_de_datos/transaccionSinFiltrosResultSet.json");
+        List<Transaccion> transacciones = obtenerTransaccionesDesdeLaBaseDeDatos("com/diewebsiten/core/eventos/dto/transaccion/transacciones_desde_base_de_datos/transaccionSinFiltrosResultSet.json");
         transacciones.forEach(transaccion -> {
             JsonNode resultadoActual = obtenerResultadoTransaccionSinFiltros(transaccion);
             JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo(obtenerNombreArchivoTransaccion(transaccion.getNombre(), RESULTADO_ESPERADO));
@@ -103,13 +108,13 @@ public class TransaccionesTest {
 
     @Test(expected = ExcepcionGenerica.class)
     public void transaccionConTipoResultadoInvalido() {
-        List<Transaccion> transacciones = obtenerTransaccionesDesdeLaBaseDeDatos("transacciones_desde_base_de_datos/transaccionConTipoResultadoInvalidoResultSet.json");
+        List<Transaccion> transacciones = obtenerTransaccionesDesdeLaBaseDeDatos("com/diewebsiten/core/eventos/dto/transaccion/transacciones_desde_base_de_datos/transaccionConTipoResultadoInvalidoResultSet.json");
         transacciones.forEach(transaccion -> obtenerResultadoTransaccionSinFiltros(transaccion));
     }
 
     @Test(expected = ExcepcionGenerica.class)
     public void transaccionConMotorAlmacenamientoInvalido() {
-        List<Transaccion> transacciones = obtenerTransaccionesDesdeLaBaseDeDatos("transacciones_desde_base_de_datos/transaccionConMotorAlmacenamientoInvalidoResultSet.json");
+        List<Transaccion> transacciones = obtenerTransaccionesDesdeLaBaseDeDatos("com/diewebsiten/core/eventos/dto/transaccion/transacciones_desde_base_de_datos/transaccionConMotorAlmacenamientoInvalidoResultSet.json");
         transacciones.forEach(transaccion -> obtenerResultadoTransaccionSinFiltros(transaccion));
     }
 
@@ -159,15 +164,15 @@ public class TransaccionesTest {
     }
 
     private void inicializarTransaccionesDesdeLaBaseDeDatos() {
-        transaccionesDesdeLaBaseDeDatos.put(LLAVES_PRIMARIAS + "consultarTiposTransacciones", "transacciones_desde_base_de_datos/transaccion_sin_filtros/llavesPrimariasTransaccionSinFiltros.json");
-        transaccionesDesdeLaBaseDeDatos.put(LLAVES_PRIMARIAS + "consultarTiposTransaccionesSinPuntoYComa", "transacciones_desde_base_de_datos/transaccion_sin_filtros/llavesPrimariasTransaccionSinFiltros.json");
-        transaccionesDesdeLaBaseDeDatos.put(LLAVES_PRIMARIAS + "sentenciaGrupoValidaciones", "transacciones_desde_base_de_datos/transaccion_solo_columnas_primarias/llavesPrimariasTransaccionSoloColumnasPrimarias.json");
-        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_TRANSACCION + "consultarTiposTransacciones", "transacciones_desde_base_de_datos/transaccion_sin_filtros/resultadoTransaccionSinFiltros.json");
-        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_TRANSACCION + "consultarTiposTransaccionesSinPuntoYComa", "transacciones_desde_base_de_datos/transaccion_sin_filtros/resultadoTransaccionSinFiltros.json");
-        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_TRANSACCION + "sentenciaGrupoValidaciones", "transacciones_desde_base_de_datos/transaccion_solo_columnas_primarias/resultadoTransaccionSoloColumnasPrimarias.json");
-        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_ESPERADO + "consultarTiposTransacciones", "transacciones_desde_base_de_datos/transaccion_sin_filtros/resultadoEsperadoEnJerarquia.json");
-        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_ESPERADO + "consultarTiposTransaccionesSinPuntoYComa", "transacciones_desde_base_de_datos/transaccion_sin_filtros/resultadoEsperadoPlano.json");
-        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_ESPERADO + "sentenciaGrupoValidaciones", "transacciones_desde_base_de_datos/transaccion_solo_columnas_primarias/resultadoEsperadoEnJerarquiaConNombres.json");
+        transaccionesDesdeLaBaseDeDatos.put(LLAVES_PRIMARIAS + "consultarTiposTransacciones", RUTA_TRANSACCION_SIN_FILTROS + "llavesPrimariasTransaccionSinFiltros.json");
+        transaccionesDesdeLaBaseDeDatos.put(LLAVES_PRIMARIAS + "consultarTiposTransaccionesSinPuntoYComa", RUTA_TRANSACCION_SIN_FILTROS + "llavesPrimariasTransaccionSinFiltros.json");
+        transaccionesDesdeLaBaseDeDatos.put(LLAVES_PRIMARIAS + "sentenciaGrupoValidaciones", RUTA_TRANSACCION_SOLO_COLUMNAS_PRIMARIAS + "llavesPrimariasTransaccionSoloColumnasPrimarias.json");
+        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_TRANSACCION + "consultarTiposTransacciones", RUTA_TRANSACCION_SIN_FILTROS + "resultadoTransaccionSinFiltros.json");
+        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_TRANSACCION + "consultarTiposTransaccionesSinPuntoYComa", RUTA_TRANSACCION_SIN_FILTROS + "resultadoTransaccionSinFiltros.json");
+        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_TRANSACCION + "sentenciaGrupoValidaciones", RUTA_TRANSACCION_SOLO_COLUMNAS_PRIMARIAS + "resultadoTransaccionSoloColumnasPrimarias.json");
+        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_ESPERADO + "consultarTiposTransacciones", RUTA_TRANSACCION_SIN_FILTROS + "resultadoEsperadoEnJerarquia.json");
+        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_ESPERADO + "consultarTiposTransaccionesSinPuntoYComa", RUTA_TRANSACCION_SIN_FILTROS + "resultadoEsperadoPlano.json");
+        transaccionesDesdeLaBaseDeDatos.put(RESULTADO_ESPERADO + "sentenciaGrupoValidaciones", RUTA_TRANSACCION_SOLO_COLUMNAS_PRIMARIAS + "resultadoEsperadoEnJerarquiaConNombres.json");
     }
     
     private String obtenerNombreArchivoTransaccion(String nombreTransaccion, String tipoArchivo) {

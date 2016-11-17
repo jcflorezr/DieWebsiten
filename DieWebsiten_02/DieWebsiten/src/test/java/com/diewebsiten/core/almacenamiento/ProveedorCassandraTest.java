@@ -17,41 +17,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.stream.Collectors.toList;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
+import static org.powermock.api.mockito.PowerMockito.mock;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({Cluster.class})
+@PrepareForTest({Cluster.class, CodecRegistry.class})
 @PowerMockIgnore("javax.management.*")
 public class ProveedorCassandraTest {
 
-    private ProveedorCassandra proveedorCassandra;
-
-    @Mock
-    private Cluster.Builder builder;
-    @Mock
-    private Optional<Cluster> clusterOptional;
-    @Mock
-    private Cluster cluster;
     @Mock
     private Session sesion;
     @Mock
     private PreparedStatement sentenciaPreparada;
     @Mock
-    private BoundStatement boundStatement;
-    @Mock
-    ColumnDefinitions columnDefinitions;
-    @Mock
     private ResultSet resultadoEjecucion;
-    @Mock
-    private Row fila;
-    @Mock
-    private ByteBuffer byteBuffer;
 
     private List<Row> resultadoEjecucionList = new ArrayList<>();
-
+    private ProveedorCassandra proveedorCassandra;
     private String sentencia = "";
     private Object[] parametros = {""};
 
@@ -65,7 +52,9 @@ public class ProveedorCassandraTest {
 
     private void mockearClusterYSesion() {
         // Cluster
+        Cluster cluster = mock(Cluster.class);
         mockStatic(Cluster.class);
+        Cluster.Builder builder = mock(Cluster.Builder.class);
         when(Cluster.builder()).thenReturn(builder);
         when(builder.addContactPoint(anyString())).thenReturn(builder);
         when(builder.withPort(anyInt())).thenReturn(builder);
@@ -78,103 +67,58 @@ public class ProveedorCassandraTest {
 
     private void mockearSentenciaPreparada(int numFiltrosSentencia) {
         when(sesion.prepare(sentencia)).thenReturn(sentenciaPreparada);
+        ColumnDefinitions columnDefinitions = mock(ColumnDefinitions.class);
         when(sentenciaPreparada.getVariables()).thenReturn(columnDefinitions);
         when(columnDefinitions.size()).thenReturn(numFiltrosSentencia);
     }
 
     private void mockearResultSet() throws Exception {
+        listRow();
+        BoundStatement boundStatement = mock(BoundStatement.class);
+        when(sentenciaPreparada.bind(parametros)).thenReturn(boundStatement);
+        when(sesion.execute(boundStatement)).thenReturn(resultadoEjecucion);
+    }
+
+    private void listRow() throws Exception {
         /** Column Definitions **/
-        Constructor<Definition> c = (Constructor<Definition>) Definition.class.getDeclaredConstructors()[0];
-        c.setAccessible(true);
-//
-//
-//        Constructor<DataType> d1 = DataType.class.getDeclaredConstructor(DataType.Name.class);
-//        d1.setAccessible(true);
-//
-//
-        Constructor<DataType.NativeType> d = (Constructor<DataType.NativeType>) DataType.NativeType.class.getDeclaredConstructors()[0];
-        d.setAccessible(true);
+        Constructor<Definition> definitionC = (Constructor<Definition>) Definition.class.getDeclaredConstructors()[0];
+        definitionC.setAccessible(true);
 
-
-
-
+        Constructor<DataType.NativeType> nativeTypeC = (Constructor<DataType.NativeType>) DataType.NativeType.class.getDeclaredConstructors()[0];
+        nativeTypeC.setAccessible(true);
 
         Definition[] defs = {
-                c.newInstance(null, null, "name1", d.newInstance(DataType.Name.VARCHAR, null)),
-                c.newInstance(null, null, "name2", d.newInstance(DataType.Name.VARCHAR, null)),
-                c.newInstance(null, null, "name3", d.newInstance(DataType.Name.VARCHAR, null))
+                definitionC.newInstance(null, null, "name1", nativeTypeC.newInstance(DataType.Name.VARCHAR, null)),
+                definitionC.newInstance(null, null, "name2", nativeTypeC.newInstance(DataType.Name.VARCHAR, null)),
+                definitionC.newInstance(null, null, "name3", nativeTypeC.newInstance(DataType.Name.VARCHAR, null))
         };
 
-        Constructor<ColumnDefinitions> c2 = (Constructor<ColumnDefinitions>) ColumnDefinitions.class.getDeclaredConstructors()[0];
-        c2.setAccessible(true);
+        Constructor<ColumnDefinitions> columnDefinitionsC = (Constructor<ColumnDefinitions>) ColumnDefinitions.class.getDeclaredConstructors()[0];
+        columnDefinitionsC.setAccessible(true);
 
-
-
-
+        Row fila = mock(Row.class);
         resultadoEjecucionList.add(fila);
 
         when(resultadoEjecucion.all()).thenReturn(resultadoEjecucionList);
 
-        // TODO hay que mockear estas dos variables bien
-        when(fila.getColumnDefinitions()).thenReturn(c2.newInstance(defs, null));
+        when(fila.getColumnDefinitions()).thenReturn(columnDefinitionsC.newInstance(defs, null));
+        ByteBuffer byteBuffer = mock(ByteBuffer.class);
         when(fila.getBytesUnsafe(anyString())).thenReturn(byteBuffer);
+        // TODO como mockear a TypeCodec y a CodecRegistry, puesto que son classes final
+        TypeCodec typeCodec = mock(TypeCodec.class);
+        CodecRegistry codecRegistry = mock(CodecRegistry.class);
+        when(codecRegistry.codecFor(anyObject())).thenReturn(typeCodec);
+        when(typeCodec.deserialize(byteBuffer, ProtocolVersion.NEWEST_SUPPORTED)).thenReturn(null);
 
-        when(sentenciaPreparada.bind(parametros)).thenReturn(boundStatement);
-        when(sesion.execute(boundStatement)).thenReturn(resultadoEjecucion);
-
-//        when(resultadoEjecucion.isExhausted()).thenReturn(false);
-
-//        Optional valorColumnaActual = Optional.ofNullable(tipoValor.deserialize(byteBuffer, ProtocolVersion.NEWEST_SUPPORTED));
-
-
-        // TODO voy aqui
-        // hay que mockear un resultSet con datos de verdad
     }
 
     @Test
     public void ejecutarTransaccion() throws Exception {
         mockearSentenciaPreparada(parametros.length);
         mockearResultSet();
-        proveedorCassandra.ejecutarTransaccion(sentencia, parametros);
+        System.out.println(proveedorCassandra.ejecutarTransaccion(sentencia, parametros).get().collect(toList()));
 
 
     }
-
-//    @Test
-//    public void ejecutarTransaccionConResultadoVacio() {
-//        crearTransaccion("PLANO", null);
-//        assertEquals(arrayVacio, mockearResultadoVacio());
-//    }
-//
-//    @Test
-//    public void ejecutarTransaccionConResultadoVacioEnJerarquia() {
-//        crearTransaccion("JERARQUÍA", null);
-//        assertEquals(objetoVacio, mockearResultadoVacio());
-//    }
-//
-//    @Test(expected = ExcepcionGenerica.class)
-//    public void tipoResultadoInvalido() {
-//        crearTransaccion("INVÁLIDO", null);
-//        proveedorCassandra.ejecutarTransaccion(transaccion);
-//    }
-//
-//    @Test(expected = ExcepcionGenerica.class)
-//    public void parametrosNoCoinciden() throws Exception {
-//        crearTransaccion("PLANO", null);
-//        when(cassandra.numParametrosSentencia()).thenReturn(1);
-//        proveedorCassandra.ejecutarTransaccion(transaccion);
-//    }
-//
-//    private void crearTransaccion(String tipoResultado, Object... parametrosTransaccion) {
-//        transaccion.setTipoResultado(tipoResultado);
-//        transaccion.setParametrosTransaccion(parametrosTransaccion);
-//    }
-//
-//    private JsonNode mockearResultadoVacio() {
-//        when(cassandra.numParametrosSentencia()).thenReturn(0);
-//        when(resultadoEjecucion.isExhausted()).thenReturn(true);
-//        return proveedorCassandra.ejecutarTransaccion(transaccion);
-//    }
-
 
 }

@@ -52,15 +52,6 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
     @Override
 	Supplier<Stream<Map<String, Object>>> ejecutarTransaccion(String sentencia, Object[] parametros) {
 
-    	parametros = Optional.ofNullable(parametros).orElse(new Object[]{});
-
-//    	try {
-
-//			boolean esSentenciaSimple = tipoResultado == PLANO ? true : false;
-
-
-
-
 
 
     		// TODO Aqui hay un error de concurrencia
@@ -85,32 +76,15 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 			// sin embargo.. hay que crear unit tests antes de encontrar los errores y seguir refactorizando
 
 		PreparedStatement sentenciaPreparada = prepararSentencia(sentencia);
-		int numFiltrosSentencia = sentenciaPreparada.getVariables().size();
 
-		if (parametros.length != numFiltrosSentencia) {
-			throw new ExcepcionGenerica("La sentencia necesita " + numFiltrosSentencia + " parámetros para ser ejecutada.");
-		}
+		int numFiltrosSentencia = sentenciaPreparada.getVariables().size();
+		parametros = Optional.ofNullable(parametros).orElse(new Object[]{});
+
+		if (parametros.length != numFiltrosSentencia) throw new ExcepcionGenerica("La sentencia necesita " + numFiltrosSentencia + " parámetros para ser ejecutada.");
 
 		ResultSet resultadoEjecucion = obtenerResultSet(sentenciaPreparada, parametros);
-		Stream<Map<String, Object>> resultadoFinal = resultadoEjecucion.isExhausted() ? Stream.empty()
-																					  : transformarResultadoEjecucion(resultadoEjecucion);
-		return () -> resultadoFinal;
-
-
-
-
-
-//			return new ResultadoTransaccion(resultadoTransformado, sentencia, tipoResultado).obtenerResultado();
-
-
-
-
-
-
-//		} catch (Throwable e) {
-//			// ES NECESARIO IMPRIMIR LOS PARAMETROS??? PUESTO QUE YA SE IMPRIMIRÁN DESDE LOS EVENTOS
-//			throw new ExcepcionGenerica("Error al ejecutar la sentencia CQL --> " + sentenciaCQL + "'. Parámetros: " + (parametros != null ? asList(parametros).toString() : "{}") + ". Mensaje original --> " + Throwables.getStackTraceAsString(e));
-//		}
+		return () -> resultadoEjecucion.isExhausted() ? Stream.empty()
+													  : transformarResultadoEjecucion(resultadoEjecucion);
     }
 
     private PreparedStatement prepararSentencia(String sentencia) {
@@ -123,23 +97,24 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 	}
 
 	private ResultSet obtenerResultSet(PreparedStatement sentenciaPreparada, Object[] parametros) {
-		ResultSet resultSet = isEmpty(parametros)
-				? sesion.execute(sentenciaPreparada.getQueryString())
-                                   : sesion.execute(sentenciaPreparada.bind(parametros));
-		return resultSet;
+		if (isEmpty(parametros))
+			return sesion.execute(sentenciaPreparada.getQueryString());
+		return sesion.execute(sentenciaPreparada.bind(parametros));
 	}
 
 	private Stream<Map<String, Object>> transformarResultadoEjecucion(ResultSet resultadoEjecucion) {
-		List<Row> resultadoEjecucionList = resultadoEjecucion.all();
-		return resultadoEjecucionList.stream()
-				.map(fila -> fila.getColumnDefinitions().asList().stream()
+		return resultadoEjecucion.all().stream()
+				.map(fila ->
+						fila.getColumnDefinitions().asList().stream()
 						.collect(toMap(Definition::getName, columna -> obtenerValorColumnaActual(fila, columna)))
 				);
 	}
 
 	private Object obtenerValorColumnaActual(Row fila, Definition columnaActual) {
 		ByteBuffer byteBuffer = fila.getBytesUnsafe(columnaActual.getName());
-		TypeCodec tipoValor = new CodecRegistry().codecFor(columnaActual.getType());
+		CodecRegistry codec = new CodecRegistry();
+		TypeCodec tipoValor = codec.codecFor(columnaActual.getType());
+		// TODO como mockear esto pa que no devuelva un ""
 		Optional valorColumnaActual = Optional.ofNullable(tipoValor.deserialize(byteBuffer, ProtocolVersion.NEWEST_SUPPORTED));
 		return valorColumnaActual.orElseGet(() -> obtenerValorVacio(columnaActual.getType(), tipoValor.getJavaType()));
 	}
