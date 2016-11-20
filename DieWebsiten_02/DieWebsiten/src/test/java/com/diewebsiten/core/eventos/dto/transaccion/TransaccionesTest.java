@@ -10,8 +10,8 @@ import org.junit.runner.RunWith;
 import org.mockito.stubbing.OngoingStubbing;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+import utils.JsonUtils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +50,7 @@ public class TransaccionesTest {
     private static final String RUTA_TRANSACCION_SOLO_COLUMNAS_PRIMARIAS = RUTA_RAIZ_EVENTOS + RUTA_TRANSACCION + "transacciones_desde_base_de_datos/transaccion_solo_columnas_primarias/";
 
     private OngoingStubbing<Supplier<Stream<Map<String, Object>>>> ejecutarTransaccionStubbing;
+    private JsonUtils jsonUtils = new JsonUtils();
     private Cassandra transaccionCassandra;
 
     @Before
@@ -63,7 +64,7 @@ public class TransaccionesTest {
     @Test
     public void transaccionCassandraConResultadoPlano() {
         ejecutarTransaccionStubbing.thenReturn(crearResultSetPrueba("com/diewebsiten/core/eventos/dto/transaccion/transaccionesEventoResultSet.json"));
-        JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo("com/diewebsiten/core/eventos/dto/transaccion/transaccionesEventoResultSet.json");
+        JsonNode resultadoEsperado = obtenerJsonDesdeArchivo("com/diewebsiten/core/eventos/dto/transaccion/transaccionesEventoResultSet.json");
         JsonNode resultadoActual = transaccionCassandra.plana();
         assertEquals(resultadoEsperado, resultadoActual);
     }
@@ -72,7 +73,7 @@ public class TransaccionesTest {
     public void transaccionCassandraConResultadoEnJerarquia() {
         ejecutarTransaccionStubbing.thenReturn(crearResultSetPrueba("com/diewebsiten/core/eventos/dto/transaccion/llavesPrimariasResultSet.json"),
                                                crearResultSetPrueba("com/diewebsiten/core/eventos/dto/transaccion/transaccionesEventoResultSet.json"));
-        JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo("com/diewebsiten/core/eventos/dto/transaccion/resultadoTransaccionesEventoEnJerarquia.json");
+        JsonNode resultadoEsperado = obtenerJsonDesdeArchivo("com/diewebsiten/core/eventos/dto/transaccion/resultadoTransaccionesEventoEnJerarquia.json");
         JsonNode resultadoActual = transaccionCassandra.enJerarquia();
         assertEquals(resultadoEsperado, resultadoActual);
     }
@@ -81,7 +82,7 @@ public class TransaccionesTest {
     public void transaccionCassandraConResultadoEnJerarquiaConNombres() {
         ejecutarTransaccionStubbing.thenReturn(crearResultSetPrueba("com/diewebsiten/core/eventos/dto/transaccion/llavesPrimariasResultSet.json"),
                                                crearResultSetPrueba("com/diewebsiten/core/eventos/dto/transaccion/transaccionesEventoResultSet.json"));
-        JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo("com/diewebsiten/core/eventos/dto/transaccion/resultadoTransaccionesEventoEnJerarquiaConNombres.json");
+        JsonNode resultadoEsperado = obtenerJsonDesdeArchivo("com/diewebsiten/core/eventos/dto/transaccion/resultadoTransaccionesEventoEnJerarquiaConNombres.json");
         JsonNode resultadoActual = transaccionCassandra.enJerarquiaConNombres();
         assertEquals(resultadoEsperado, resultadoActual);
     }
@@ -91,7 +92,7 @@ public class TransaccionesTest {
         List<Transaccion> transacciones = obtenerTransaccionesDesdeLaBaseDeDatos("com/diewebsiten/core/eventos/dto/transaccion/transacciones_desde_base_de_datos/transaccionSoloColumnasPrimariasResultSet.json");
         transacciones.forEach(transaccion -> {
             JsonNode resultadoActual = obtenerResultado(transaccion);
-            JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo(obtenerNombreArchivoTransaccion(transaccion.getNombre(), RESULTADO_ESPERADO));
+            JsonNode resultadoEsperado = obtenerJsonDesdeArchivo(obtenerNombreArchivoTransaccion(transaccion.getNombre(), RESULTADO_ESPERADO));
             assertEquals(resultadoEsperado, resultadoActual);
         });
     }
@@ -101,7 +102,7 @@ public class TransaccionesTest {
         List<Transaccion> transacciones = obtenerTransaccionesDesdeLaBaseDeDatos("com/diewebsiten/core/eventos/dto/transaccion/transacciones_desde_base_de_datos/transaccionSinFiltrosResultSet.json");
         transacciones.forEach(transaccion -> {
             JsonNode resultadoActual = obtenerResultadoTransaccionSinFiltros(transaccion);
-            JsonNode resultadoEsperado = obtenerResultadoDesdeArchivo(obtenerNombreArchivoTransaccion(transaccion.getNombre(), RESULTADO_ESPERADO));
+            JsonNode resultadoEsperado = obtenerJsonDesdeArchivo(obtenerNombreArchivoTransaccion(transaccion.getNombre(), RESULTADO_ESPERADO));
             assertEquals(resultadoEsperado, resultadoActual);
         });
     }
@@ -132,27 +133,19 @@ public class TransaccionesTest {
         return new Transacciones(transaccion).obtenerResultado();
     }
 
-
     private Supplier<Stream<Map<String,Object>>> crearResultSetPrueba(String nombreArchivo) {
-        JsonNode resultSetPrueba = obtenerResultadoDesdeArchivo(nombreArchivo);
+        JsonNode resultSetPrueba = obtenerJsonDesdeArchivo(nombreArchivo);
         List<Map<String, Object>> resultSetPruebaList = new ArrayList<>();
         resultSetPrueba.forEach(objeto -> resultSetPruebaList.add(jsonToMap(objeto, String.class, Object.class)));
         return () -> resultSetPruebaList.stream();
     }
 
-    private JsonNode obtenerResultadoDesdeArchivo(String nombreArchivo) {
-        String ruta = "";
-        try {
-            ruta = getClass().getClassLoader().getResource(nombreArchivo).getPath();
-            File archivo = new File(ruta);
-            return jsonToObject(archivo, JsonNode.class);
-        } catch (Exception e) {
-            throw new ExcepcionGenerica("Error al procesar el archivo '" + nombreArchivo + "' en la ruta " + ruta + ". MOTIVO: " + e.getMessage());
-        }
+    private JsonNode obtenerJsonDesdeArchivo(String nombreArchivo) {
+        return jsonUtils.obtenerJsonDesdeArchivo(nombreArchivo);
     }
 
     private List<Transaccion> obtenerTransaccionesDesdeLaBaseDeDatos(String nombreArchivo) {
-        JsonNode transaccionesJson = obtenerResultadoDesdeArchivo(nombreArchivo);
+        JsonNode transaccionesJson = obtenerJsonDesdeArchivo(nombreArchivo);
         List<Transaccion> transacciones = new ArrayList<>();
         transaccionesJson.forEach(transaccionJson -> {
             String nombreMotorAlmacenamiento = transaccionJson.get(MOTOR_ALMACENAMIENTO).asText();

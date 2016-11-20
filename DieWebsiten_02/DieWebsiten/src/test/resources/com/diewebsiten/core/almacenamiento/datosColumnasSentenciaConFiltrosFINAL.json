@@ -1,0 +1,33 @@
+[
+  {
+    "nombre": "transaccion",
+    "tipo": "VARCHAR",
+    "valor": "transacción"
+  },
+  {
+    "nombre": "transaccion",
+    "tipo": "VARCHAR",
+    "valor": null
+  },
+  {
+    "nombre": "orden",
+    "tipo": "VARINT",
+    "valor": "1"
+  },
+  {
+    "nombre": "orden",
+    "tipo": "VARINT",
+    "valor": null
+  },
+  // TODO se debe encontrar la forma de mockear con java.nio.ByteBuffer las columnas de tipo list
+  {
+    "nombre": "filtrossentencia",
+    "tipo": "LIST",
+    "valor": "['keyspace_name', 'columnfamily_name']"
+  },
+  {
+    "nombre": "filtrossentencia",
+    "tipo": "LIST",
+    "valor": null
+  }
+]

@@ -80,11 +80,13 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 		int numFiltrosSentencia = sentenciaPreparada.getVariables().size();
 		parametros = Optional.ofNullable(parametros).orElse(new Object[]{});
 
-		if (parametros.length != numFiltrosSentencia) throw new ExcepcionGenerica("La sentencia necesita " + numFiltrosSentencia + " parámetros para ser ejecutada.");
+		if (parametros.length != numFiltrosSentencia)
+			throw new ExcepcionGenerica("La sentencia necesita " + numFiltrosSentencia + " parámetros para ser ejecutada.");
 
 		ResultSet resultadoEjecucion = obtenerResultSet(sentenciaPreparada, parametros);
-		return () -> resultadoEjecucion.isExhausted() ? Stream.empty()
-													  : transformarResultadoEjecucion(resultadoEjecucion);
+		return () -> resultadoEjecucion.isExhausted()
+				? Stream.empty()
+			 	: transformarResultadoEjecucion(resultadoEjecucion);
     }
 
     private PreparedStatement prepararSentencia(String sentencia) {
@@ -111,12 +113,10 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 	}
 
 	private Object obtenerValorColumnaActual(Row fila, Definition columnaActual) {
-		ByteBuffer byteBuffer = fila.getBytesUnsafe(columnaActual.getName());
-		CodecRegistry codec = new CodecRegistry();
-		TypeCodec tipoValor = codec.codecFor(columnaActual.getType());
-		// TODO como mockear esto pa que no devuelva un ""
-		Optional valorColumnaActual = Optional.ofNullable(tipoValor.deserialize(byteBuffer, ProtocolVersion.NEWEST_SUPPORTED));
-		return valorColumnaActual.orElseGet(() -> obtenerValorVacio(columnaActual.getType(), tipoValor.getJavaType()));
+		ByteBuffer valorColumnaActualBytes = fila.getBytesUnsafe(columnaActual.getName());
+		TypeCodec tipoValorColumnaActual = new CodecRegistry().codecFor(columnaActual.getType());
+		Optional valorColumnaActual = Optional.ofNullable(tipoValorColumnaActual.deserialize(valorColumnaActualBytes, ProtocolVersion.NEWEST_SUPPORTED));
+		return valorColumnaActual.orElseGet(() -> obtenerValorVacio(columnaActual.getType(), tipoValorColumnaActual.getJavaType()));
 	}
 
 	private Object obtenerValorVacio(DataType cassandraType, TypeToken javaType) {
@@ -124,9 +124,9 @@ public class ProveedorCassandra extends ProveedorAlmacenamiento {
 		if (cassandraType.isCollection()) {
 			return "List".equals(tipoColumna) ? new ArrayList<>() : new HashMap();
 		} else {
-			if ("String".equals(tipoColumna)) return "";
-			if (TIPOS_NUMERICOS.contains(tipoColumna)) return 0;
-			return null;
+			return "String".equals(tipoColumna) ? ""
+												: TIPOS_NUMERICOS.contains(tipoColumna) ? 0
+																						: null;
 		}
 	}
 

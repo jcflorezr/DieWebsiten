@@ -65,7 +65,7 @@ public class Proveedores implements AutoCloseable {
 
 	static void guardarNuevaSentencia(String sentencia, Object sentenciaPreparada) {
 		int idSentencia = sentencia.hashCode();
-		sentencias.put(idSentencia, sentencia);
+		sentencias.put(idSentencia, sentenciaPreparada);
 	}
 	
 	private enum MotoresAlmacenamiento {

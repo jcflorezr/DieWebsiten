@@ -1,0 +1,20 @@
+[
+  {
+    "transaccion": "transacción"
+  },
+  {
+    "transaccion": ""
+  },
+  {
+    "orden": 49
+  },
+  {
+    "orden": 0
+  },
+  {
+    "filtrossentencia": ["keyspace_name", "columnfamily_name"]
+  },
+  {
+    "filtrossentencia": []
+  }
+]

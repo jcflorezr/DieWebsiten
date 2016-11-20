@@ -25,7 +25,7 @@ import static org.apache.commons.lang3.StringUtils.*;
 public class Transformaciones {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final TypeFactory typeFactory = MAPPER.getTypeFactory();
+    private static final TypeFactory TYPE_FACTORY = MAPPER.getTypeFactory();
 
     public static ObjectNode newJsonObject() {
         return MAPPER.createObjectNode();
@@ -33,14 +33,14 @@ public class Transformaciones {
 
     public static <T> List<T> stringToList(String listString, Class<T> tipoDeLista) {
         try {
-            return MAPPER.readValue(listString, typeFactory.constructCollectionType(List.class, tipoDeLista));
+            return MAPPER.readValue(listString, TYPE_FACTORY.constructCollectionType(List.class, tipoDeLista));
         } catch (IOException e) {
-            throw new ExcepcionGenerica("no se pudo deserializar el String: " + listString + " a una lista de tipo: " + tipoDeLista + ". MOTIVO: " + e.getMessage());
+            throw new ExcepcionGenerica("no se pudo deserializar el String a una lista de tipo: " + tipoDeLista + ". MOTIVO: " + e.getMessage());
         }
     }
 
     public static <T> List<T> objectToList(Object objeto, Class<T> tipoDeLista) {
-        return MAPPER.convertValue(objeto, typeFactory.constructCollectionType(List.class, tipoDeLista));
+        return MAPPER.convertValue(objeto, TYPE_FACTORY.constructCollectionType(List.class, tipoDeLista));
     }
 
     public static ObjectNode stringToJsonObject(String jsonString) {
@@ -75,7 +75,7 @@ public class Transformaciones {
 
     public static <K, V> Map<K, V> jsonToMap(JsonNode json, Class<K> tipoDeLlave, Class<V> tipoDeValor) {
         try {
-            return MAPPER.readValue(json.toString(), typeFactory.constructMapType(Map.class, tipoDeLlave, tipoDeValor));
+            return MAPPER.readValue(json.toString(), TYPE_FACTORY.constructMapType(Map.class, tipoDeLlave, tipoDeValor));
         } catch (IOException e) {
             throw new ExcepcionGenerica("no se pudo deserializar el String: " + json.toString() + " a un map de tipo: " + tipoDeLlave + "," + tipoDeValor
             + ". MOTIVO: " + e.getMessage());
