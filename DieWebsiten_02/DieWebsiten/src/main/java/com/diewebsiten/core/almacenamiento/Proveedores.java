@@ -16,9 +16,7 @@ public class Proveedores implements AutoCloseable {
 	private static Map<Integer, Object> sentencias = new HashMap<>();
 	private static Object obj = new Object();
 
-	public Proveedores() {
-		obtenerProveedorAlmacenamiento(MotoresAlmacenamiento.CASSANDRA);
-	}
+	public Proveedores() {}
 
 	private static ProveedorAlmacenamiento obtenerProveedorAlmacenamiento(MotoresAlmacenamiento nombreBaseDeDatos) {
 		ProveedorAlmacenamiento proveedorAlmacenamiento = instanciasBasesDeDatos.get(nombreBaseDeDatos);
