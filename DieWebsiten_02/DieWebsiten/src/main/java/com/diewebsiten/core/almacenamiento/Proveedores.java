@@ -35,18 +35,20 @@ public class Proveedores implements AutoCloseable {
 
 	private static ProveedorAlmacenamiento crearNuevaInstanciaBaseDeDatos(MotoresAlmacenamiento nombreBaseDeDatos) {
 		switch (nombreBaseDeDatos) {
-			case CASSANDRA:
-				return new ProveedorCassandra();
 			case MYSQL:
 				return new ProveedorMySql();
 			default:
-				throw new ExcepcionGenerica("'" + nombreBaseDeDatos + "' no es un motor de almacenamiento válido");
+				return new ProveedorCassandra();
 		}
 	}
 
 	public static Supplier<Stream<Map<String, Object>>> ejecutarTransaccion(String nombreBaseDeDatos, String sentencia, Object[] parametros) {
-		MotoresAlmacenamiento motorAlmacenamiento = MotoresAlmacenamiento.valueOf(nombreBaseDeDatos);
-		if (motorAlmacenamiento == null) throw new ExcepcionGenerica("El motor de almacenamiento '" + nombreBaseDeDatos + "' no está soportado");
+		MotoresAlmacenamiento motorAlmacenamiento;
+		try {
+			motorAlmacenamiento = MotoresAlmacenamiento.valueOf(nombreBaseDeDatos);
+		} catch (IllegalArgumentException e) {
+			throw new ExcepcionGenerica("El motor de almacenamiento '" + nombreBaseDeDatos + "' no está soportado");
+		}
 		if (isBlank(sentencia)) throw new ExcepcionGenerica("No hay ninguna sentencia a ejecutar");
 		return obtenerProveedorAlmacenamiento(motorAlmacenamiento).ejecutarTransaccion(sentencia, parametros);
 	}
