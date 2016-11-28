@@ -1,8 +1,8 @@
 
 package com.diewebsiten.core.eventos;
 
+import com.diewebsiten.core.eventos.dto.*;
 import com.diewebsiten.core.eventos.dto.Campo.InformacionCampo;
-import com.diewebsiten.core.eventos.dto.Evento;
 import com.diewebsiten.core.eventos.dto.transaccion.Transaccion;
 import com.diewebsiten.core.eventos.dto.transaccion.Transacciones;
 import com.diewebsiten.core.eventos.dto.transaccion.columnar.Cassandra;
@@ -11,20 +11,17 @@ import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.*;
 
 import static com.diewebsiten.core.almacenamiento.util.Sentencias.*;
 import static com.diewebsiten.core.eventos.dto.transaccion.Transacciones.nuevaTransaccionCassandra;
 import static com.diewebsiten.core.eventos.util.Mensajes.ERROR;
 import static com.diewebsiten.core.eventos.util.Mensajes.Evento.EVENTO_NO_EXISTE;
-import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario;
 import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario.CAMPOS_FORMULARIO_NO_EXISTEN;
 import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario.PARAMETROS_FORMULARIO_NO_EXISTEN;
+import static com.diewebsiten.core.eventos.util.Mensajes.Evento.Formulario.VALIDACIONES_NO_EXISTEN;
 import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.transformarParametro;
 import static com.diewebsiten.core.eventos.util.ProcesamientoParametros.validarParametro;
 import static com.google.common.base.Objects.firstNonNull;
@@ -36,25 +33,32 @@ import static com.google.common.base.Objects.firstNonNull;
  *
  * @author Juan Camilo Flórez Román (www.diewebstien.com).
  */
-public class Eventos implements Callable<ObjectNode> {
+public class Eventos {
 
 	private Evento evento;
+	private Formulario formulario;
 
     Eventos(String url, String nombreEvento, String parametros) throws Exception {
         evento = new Evento(url, nombreEvento, parametros);
+		formulario = evento.getFormulario();
     }
 
 
-    @Override
-    public ObjectNode call() throws ExcepcionDeLog {
+    public ObjectNode ejecutar() throws ExcepcionDeLog {
 
 		try {
+
+			// TODO estos dos llamados a la BD pueden ir con CompletableFuture
+			// http://www.deadcoderising.com/java8-writing-asynchronous-code-with-completablefuture/#callbackdependingonmultiplecomputations
+
+			obtenerFormulario();
+			obtenerTransacciones();
+
 			if (validarEvento()) {
 				ejecutarEvento();
 			} else {
-				evento.getResultadoFinal().putPOJO("VAL_" + evento.getNombreEvento(), evento.getFormulario().getParametros());
+				evento.getResultadoFinal().putPOJO("VAL_" + evento.getNombreEvento(), formulario.getParametros());
 			}
-			return evento.getResultadoFinal();
 		} catch (Exception e) {
 			Throwable excepcionReal = e.getCause();
 			if (excepcionReal != null) {
@@ -63,10 +67,20 @@ public class Eventos implements Callable<ObjectNode> {
 				new LogEventos(evento).imprimirErrorEnLog(e);
 			}
 			evento.getResultadoFinal().put("error", ERROR.get());
-			return evento.getResultadoFinal();
 		}
+		return evento.getResultadoFinal();
 
     }
+
+    private void obtenerFormulario() {
+		Cassandra transaccion = nuevaTransaccionCassandra(VALIDACIONES_EVENTO.sentencia(), evento.getInformacionEvento());
+        formulario.setCampos(transaccion.enJerarquiaConNombres());
+	}
+
+	private void obtenerTransacciones() {
+		Cassandra transaccion = nuevaTransaccionCassandra(TRANSACCIONES.sentencia(), evento.getInformacionEvento());
+		evento.setTransacciones(transaccion.plana());
+	}
 
     /**
      *
@@ -75,176 +89,82 @@ public class Eventos implements Callable<ObjectNode> {
      */
     private boolean validarEvento() throws Exception {
 
-		Cassandra transaccion = nuevaTransaccionCassandra(VALIDACIONES_EVENTO.sentencia(), evento.getInformacionEvento());
-        evento.getFormulario().setCampos(transaccion.enJerarquiaConNombres());
-        
-        if (!evento.getFormulario().poseeCampos() && evento.getFormulario().poseeParametros()) {
+        if (formulario.sinCamposPeroConParametros()) {
             throw new ExcepcionGenerica(CAMPOS_FORMULARIO_NO_EXISTEN.get());
-        } else if (evento.getFormulario().poseeCampos() && !evento.getFormulario().poseeParametros()) {
+        } else if (formulario.conCamposPeroSinParametros()) {
             throw new ExcepcionGenerica(PARAMETROS_FORMULARIO_NO_EXISTEN.get());
-        } else if (!evento.getFormulario().poseeCampos()) {
-        	return true; // Si no se encontraron campos para la ejecución de este evento significa que no los necesita.
+        } else if (formulario.sinCampos()) {
+			// Si no se encontraron campos para la ejecución de este evento significa que no los necesita.
+        	return true;
         }
 
-        ExecutorService grupoEjecucion = obtenerGrupoEjecucion();
-        try {
-        	List<Future<Void>> ejecucionValidaciones = new ArrayList<>();
-			evento.getFormulario().getCampos().get().forEach(campoFormulario ->
-					ejecucionValidaciones.add(grupoEjecucion.submit(new ValidacionFormularios(campoFormulario.getKey(), campoFormulario.getValue()))));
-			for (Future<Void> ejecucionValidacion : ejecucionValidaciones) {
-				ejecucionValidacion.get();
-			}
-		} finally {
-			if (grupoEjecucion != null) grupoEjecucion.shutdown();
-		}
+        // TODO como esperar a que los campos ya esten listos?
+		formulario.getCampos().get().forEach(campoFormulario -> procesarFormulario(campoFormulario));
 
-        if (!evento.getFormulario().isValidacionExitosa()) return false;
-
-        return true;
+        return formulario.isValidacionExitosa();
         
     }
-    
-    /**
-     *
-     * @return
-     */
-    private void ejecutarEvento() throws Exception {
 
-		Cassandra transaccionCassandra = nuevaTransaccionCassandra(TRANSACCIONES.sentencia(), evento.getInformacionEvento());
-		evento.setTransacciones(transaccionCassandra.plana());
+	/**
+	 * Recibir los valores de los parámetros de un formulario, luego obtener de
+	 * la base de datos la validación de cada parámetro y por último validar cada parámetro.
+	 */
+	private void procesarFormulario(Entry<String, InformacionCampo> campoFormulario) {
+
+		String columnName = campoFormulario.getKey();
+		InformacionCampo campo = campoFormulario.getValue();
+
+		Cassandra transaccion = nuevaTransaccionCassandra(GRUPO_VALIDACIONES.sentencia(), campo.getGrupoValidacion());
+		campo.setValidaciones(transaccion.enJerarquiaConNombres());
+
+		if (!campo.poseeValidaciones()) throw new ExcepcionGenerica(VALIDACIONES_NO_EXISTEN.get());
+
+		Object valorParametroActual = formulario.getParametro(columnName);
+		// TODO aqui podria ir otro CompletableFuture
+		campo.getValidaciones()
+				.map(validacion -> validarParametro(validacion, valorParametroActual))
+				.filter(resultadoValidacion -> !resultadoValidacion.equals(valorParametroActual))
+				.peek(resultadoValidacion -> formulario.setParametro(columnName, resultadoValidacion))
+				.findFirst()
+				.ifPresent(resultadoValidacion -> formulario.setValidacionExitosa(false));
+
+		if (formulario.isValidacionExitosa()) {
+			campo.getTransformaciones()
+					.forEach(transformacion -> formulario.setParametro(columnName, transformarParametro(transformacion, valorParametroActual)));
+		}
+
+	}
+
+
+    private void ejecutarEvento() throws Exception {
 
         if (!evento.poseeTransacciones()) throw new ExcepcionGenerica(EVENTO_NO_EXISTE.get());
 
-		ExecutorService grupoEjecucion = obtenerGrupoEjecucion();
-		try {
-			List<Future<Void>> grupoTransacciones = new ArrayList<>();
-			for (Transaccion transaccion : evento.getTransacciones()) grupoTransacciones.add(grupoEjecucion.submit(new EjecucionTransacciones(transaccion)));
-			for (Future<Void> grupoTransaccion : grupoTransacciones) grupoTransaccion.get();
-		} finally {
-			if (grupoEjecucion != null) grupoEjecucion.shutdown();
-		}
+		evento.getTransacciones().forEach(transaccion -> ejecutarTransaccion(transaccion));
 
     }
 
-    private ExecutorService obtenerGrupoEjecucion() {
-		final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat(evento.getNombreEvento() + "-%d").setDaemon(true).build();
-        return Executors.newFixedThreadPool(10, threadFactoryBuilder);
-	}
-    
-    
-    // =========================================================================== //
-    // =========================== FORMULARIOS =================================== //
-    // =========================================================================== //
-	
-	private class ValidacionFormularios implements Callable<Void> {
+	private void ejecutarTransaccion(Transaccion transaccion) {
 
-		private final String columnName;
-	    private final InformacionCampo campo;
-	    
-	    private ValidacionFormularios(String columnName, InformacionCampo campo) {
-	    	this.columnName = columnName;
-	        this.campo = campo;
-	    } 
-	    
-	    @Override
-	    public Void call() {
-	    	try {			
-	    		return procesarFormulario();
-			} catch (Exception e) {
-				Throwable excepcionReal = e.getCause();
-				if (excepcionReal != null) {
-					throw new RuntimeException(excepcionReal);
-				} else {
-					throw e;
-				}
-			}
-	    }
-	    
-	    /**
-	     * Recibir los valores de los parámetros de un formulario, luego obtener de
-	     * la base de datos la validación de cada parámetro y por último validar cada parámetro.
-	     */
-	    private Void procesarFormulario() {
+		// Extraer los valores recibidos desde el cliente (navegador web, dispositivo móvil)
+		// y guardarlos en una lista para enviarlos a la sentencia preparada
+		transaccion.setParametros(
+			transaccion.getFiltrosSentencia().stream()
+				.map(filtro -> formulario.getCampos().get()
+						.filter(campo -> campo.getKey().equals(filtro))
+						.map(campo -> firstNonNull(campo.getValue().getValorPorDefecto(),
+												   formulario.getParametro(campo.getKey())))
+						.findAny().get()
+				).toArray());
 
-			Cassandra transaccion = nuevaTransaccionCassandra(GRUPO_VALIDACIONES.sentencia(), campo.getGrupoValidacion());
-			campo.setValidaciones(transaccion.enJerarquiaConNombres());
+		// Guardar los resultados de esta transacción dentro del resultado final de todos el evento
+		JsonNode resultadoTransaccion = new Transacciones(transaccion).obtenerResultado();
+		if (evento.getResultadoFinal().size() == 0) {
+			evento.setResultadoFinal(resultadoTransaccion);
+		} else if (resultadoTransaccion.size() > 0) {
+			poblarResultadoFinal(resultadoTransaccion);
+		}
 
-	        // Validar que sí existan las setValidaciones del grupo.
-	        if (!campo.poseeValidaciones()) throw new ExcepcionGenerica(Formulario.VALIDACIONES_NO_EXISTEN.get());
-
-			Object valorParametroActual = evento.getFormulario().getParametro(columnName);
-			campo.getValidaciones()
-			     .map(validacion -> validarParametro(validacion, valorParametroActual))
-			     .filter(resultadoValidacion -> !resultadoValidacion.equals(valorParametroActual))
-			     .peek(resultadoValidacion -> evento.getFormulario().setParametro(columnName, resultadoValidacion))
-			     .findFirst()
-				 .ifPresent(resultadoValidacion -> evento.getFormulario().setValidacionExitosa(false));
-
-			if (evento.getFormulario().isValidacionExitosa()) {
-				campo.getTransformaciones()
-					 .forEach(transformacion -> evento.getFormulario().setParametro(columnName, transformarParametro(transformacion, valorParametroActual)));
-			}
-
-			return null;
-
-	    }
-	    
-	}
-
-	
-	// =========================================================================== //
-    // ============================== TRANSACCIONES ============================== //
-    // =========================================================================== //
-	
-	private class EjecucionTransacciones implements Callable<Void> {
-
-		private final Transaccion transaccion;
-
-	    private EjecucionTransacciones(Transaccion transaccion) {
-	        this.transaccion = transaccion;
-	    }
-
-	    @Override
-	    public Void call() {
-	    	try {
-	    		ejecutarTransaccion();
-				return null;
-			} catch (Exception e) {
-				Throwable excepcionReal = e.getCause();
-				if (excepcionReal != null) {
-					throw new RuntimeException(excepcionReal);
-				} else {
-					throw e;
-				}
-			}
-	    }
-
-        /**
-		 *
-		 */
-	    private void ejecutarTransaccion() {
-
-	        // Extraer los valores recibidos desde el cliente (navegador web, dispositivo móvil)
-	        // y guardarlos en una lista para enviarlos a la sentencia preparada
-			transaccion.setParametros(
-				transaccion.getFiltrosSentencia().stream().parallel()
-					.map(filtro -> evento.getFormulario().getCampos().get()
-							.filter(campo -> campo.getKey().equals(filtro))
-							.map(campo -> firstNonNull(campo.getValue().getValorPorDefecto(),
-													   evento.getFormulario().getParametro(campo.getKey())))
-							.findAny().get()
-					).toArray());
-
-			// Guardar los resultados de esta transacción dentro del resultado final de todos el evento
-			JsonNode resultadoTransaccion = new Transacciones(transaccion).obtenerResultado();
-			if (evento.getResultadoFinal().size() == 0) {
-				evento.setResultadoFinal(resultadoTransaccion);
-			} else if (resultadoTransaccion.size() > 0) {
-				poblarResultadoFinal(resultadoTransaccion);
-			}
-
-	    }
-	    
 	}
 	
 	private void poblarResultadoFinal(JsonNode coleccion) {
@@ -254,111 +174,5 @@ public class Eventos implements Callable<ObjectNode> {
 							  evento.getResultadoFinal().setAll((ObjectNode) coleccion);}
 		);
 	}
-	
-	
-	
-	
-	
-	
-	/**
-     * En este método se genera dinámicamente la sentencia CQL (SELECT, INSERT, UPDATE o DELETE) 
-     * que pertenece a una nueva transacción.
-     * 
-     * @param sitioWeb sitio web a donde pertenece la página
-     * @param pagina página a donde pertenece la transacción
-     * @param transaccion nombre de la transacción a la que pertenece la nueva sentencia CQL
-     * @param tipoSentencia si es (SELECT, INSERT, UPDATE o DELETE)
-     * @param tabla nombre de la tabla de la base de datos donde se ejecutará la sentencia CQL
-     * @return sentencia CQL preparada. Ej: SELECT campo1 FROM base_de_datos.tabla WHERE campo2 = ?
-     * @throws java.lang.Exception 
-     */
-//    private String generarSentenciasCQL(String sitioWeb, String pagina, String transaccion, String tipoSentencia, String tabla) throws Exception {
-//
-//        try {
-//            
-//            // Obtener los campos que contiene la sentencia CQL.
-//            StringBuilder sentenciaCQL = new StringBuilder("SELECT clausula, campo FROM diewebsiten.sentencias_cql WHERE sitioweb = ? AND pagina = ? AND tipotransaccion = ? AND transaccion = ?");
-//            List<Row> camposSentencia = consultar(sentenciaCQL.toString(), "cualquierNombreDeSentencia", new Object[] {sitioWeb, pagina, tipoSentencia, transaccion});
-//
-//            // Validar que los campos del formulario existen.
-//            if (camposSentencia.isEmpty()) {
-//                sentenciaCQL = new StringBuilder("No se puede generar la sentencia CQL de la transacción '" + transaccion 
-//                             + "' de la página '" + pagina + "' del sitio web '" + sitioWeb + "' " 
-//                             + "debido a que no se encontraron los campos que componen la sentencia CQL.");
-//                throw new Exception(sentenciaCQL.toString());
-//            }
-//
-//            // Que la sentencia CQL sea de tipo válido.
-//            if (!contienePalabra(tipoSentencia, "SELECT,UPDATE,INSERT,DELETE")) {
-//                sentenciaCQL = new StringBuilder("La transacción '" + transaccion + "' de la página '" + pagina + "' del sitio web '" + sitioWeb + "' " 
-//                             + "tiene un tipo de transacción no válido: '" + tipoSentencia + "'. "
-//                             + "Los tipos de transacción válidos son: SELECT, UPDATE, INSERT o DELETE.");
-//                throw new Exception(sentenciaCQL.toString());
-//            }
-//            
-//            Map <String, String> clausulas = new LinkedHashMap<String, String>();
-//            
-//            for (Row campo : camposSentencia) {  
-//                
-//                // Guardar cada cláusula con su formato CQL y con sus campos correspondientes en cada Key del Map.
-//                // Ej: {"SELECT" : "campo1, campo2"}, {"WHERE" : "campo1 = ? AND campo2 = ?"}, 
-//                //     {"SET" : "campo1 = ?, campo2 = ?"}, {"INSERT" : "campo1, campo2"},
-//                //     {"VALUES" : "?,?,?"}
-//                if (clausulas.containsKey(campo.getString("clausula"))) {
-//                    
-//                    // {"SELECT" : "campo1, campo2"}
-//                    if (campo.getString("clausula").equals("SELECT")) {
-//                        clausulas.put(campo.getString("clausula"), clausulas.get(campo.getString("clausula")) + ", " + campo.getString("campo"));
-//                    // {"INSERT" : "campo1, campo2"} | {"VALUES" : "?,?"}  
-//                    } else if (campo.getString("clausula").equals("INSERT")) {
-//                        clausulas.put(campo.getString("clausula"), clausulas.get(campo.getString("clausula")) + " AND " + campo.getString("campo") + " = ?");
-//                        clausulas.put("VALUES", clausulas.get("VALUES") + ", ?");
-//                    // {"SET" : "campo1 = ?, campo2 = ?"}  
-//                    } else if (campo.getString("clausula").equals("SET")) {
-//                        clausulas.put(campo.getString("clausula"), clausulas.get(campo.getString("clausula")) + ", " + campo.getString("campo") + " = ?");
-//                    // {"WHERE" : "campo1 = ? AND campo2 = ?"}  
-//                    } else if (campo.getString("clausula").equals("WHERE")) {
-//                        clausulas.put(campo.getString("clausula"), clausulas.get(campo.getString("clausula")) + " AND " + campo.getString("campo") + " = ?");                        
-//                    }
-//                    
-//                } else {
-//                    
-//                    //{"SELECT" : "campo1"}
-//                    if (campo.getString("clausula").equals("SELECT")) {
-//                        clausulas.put(campo.getString("clausula"), campo.getString("campo"));
-//                    // {"INSERT" : "campo1"} | {"VALUES" : "?"}    
-//                    } else if (campo.getString("clausula").equals("INSERT")) {
-//                        clausulas.put(campo.getString("clausula"), clausulas.get("clausula") + " AND " + campo.getString("campo") + " = ?");
-//                        clausulas.put("VALUES", "?");
-//                    // {"SET" : "campo1 = ?"} | {"WHERE" : "campo1 = ?"}
-//                    } else if (contienePalabra(campo.getString("clausula"), "SET,WHERE")) {
-//                        clausulas.put(campo.getString("clausula"), campo.getString("campo") + " = ?");                        
-//                    }
-//                }              
-//            }            
-//            
-//            sentenciaCQL = new StringBuilder(tipoSentencia + " ");
-//            
-//            // Generar la sentencia SELECT, INSERT, UPDATE o DELETE.
-//            if (sentenciaCQL.toString().trim().equals("SELECT")) {                
-//                sentenciaCQL.append(clausulas.get("SELECT") + " FROM " + tabla + " WHERE " + clausulas.get("WHERE"));
-//            } else if (sentenciaCQL.toString().trim().equals("INSERT")) {                
-//                sentenciaCQL.append("INTO " + tabla + "(" + clausulas.get("INSERT") + ") VALUES (" + clausulas.get("VALUES") + ")");                
-//            } else if (sentenciaCQL.toString().trim().equals("UPDATE")) {                
-//                sentenciaCQL.append(tabla + " SET " + clausulas.get("SET") + " WHERE " + clausulas.get("WHERE"));                
-//            } else if (sentenciaCQL.toString().trim().equals("DELETE")) {
-//                sentenciaCQL.append("FROM " + tabla + " WHERE " + clausulas.get("WHERE"));  
-//            } 
-//            
-//            return sentenciaCQL.append(";").toString();
-//               
-//        } catch (Exception e) {
-//            Log.getInstance().imprimirErrorEnLog(e);
-//            throw new Exception(e);
-//        }
-//        
-//    }// generarSentenciasCQL
-	
-	
 	
 }

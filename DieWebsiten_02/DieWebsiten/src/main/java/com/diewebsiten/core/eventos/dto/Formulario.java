@@ -49,8 +49,8 @@ public class Formulario {
 		if (campos.getColumnName() != null) poseeCampos = true; // El formulario sí posee campos
 	}
 
-	public boolean poseeCampos() {
-		return poseeCampos;
+	public boolean sinCampos() {
+		return poseeCampos == true ? false : poseeCampos;
 	}
 
     // =================================================================
@@ -82,9 +82,12 @@ public class Formulario {
     public void setParametro(String nombreParametro, Object valorParametro) {
     	if (this.parametros != null) this.parametros.putPOJO(nombreParametro, valorParametro);
     }
-    
-    public boolean poseeParametros() {
-		return poseeParametros;
+
+	public boolean sinCamposPeroConParametros() {
+		return !poseeCampos && poseeParametros;
 	}
 
+	public boolean conCamposPeroSinParametros() {
+		return poseeCampos && !poseeParametros;
+	}
 }

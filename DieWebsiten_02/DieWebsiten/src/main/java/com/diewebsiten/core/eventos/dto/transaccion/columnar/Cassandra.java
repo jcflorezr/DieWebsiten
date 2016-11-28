@@ -48,7 +48,7 @@ public class Cassandra extends TransaccionColumnar {
                 Stream.of(stringToList(llavesPrimarias.get(KEY_ALIASES).asText(), String.class),
                           stringToList(llavesPrimarias.get(COLUMN_ALIASES).asText(), String.class))
                         .flatMap(List::stream)
-                        .filter(llavePrimaria -> getFiltrosSentencia().stream().noneMatch(parametro -> llavePrimaria.equals(parametro)))
+                        .filter(llavePrimaria -> getFiltrosSentencia().stream().noneMatch(filtro -> llavePrimaria.equals(filtro)))
                         .map(columnaPrimaria -> getColumnasQuery().filter(columna -> columna.equals(columnaPrimaria)).findFirst().get())
                         .collect(toList());
         if (queryContieneSoloColumnasPrimarias(columnasPrimarias)) convertirUltimaColumnaARegular(columnasPrimarias);

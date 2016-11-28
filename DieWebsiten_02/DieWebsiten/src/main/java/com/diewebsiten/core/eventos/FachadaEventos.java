@@ -5,14 +5,10 @@ import com.diewebsiten.core.eventos.util.Mensajes;
 import com.diewebsiten.core.excepciones.ExcepcionDeLog;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.diewebsiten.core.util.Log;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
 public class FachadaEventos {
@@ -26,7 +22,7 @@ public class FachadaEventos {
     public void iniciarModuloEventos() {
         
     	final ThreadFactory threadFactoryBuilder = new ThreadFactoryBuilder().setNameFormat("Eventos-%d").setDaemon(true).build();
-        ExecutorService ejecucionEventos = Executors.newFixedThreadPool(10, threadFactoryBuilder);
+        ExecutorService ejecucionEventos = Executors.newFixedThreadPool(1, threadFactoryBuilder);
         
         try (Proveedores almacenamiento = new Proveedores()) {
         	
@@ -100,26 +96,36 @@ public class FachadaEventos {
             
             
             
-            List<Future<ObjectNode>> grupoEventos = new ArrayList<>();
-            
-            
-            
-            
-            
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
-//            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
-//            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
-            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
+//            List<Future<ObjectNode>> grupoEventos = new ArrayList<>();
+//
+//
+//
+//
+//
+//            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
+//            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros)));
+////            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros)));
+//            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null)));
+//            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1)));
+////            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1)));
+//            grupoEventos.add(ejecucionEventos.submit(new Eventos("localhost:@:eventos", "ConsultarInfoTabla", parametros1)));
+//
+//
+//
+//            for (Future<ObjectNode> evento : grupoEventos) {
+//                System.out.println(evento.get());
+//            }
 
 
+            System.out.println(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null).ejecutar());
+            System.out.println(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros).ejecutar());
+//            System.out.println(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros).ejecutar());
+            System.out.println(new Eventos("localhost:@:eventos", "CargaInicialPaginaEventos", null).ejecutar());
+            System.out.println(new Eventos("localhost:@:eventos", "ConsultarInfoSitioWeb", parametros1).ejecutar());
+//            System.out.println(new Eventos("localhost:@:eventos", "ConsultarInfoBaseDeDatos", parametros1).ejecutar());
+            System.out.println(new Eventos("localhost:@:eventos", "ConsultarInfoTabla", parametros1).ejecutar());
 
-            for (Future<ObjectNode> evento : grupoEventos) {
-                System.out.println(evento.get());
-            }
-            
+
             System.out.println(((System.currentTimeMillis() - timestamp) / 1000) + " seg.");
             
             
