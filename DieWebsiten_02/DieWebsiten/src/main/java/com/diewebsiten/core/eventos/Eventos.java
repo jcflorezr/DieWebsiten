@@ -2,7 +2,8 @@
 package com.diewebsiten.core.eventos;
 
 import com.diewebsiten.core.eventos.dto.*;
-import com.diewebsiten.core.eventos.dto.Campo.InformacionCampo;
+import com.diewebsiten.core.eventos.dto.Campo.PorGrupoValidacion;
+import com.diewebsiten.core.eventos.dto.Campo.PorGrupoValidacion.InformacionCampo;
 import com.diewebsiten.core.eventos.dto.transaccion.Transaccion;
 import com.diewebsiten.core.eventos.dto.transaccion.Transacciones;
 import com.diewebsiten.core.eventos.dto.transaccion.columnar.Cassandra;
@@ -14,6 +15,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import static com.diewebsiten.core.almacenamiento.util.Sentencias.*;
 import static com.diewebsiten.core.eventos.dto.transaccion.Transacciones.nuevaTransaccionCassandra;
@@ -82,11 +84,6 @@ public class Eventos {
 		evento.setTransacciones(transaccion.plana());
 	}
 
-    /**
-     *
-     * @return
-     * @throws Exception
-     */
     private boolean validarEvento() throws Exception {
 
         if (formulario.sinCamposPeroConParametros()) {
@@ -99,7 +96,7 @@ public class Eventos {
         }
 
         // TODO como esperar a que los campos ya esten listos?
-		formulario.getCampos().get().forEach(campoFormulario -> procesarFormulario(campoFormulario));
+		formulario.getCamposPorGrupoValidacion().get().forEach(campoFormulario -> procesarFormulario(campoFormulario));
 
         return formulario.isValidacionExitosa();
         
@@ -109,12 +106,14 @@ public class Eventos {
 	 * Recibir los valores de los parámetros de un formulario, luego obtener de
 	 * la base de datos la validación de cada parámetro y por último validar cada parámetro.
 	 */
-	private void procesarFormulario(Entry<String, InformacionCampo> campoFormulario) {
+	private void procesarFormulario(Entry<String, PorGrupoValidacion> campoFormulario) {
 
-		String columnName = campoFormulario.getKey();
-		InformacionCampo campo = campoFormulario.getValue();
+		String grupoValidacion = campoFormulario.getKey();
+		TreeMap<String, InformacionCampo> informacionCampo = campoFormulario.getValue().getColumnName();
+		String columnName = informacionCampo.firstKey();
+		InformacionCampo campo = informacionCampo.firstEntry().getValue();
 
-		Cassandra transaccion = nuevaTransaccionCassandra(GRUPO_VALIDACIONES.sentencia(), campo.getGrupoValidacion());
+		Cassandra transaccion = nuevaTransaccionCassandra(GRUPO_VALIDACIONES.sentencia(), grupoValidacion);
 		campo.setValidaciones(transaccion.enJerarquiaConNombres());
 
 		if (!campo.poseeValidaciones()) throw new ExcepcionGenerica(VALIDACIONES_NO_EXISTEN.get());

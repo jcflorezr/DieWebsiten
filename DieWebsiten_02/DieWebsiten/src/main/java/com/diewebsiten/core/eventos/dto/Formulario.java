@@ -1,11 +1,12 @@
 package com.diewebsiten.core.eventos.dto;
 
-import com.diewebsiten.core.eventos.dto.Campo.InformacionCampo;
+import com.diewebsiten.core.eventos.dto.Campo.PorGrupoValidacion;
+import com.diewebsiten.core.eventos.dto.Campo.PorGrupoValidacion.InformacionCampo;
 import com.diewebsiten.core.excepciones.ExcepcionGenerica;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -40,13 +41,19 @@ public class Formulario {
     // === Guardar los campos que componen el formulario === 
     // =====================================================
     
-	public Supplier<Stream<Map.Entry<String, InformacionCampo>>> getCampos() {
-		return () -> campos.getColumnName().entrySet().stream();
+	public Supplier<Stream<Entry<String, InformacionCampo>>> getCampos() {
+		return () -> campos.getGrupoValidacion().entrySet()
+				.stream()
+				.flatMap((k) -> k.getValue().getColumnName().entrySet().stream());
+	}
+
+	public Supplier<Stream<Entry<String, PorGrupoValidacion>>> getCamposPorGrupoValidacion() {
+		return () -> campos.getGrupoValidacion().entrySet().stream();
 	}
 
     public void setCampos(JsonNode camposFormularioEvento) {
     	campos = jsonToObject(camposFormularioEvento, Campo.class);
-		if (campos.getColumnName() != null) poseeCampos = true; // El formulario sí posee campos
+		if (campos.getGrupoValidacion() != null) poseeCampos = true; // El formulario sí posee campos
 	}
 
 	public boolean sinCampos() {
