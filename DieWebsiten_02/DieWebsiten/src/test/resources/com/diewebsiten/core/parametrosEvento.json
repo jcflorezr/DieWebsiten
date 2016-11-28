@@ -1,0 +1,9 @@
+{
+  "coleccion": "tiposTransacciones",
+  "sitioweb": "miradorhumadea.com",
+  "tipo": "SW",
+  "basededatos": "diewebsiten",
+  "keyspace_name": "diewebsiten",
+  "columnfamily_name": "eventos",
+  "tipotransaccion": "sELECT"
+}
