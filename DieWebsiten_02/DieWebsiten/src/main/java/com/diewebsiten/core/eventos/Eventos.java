@@ -75,13 +75,13 @@ public class Eventos {
     }
 
     private void obtenerFormulario() {
-		Cassandra transaccion = nuevaTransaccionCassandra(VALIDACIONES_EVENTO.sentencia(), evento.getInformacionEvento());
-        formulario.setCampos(transaccion.enJerarquiaConNombres());
+		Cassandra transaccionCassandra = nuevaTransaccionCassandra(VALIDACIONES_EVENTO.sentencia(), evento.getInformacionEvento());
+        formulario.setCampos(transaccionCassandra.enJerarquiaConNombres());
 	}
 
 	private void obtenerTransacciones() {
-		Cassandra transaccion = nuevaTransaccionCassandra(TRANSACCIONES.sentencia(), evento.getInformacionEvento());
-		evento.setTransacciones(transaccion.plana());
+		Cassandra transaccionCassandra = nuevaTransaccionCassandra(TRANSACCIONES.sentencia(), evento.getInformacionEvento());
+		evento.setTransacciones(transaccionCassandra.plana());
 	}
 
     private boolean validarEvento() throws Exception {

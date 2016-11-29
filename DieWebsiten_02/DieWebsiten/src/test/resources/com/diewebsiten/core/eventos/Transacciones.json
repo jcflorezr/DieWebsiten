@@ -1,0 +1,20 @@
+{
+  "grupovalidacion": {
+    "CampoTipoCaracterSinEspaciosMinusculas": {
+      "column_name": {
+        "columnfamily_name": {
+          "formaingreso": "captura",
+          "valorpordefecto": ""
+        }
+      }
+    },
+    "CampoTipoDominioSitioWeb": {
+      "column_name": {
+        "keyspace_name": {
+          "formaingreso": "captura",
+          "valorpordefecto": ""
+        }
+      }
+    }
+  }
+}
