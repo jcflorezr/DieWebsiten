@@ -40,7 +40,7 @@ public class Eventos {
 	private Evento evento;
 	private Formulario formulario;
 
-    Eventos(String url, String nombreEvento, String parametros) throws Exception {
+    Eventos(String url, String nombreEvento, String parametros) {
         evento = new Evento(url, nombreEvento, parametros);
 		formulario = evento.getFormulario();
     }

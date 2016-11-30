@@ -25,8 +25,13 @@ public class Formulario {
 	private ObjectNode parametros;
 	private boolean poseeParametros;
 
+	public Formulario() {}
 
-  	public boolean isValidacionExitosa() {
+	public Formulario(String parametros) {
+		setParametros(parametros);
+	}
+
+	public boolean isValidacionExitosa() {
   		return validacionExitosa.get();
   	}
 
@@ -79,11 +84,13 @@ public class Formulario {
 		return parametro != null ? parametro.asText() : "";
     }
     
-    public void setParametro(String parametros) throws ExcepcionGenerica {
+    private void setParametros(String parametros) throws ExcepcionGenerica {
     	if (isNotBlank(parametros)) {
 			this.parametros = stringToJsonObject(parametros);
 			if (this.parametros != null && this.parametros.size() > 0) this.poseeParametros = true; // El formulario sí posee parámetros
-    	}
+    	} else {
+			this.parametros = newJsonObject();
+		}
     }
     
     public void setParametro(String nombreParametro, Object valorParametro) {

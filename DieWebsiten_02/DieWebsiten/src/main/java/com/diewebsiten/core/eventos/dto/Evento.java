@@ -44,17 +44,10 @@ public class Evento {
     public Evento(String url, String nombreEvento, String parametrosFormularioEvento) {
 
         // Validar que el nombre del evento no llegue vacío.
-        if (isBlank(nombreEvento)) {
-            throw new ExcepcionGenerica(Mensajes.Evento.NOMBRE_EVENTO_VACIO.get());
-        } else {
-        	// Obtener el nombre del evento que se ejecutará.
-            this.nombreEvento = nombreEvento;
-        }
+        if (isBlank(nombreEvento)) throw new ExcepcionGenerica(Mensajes.Evento.NOMBRE_EVENTO_VACIO.get());
 
-        /*
-         * AQUI FALTA UNA VALIDACION PARA 'NOMBRE SITIO WEB' Y 'NOMBRE PAGINA'
-         */
-
+        // Obtener el nombre del evento que se ejecutará.
+        this.nombreEvento = nombreEvento;
 
         // Obtener la dirección URL del sitio web que está realizando la petición.
         this.nombreSitioWeb = substringBefore(url, ":@:")/*.equals("localhost") ? "127.0.0.1" : sitioWeb*/;
@@ -64,17 +57,11 @@ public class Evento {
 
         this.informacionEvento = new Object[]{this.nombreSitioWeb, this.nombrePagina, this.nombreEvento};
 
-        this.formulario = new Formulario();
-
-        // Es posible que un evento no necesite formulario.
-        this.formulario.setParametro(isBlank(parametrosFormularioEvento) ? "{}" : parametrosFormularioEvento);
+        this.formulario = new Formulario(parametrosFormularioEvento);
 
         // Obtener el código del idioma en el que se desplegará la página, si no existe el código
         // se desplegará por defecto en idioma español (ES).
         this.idioma = this.formulario.getParametro("lang") != null ? this.formulario.getParametro("lang") : "ES";
-
-        // validacionExitosa = true
-        this.formulario.setValidacionExitosa(true);
 
         // Inicializar el objeto JSON que va a contener el resultado de la ejecución del evento.
         this.resultadoFinal = newJsonObject();
